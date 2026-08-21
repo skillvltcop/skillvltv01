@@ -12,8 +12,23 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('blueprints', function (Blueprint $table) {
-            $table->id();
+            $table->ulid('id')->primary();
+
+            $table->string('canonical_name');
+            $table->string('namespace');
+
+            $table->string('owner_type');
+            $table->string('owner_id');
+
+            $table->string('lifecycle_status')
+                ->default('draft');
+
+            $table->ulid('current_revision_id')
+                ->nullable();
+
             $table->timestamps();
+
+            $table->unique(['namespace', 'canonical_name']);
         });
     }
 
