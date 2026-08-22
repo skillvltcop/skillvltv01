@@ -8,8 +8,9 @@ use App\Application\Execution\Runtime\Contracts\BehaviorRunner;
 use App\Domain\Blueprint\Entities\Blueprint;
 use App\Domain\Blueprint\ValueObjects\RevisionId;
 use App\Domain\Execution\Entities\Execution;
+use App\Application\Execution\Engine\ExecutionEngineContract;
 
-final class ExecutionEngine
+final class ExecutionEngine implements ExecutionEngineContract
 {
     public function __construct(
         private BehaviorRunner $runner,

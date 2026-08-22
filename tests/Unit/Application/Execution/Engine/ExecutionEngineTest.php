@@ -9,6 +9,7 @@ use App\Domain\Execution\Enums\ExecutionStatus;
 use App\Domain\Blueprint\Commands\PromoteBlueprintRevision;
 use App\Application\Execution\Runtime\BehaviorRunner;
 use App\Application\Execution\Runtime\Contracts\BehaviorRunner as BehaviorRunnerContract;
+use App\Application\Execution\Engine\ExecutionEngineContract;
 
 it('executes a frozen blueprint revision and completes an execution', function () {
     $blueprint = Blueprint::create(
