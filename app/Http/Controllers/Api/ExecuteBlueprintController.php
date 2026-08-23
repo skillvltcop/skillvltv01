@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Application\Execution\Commands\ExecuteBlueprint;
+use App\Http\Requests\Api\ExecuteBlueprintRequest;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 final class ExecuteBlueprintController
 {
@@ -16,7 +16,7 @@ final class ExecuteBlueprintController
     }
 
     public function __invoke(
-        Request $request,
+        ExecuteBlueprintRequest $request,
         string $blueprint,
     ): JsonResponse {
         $execution = $this->executeBlueprint->handle(

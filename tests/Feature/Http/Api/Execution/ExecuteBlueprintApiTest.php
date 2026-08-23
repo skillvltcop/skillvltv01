@@ -110,3 +110,63 @@ it('executes a blueprint through the HTTP API', function () {
         'score',
     );
 });
+
+it('returns 404 when the blueprint does not exist', function () {
+    $blueprintId = \App\Domain\Blueprint\ValueObjects\BlueprintId::generate();
+    $revisionId = \App\Domain\Blueprint\ValueObjects\RevisionId::generate();
+
+    $response = $this->postJson(
+        "/api/blueprints/{$blueprintId}/execute",
+        [
+            'revision_id' => (string) $revisionId,
+            'input' => [
+                'student' => [
+                    'name' => 'Ahmed',
+                ],
+            ],
+            'context' => [
+                'locale' => 'ar',
+            ],
+        ],
+    );
+
+    $response->assertNotFound();
+
+    $response->assertJson([
+        'message' => 'Blueprint not found.',
+    ]);
+});
+
+it('returns 422 when revision_id is missing', function () {
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'assessment-rubric-validation',
+        namespace: 'skillvlt.edu.assessment',
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $response = $this->postJson(
+        "/api/blueprints/{$blueprint->id()}/execute",
+        [
+            'input' => [
+                'student' => [
+                    'name' => 'Ahmed',
+                ],
+            ],
+            'context' => [
+                'locale' => 'ar',
+            ],
+        ],
+    );
+
+    $response->assertUnprocessable();
+
+    $response->assertJsonValidationErrors([
+        'revision_id',
+    ]);
+});
