@@ -99,6 +99,17 @@ it('retrieves a completed execution through the HTTP API', function () {
 
     $response->assertSuccessful();
 
+    $response->assertJsonStructure([
+        'id',
+        'blueprint_id',
+        'revision_id',
+        'status',
+        'input',
+        'context',
+        'output',
+        'error',
+    ]);
+
     $response->assertJsonPath(
         'id',
         (string) $execution->id(),
@@ -137,6 +148,11 @@ it('retrieves a completed execution through the HTTP API', function () {
     $response->assertJsonPath(
         'output.steps.1',
         'score',
+    );
+
+    $response->assertJsonPath(
+        'error',
+        null,
     );
 });
 
