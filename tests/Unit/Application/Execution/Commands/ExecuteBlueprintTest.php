@@ -1,26 +1,29 @@
 <?php
 
-use App\Application\Blueprint\Commands\ActivateBlueprint;
-use App\Application\Blueprint\Commands\AddBlueprintRevision;
-use App\Application\Blueprint\Commands\CreateBlueprint;
-use App\Application\Blueprint\Commands\FreezeBlueprintRevision;
-use App\Application\Blueprint\Commands\PromoteBlueprintRevision;
 use App\Application\Execution\Commands\ExecuteBlueprint;
 use App\Application\Execution\Engine\ExecutionEngineContract;
 use App\Domain\Blueprint\Entities\Blueprint;
+use App\Domain\Blueprint\Repositories\BlueprintRepository;
+use App\Domain\Blueprint\ValueObjects\BehaviorDigest;
+use App\Domain\Blueprint\ValueObjects\BlueprintNamespace;
+use App\Domain\Blueprint\ValueObjects\CanonicalName;
+use App\Domain\Blueprint\ValueObjects\RevisionId;
+use App\Domain\Blueprint\ValueObjects\RevisionNumber;
 use App\Domain\Execution\Entities\Execution;
 use App\Domain\Execution\Enums\ExecutionStatus;
-use App\Domain\Blueprint\Repositories\BlueprintRepository;
+use App\Domain\Execution\Repositories\ExecutionRepository;
 
-it('executes an activated blueprint through the application layer', function () {
+it('executes an activated blueprint and persists the execution', function () {
     $repository = Mockery::mock(BlueprintRepository::class);
+    $executionRepository = Mockery::mock(ExecutionRepository::class);
+    $engine = Mockery::mock(ExecutionEngineContract::class);
 
     $blueprint = Blueprint::create(
-        canonicalName: new \App\Domain\Blueprint\ValueObjects\CanonicalName(
-            'assessment-rubric-core'
+        canonicalName: new CanonicalName(
+            'assessment-rubric-core',
         ),
-        namespace: new \App\Domain\Blueprint\ValueObjects\BlueprintNamespace(
-            'skillvlt.edu.assessment'
+        namespace: new BlueprintNamespace(
+            'skillvlt.edu.assessment',
         ),
         ownership: [
             'type' => 'system',
@@ -30,9 +33,9 @@ it('executes an activated blueprint through the application layer', function () 
     );
 
     $revision = $blueprint->addRevision(
-        number: new \App\Domain\Blueprint\ValueObjects\RevisionNumber('1.0.0'),
-        behaviorDigest: new \App\Domain\Blueprint\ValueObjects\BehaviorDigest(
-            'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         ),
         contracts: [
             'input' => [
@@ -62,11 +65,9 @@ it('executes an activated blueprint through the application layer', function () 
         ->shouldReceive('find')
         ->once()
         ->with(Mockery::on(
-            fn ($id) => (string) $id === (string) $blueprint->id()
+            fn ($id) => (string) $id === (string) $blueprint->id(),
         ))
         ->andReturn($blueprint);
-
-   $engine = Mockery::mock(ExecutionEngineContract::class);
 
     $expectedExecution = Execution::create(
         blueprintId: $blueprint->id(),
@@ -97,7 +98,7 @@ it('executes an activated blueprint through the application layer', function () 
             $blueprint,
             Mockery::on(
                 fn ($revisionId) =>
-                    (string) $revisionId === (string) $revision->id()
+                    (string) $revisionId === (string) $revision->id(),
             ),
             [
                 'student' => [
@@ -110,9 +111,15 @@ it('executes an activated blueprint through the application layer', function () 
         )
         ->andReturn($expectedExecution);
 
+    $executionRepository
+        ->shouldReceive('save')
+        ->once()
+        ->with($expectedExecution);
+
     $command = new ExecuteBlueprint(
         blueprintRepository: $repository,
         engine: $engine,
+        executionRepository: $executionRepository,
     );
 
     $result = $command->handle(
@@ -137,25 +144,29 @@ it('executes an activated blueprint through the application layer', function () 
 
 it('fails when the blueprint does not exist', function () {
     $repository = Mockery::mock(BlueprintRepository::class);
+    $executionRepository = Mockery::mock(ExecutionRepository::class);
+    $engine = Mockery::mock(ExecutionEngineContract::class);
 
     $repository
         ->shouldReceive('find')
         ->once()
         ->andReturn(null);
 
-    $engine = Mockery::mock(ExecutionEngineContract::class);
-
     $engine
         ->shouldNotReceive('execute');
+
+    $executionRepository
+        ->shouldNotReceive('save');
 
     $command = new ExecuteBlueprint(
         blueprintRepository: $repository,
         engine: $engine,
+        executionRepository: $executionRepository,
     );
 
     expect(fn () => $command->handle(
         blueprintId: (string) \App\Domain\Blueprint\ValueObjects\BlueprintId::generate(),
-        revisionId: (string) \App\Domain\Blueprint\ValueObjects\RevisionId::generate(),
+        revisionId: (string) RevisionId::generate(),
         input: [
             'student' => [
                 'name' => 'Ahmed',
@@ -173,14 +184,15 @@ it('fails when the blueprint does not exist', function () {
 
 it('delegates an invalid revision to the execution engine', function () {
     $repository = Mockery::mock(BlueprintRepository::class);
+    $executionRepository = Mockery::mock(ExecutionRepository::class);
     $engine = Mockery::mock(ExecutionEngineContract::class);
 
     $blueprint = Blueprint::create(
-        canonicalName: new \App\Domain\Blueprint\ValueObjects\CanonicalName(
-            'assessment-rubric-core'
+        canonicalName: new CanonicalName(
+            'assessment-rubric-core',
         ),
-        namespace: new \App\Domain\Blueprint\ValueObjects\BlueprintNamespace(
-            'skillvlt.edu.assessment'
+        namespace: new BlueprintNamespace(
+            'skillvlt.edu.assessment',
         ),
         ownership: [
             'type' => 'system',
@@ -194,7 +206,7 @@ it('delegates an invalid revision to the execution engine', function () {
         ->once()
         ->andReturn($blueprint);
 
-    $invalidRevisionId = \App\Domain\Blueprint\ValueObjects\RevisionId::generate();
+    $invalidRevisionId = RevisionId::generate();
 
     $engine
         ->shouldReceive('execute')
@@ -203,7 +215,7 @@ it('delegates an invalid revision to the execution engine', function () {
             $blueprint,
             Mockery::on(
                 fn ($revisionId) =>
-                    (string) $revisionId === (string) $invalidRevisionId
+                    (string) $revisionId === (string) $invalidRevisionId,
             ),
             [
                 'student' => [
@@ -216,13 +228,17 @@ it('delegates an invalid revision to the execution engine', function () {
         )
         ->andThrow(
             new DomainException(
-                'Revision does not belong to the Blueprint.'
-            )
+                'Revision does not belong to the Blueprint.',
+            ),
         );
+
+    $executionRepository
+        ->shouldNotReceive('save');
 
     $command = new ExecuteBlueprint(
         blueprintRepository: $repository,
         engine: $engine,
+        executionRepository: $executionRepository,
     );
 
     expect(fn () => $command->handle(

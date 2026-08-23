@@ -9,12 +9,14 @@ use App\Domain\Blueprint\Repositories\BlueprintRepository;
 use App\Domain\Blueprint\ValueObjects\BlueprintId;
 use App\Domain\Blueprint\ValueObjects\RevisionId;
 use App\Domain\Execution\Entities\Execution;
+use App\Domain\Execution\Repositories\ExecutionRepository;
 
 final class ExecuteBlueprint
 {
     public function __construct(
         private BlueprintRepository $blueprintRepository,
         private ExecutionEngineContract $engine,
+        private ExecutionRepository $executionRepository,
     ) {
     }
 
@@ -38,11 +40,15 @@ final class ExecuteBlueprint
             );
         }
 
-        return $this->engine->execute(
+        $execution = $this->engine->execute(
             blueprint: $blueprint,
             revisionId: new RevisionId($revisionId),
             input: $input,
             context: $context,
         );
+
+        $this->executionRepository->save($execution);
+
+        return $execution;
     }
 }

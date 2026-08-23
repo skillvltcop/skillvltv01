@@ -170,3 +170,83 @@ it('returns 422 when revision_id is missing', function () {
         'revision_id',
     ]);
 });
+
+it('persists the execution when executed through the HTTP API', function () {
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'assessment-rubric-persistence',
+        namespace: 'skillvlt.edu.assessment',
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision = (new AddBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        number: '1.0.0',
+        behaviorDigest:
+            'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'steps' => [
+                'validate',
+                'score',
+            ],
+        ],
+        outputs: [
+            'type' => 'assessment-result',
+        ],
+        policies: [
+            'visibility' => 'public',
+        ],
+    );
+
+    (new FreezeBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        revisionId: (string) $revision->id(),
+    );
+
+    (new PromoteBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        revisionId: (string) $revision->id(),
+    );
+
+    (new ActivateBlueprint($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+    );
+
+    $response = $this->postJson(
+        "/api/blueprints/{$blueprint->id()}/execute",
+        [
+            'revision_id' => (string) $revision->id(),
+            'input' => [
+                'student' => [
+                    'name' => 'Ahmed',
+                ],
+            ],
+            'context' => [
+                'locale' => 'ar',
+            ],
+        ],
+    );
+
+    $response->assertSuccessful();
+
+    $executionId = $response->json('id');
+
+    expect($executionId)->not->toBeNull();
+
+    $this->assertDatabaseHas('executions', [
+        'id' => $executionId,
+        'blueprint_id' => (string) $blueprint->id(),
+        'revision_id' => (string) $revision->id(),
+        'status' => 'completed',
+    ]);
+});
