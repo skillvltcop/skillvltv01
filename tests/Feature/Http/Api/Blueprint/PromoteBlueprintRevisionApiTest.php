@@ -8,6 +8,7 @@ use App\Domain\Blueprint\ValueObjects\RevisionId;
 use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use App\Models\User;
 
 uses(
     TestCase::class,
@@ -15,14 +16,15 @@ uses(
 );
 
 it('promotes a frozen blueprint revision through the HTTP API', function () {
+    $user = User::factory()->create();
     $repository = new EloquentBlueprintRepository();
 
     $blueprint = (new CreateBlueprint($repository))->handle(
         canonicalName: 'assessment-rubric-promote',
         namespace: 'skillvlt.edu.assessment',
         ownership: [
-            'type' => 'system',
-            'id' => 'skillvlt',
+            'type' => 'user',
+            'id' => (string) $user->id,
         ],
         metadata: [],
     );
@@ -56,9 +58,11 @@ it('promotes a frozen blueprint revision through the HTTP API', function () {
         revisionId: (string) $revision->id(),
     );
 
-    $response = $this->postJson(
-        "/api/blueprints/{$blueprint->id()}/revisions/{$revision->id()}/promote",
-    );
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/revisions/{$revision->id()}/promote",
+        );
 
     $response->assertSuccessful();
 
@@ -110,9 +114,13 @@ it('returns 404 when promoting a revision for a missing blueprint', function () 
     $blueprintId = BlueprintId::generate();
     $revisionId = RevisionId::generate();
 
-    $response = $this->postJson(
-        "/api/blueprints/{$blueprintId}/revisions/{$revisionId}/promote",
-    );
+    $user = User::factory()->create();
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprintId}/revisions/{$revisionId}/promote",
+        );
 
     $response->assertNotFound();
 
@@ -120,9 +128,9 @@ it('returns 404 when promoting a revision for a missing blueprint', function () 
         'message' => 'Blueprint not found.',
     ]);
 });
-
 it('returns 404 when promoting a missing revision', function () {
     $repository = new EloquentBlueprintRepository();
+    $user = User::factory()->create();
 
     $blueprint = (new CreateBlueprint($repository))->handle(
         canonicalName: 'assessment-rubric-promote-missing',
@@ -136,10 +144,11 @@ it('returns 404 when promoting a missing revision', function () {
 
     $missingRevisionId = RevisionId::generate();
 
-    $response = $this->postJson(
-        "/api/blueprints/{$blueprint->id()}/revisions/{$missingRevisionId}/promote",
-    );
-$response->dump();
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/revisions/{$missingRevisionId}/promote",
+        );
     $response->assertNotFound();
 
     $response->assertJson([
@@ -149,14 +158,15 @@ $response->dump();
 
 it('rejects promoting an unfrozen revision', function () {
     $repository = new EloquentBlueprintRepository();
+    $user = User::factory()->create();
 
     $blueprint = (new CreateBlueprint($repository))->handle(
         canonicalName: 'assessment-rubric-promote-unfrozen',
         namespace: 'skillvlt.edu.assessment',
-        ownership: [
-            'type' => 'system',
-            'id' => 'skillvlt',
-        ],
+    ownership: [
+        'type' => 'user',
+        'id' => (string) $user->id,
+    ],
         metadata: [],
     );
 
@@ -184,14 +194,80 @@ it('rejects promoting an unfrozen revision', function () {
     );
 
     expect($revision->isFrozen())->toBeFalse();
-
-    $response = $this->postJson(
-        "/api/blueprints/{$blueprint->id()}/revisions/{$revision->id()}/promote",
-    );
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/revisions/{$revision->id()}/promote",
+        );
 
     $response->assertUnprocessable();
 
     $response->assertJson([
         'message' => 'A Revision must be frozen before it can become current.',
     ]);
+});
+
+it('forbids a user from promoting another user blueprint revision', function () {
+    $owner = User::factory()->create();
+    $otherUser = User::factory()->create();
+
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'promote-owner-protected',
+        namespace: 'skillvlt.edu.promote',
+        ownership: [
+            'type' => 'user',
+            'id' => (string) $owner->id,
+        ],
+        metadata: [],
+    );
+
+    $revision = (new AddBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        number: '1.0.0',
+        behaviorDigest:
+            'sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'steps' => [
+                'validate',
+                'score',
+            ],
+        ],
+        outputs: [
+            'type' => 'assessment-result',
+        ],
+        policies: [
+            'visibility' => 'public',
+        ],
+    );
+
+    (new FreezeBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        revisionId: (string) $revision->id(),
+    );
+
+    $response = $this
+        ->actingAs($otherUser)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/revisions/{$revision->id()}/promote",
+        );
+
+    $response->assertForbidden();
+});
+
+it('rejects unauthenticated revision promotion', function () {
+    $blueprintId = BlueprintId::generate();
+    $revisionId = RevisionId::generate();
+
+    $response = $this->postJson(
+        "/api/blueprints/{$blueprintId}/revisions/{$revisionId}/promote",
+    );
+
+    $response->assertUnauthorized();
 });

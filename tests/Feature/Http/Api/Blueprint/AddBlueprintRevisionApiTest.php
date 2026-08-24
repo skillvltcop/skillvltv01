@@ -4,6 +4,7 @@ use App\Application\Blueprint\Commands\CreateBlueprint;
 use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use App\Models\User;
 
 uses(
     TestCase::class,
@@ -11,19 +12,23 @@ uses(
 );
 
 it('adds a revision to a blueprint through the HTTP API', function () {
+
+$user = User::factory()->create();
     $repository = new EloquentBlueprintRepository();
 
     $blueprint = (new CreateBlueprint($repository))->handle(
         canonicalName: 'assessment-rubric-revision',
         namespace: 'skillvlt.edu.assessment',
-        ownership: [
-            'type' => 'system',
-            'id' => 'skillvlt',
-        ],
+ownership: [
+    'type' => 'user',
+    'id' => (string) $user->id,
+],
         metadata: [],
     );
 
-    $response = $this->postJson(
+$response = $this
+    ->actingAs($user)
+    ->postJson(
         "/api/blueprints/{$blueprint->id()}/revisions",
         [
             'number' => '1.0.0',
@@ -125,7 +130,11 @@ it('adds a revision to a blueprint through the HTTP API', function () {
 it('returns 404 when adding a revision to a missing blueprint', function () {
     $blueprintId = \App\Domain\Blueprint\ValueObjects\BlueprintId::generate();
 
-    $response = $this->postJson(
+    $user = User::factory()->create();
+
+$response = $this
+    ->actingAs($user)
+    ->postJson(
         "/api/blueprints/{$blueprintId}/revisions",
         [
             'number' => '1.0.0',
@@ -161,6 +170,8 @@ it('returns 404 when adding a revision to a missing blueprint', function () {
 it('returns 422 when required revision fields are missing', function () {
     $repository = new EloquentBlueprintRepository();
 
+    $user = User::factory()->create();
+
     $blueprint = (new CreateBlueprint($repository))->handle(
         canonicalName: 'assessment-rubric-validation',
         namespace: 'skillvlt.edu.assessment',
@@ -171,7 +182,9 @@ it('returns 422 when required revision fields are missing', function () {
         metadata: [],
     );
 
-    $response = $this->postJson(
+$response = $this
+    ->actingAs($user)
+    ->postJson(
         "/api/blueprints/{$blueprint->id()}/revisions",
         [],
     );
@@ -186,4 +199,62 @@ it('returns 422 when required revision fields are missing', function () {
         'outputs',
         'policies',
     ]);
+});
+
+it('forbids a user from adding a revision to another user blueprint', function () {
+    $owner = User::factory()->create();
+    $otherUser = User::factory()->create();
+
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'revision-owner-protected',
+        namespace: 'skillvlt.edu.revisions',
+        ownership: [
+            'type' => 'user',
+            'id' => (string) $owner->id,
+        ],
+        metadata: [],
+    );
+
+    $response = $this
+        ->actingAs($otherUser)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/revisions",
+            [
+                'number' => '1.0.0',
+                'behavior_digest' =>
+                    'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+                'contracts' => [
+                    'input' => [
+                        'type' => 'object',
+                    ],
+                ],
+                'logic' => [
+                    'steps' => [
+                        'validate',
+                        'score',
+                    ],
+                ],
+                'outputs' => [
+                    'type' => 'assessment-result',
+                ],
+                'policies' => [
+                    'visibility' => 'public',
+                ],
+            ],
+        );
+
+    $response->assertForbidden();
+});
+
+it('rejects unauthenticated revision creation', function () {
+    $blueprintId = \App\Domain\Blueprint\ValueObjects\BlueprintId::generate();
+
+    $response = $this->postJson(
+        "/api/blueprints/{$blueprintId}/revisions",
+        [],
+    );
+
+    $response->assertUnauthorized();
 });

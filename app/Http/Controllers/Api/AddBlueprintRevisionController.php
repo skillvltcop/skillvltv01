@@ -8,13 +8,16 @@ use App\Application\Blueprint\Commands\AddBlueprintRevision;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use App\Domain\Blueprint\Repositories\BlueprintRepository;
+use App\Domain\Blueprint\ValueObjects\BlueprintId;
 
 final class AddBlueprintRevisionController
 {
-    public function __construct(
-        private AddBlueprintRevision $command,
-    ) {
-    }
+public function __construct(
+    private AddBlueprintRevision $command,
+    private BlueprintRepository $repository,
+) {
+}
 
     public function __invoke(
         Request $request,
@@ -51,6 +54,30 @@ final class AddBlueprintRevisionController
                 ],
             ],
         )->validate();
+
+        $blueprintEntity = $this->repository->find(
+            new BlueprintId($blueprint),
+        );
+
+        if ($blueprintEntity === null) {
+            return response()->json([
+                'message' => 'Blueprint not found.',
+            ], 404);
+        }
+
+        $ownership = $blueprintEntity->ownership();
+
+        $user = $request->user();
+
+        $isOwner =
+            $ownership['type'] === 'user'
+            && (string) $ownership['id'] === (string) $user->id;
+
+        if (! $isOwner) {
+            return response()->json([
+                'message' => 'Forbidden.',
+            ], 403);
+        }
 
         try {
             $revision = $this->command->handle(

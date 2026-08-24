@@ -7,6 +7,7 @@ use App\Domain\Blueprint\ValueObjects\BlueprintId;
 use App\Domain\Blueprint\ValueObjects\RevisionId;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use App\Models\User;
 
 uses(
     TestCase::class,
@@ -14,15 +15,16 @@ uses(
 );
 
 it('freezes a blueprint revision through the HTTP API', function () {
+    $user = User::factory()->create();
     $repository = new EloquentBlueprintRepository();
 
     $blueprint = (new CreateBlueprint($repository))->handle(
         canonicalName: 'assessment-rubric-freeze',
         namespace: 'skillvlt.edu.assessment',
-        ownership: [
-            'type' => 'system',
-            'id' => 'skillvlt',
-        ],
+ownership: [
+    'type' => 'user',
+    'id' => (string) $user->id,
+],
         metadata: [],
     );
 
@@ -52,7 +54,9 @@ it('freezes a blueprint revision through the HTTP API', function () {
 
     expect($revision->isFrozen())->toBeFalse();
 
-    $response = $this->postJson(
+$response = $this
+    ->actingAs($user)
+    ->postJson(
         "/api/blueprints/{$blueprint->id()}/revisions/{$revision->id()}/freeze",
     );
 
@@ -98,13 +102,15 @@ it('freezes a blueprint revision through the HTTP API', function () {
 });
 
 it('returns 404 when freezing a revision for a missing blueprint', function () {
+    $user = User::factory()->create();
     $blueprintId = BlueprintId::generate();
     $revisionId = RevisionId::generate();
 
-    $response = $this->postJson(
+$response = $this
+    ->actingAs($user)
+    ->postJson(
         "/api/blueprints/{$blueprintId}/revisions/{$revisionId}/freeze",
     );
-
     $response->assertNotFound();
 
     $response->assertJson([
@@ -113,6 +119,8 @@ it('returns 404 when freezing a revision for a missing blueprint', function () {
 });
 
 it('returns 404 when freezing a missing revision', function () {
+    $user = User::factory()->create();
+
     $repository = new EloquentBlueprintRepository();
 
     $blueprint = (new CreateBlueprint($repository))->handle(
@@ -127,7 +135,9 @@ it('returns 404 when freezing a missing revision', function () {
 
     $missingRevisionId = RevisionId::generate();
 
-    $response = $this->postJson(
+$response = $this
+    ->actingAs($user)
+    ->postJson(
         "/api/blueprints/{$blueprint->id()}/revisions/{$missingRevisionId}/freeze",
     );
 
@@ -136,4 +146,64 @@ it('returns 404 when freezing a missing revision', function () {
     $response->assertJson([
         'message' => 'Blueprint revision not found.',
     ]);
+});
+
+it('forbids a user from freezing another user blueprint revision', function () {
+    $owner = User::factory()->create();
+    $otherUser = User::factory()->create();
+
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'freeze-owner-protected',
+        namespace: 'skillvlt.edu.freeze',
+        ownership: [
+            'type' => 'user',
+            'id' => (string) $owner->id,
+        ],
+        metadata: [],
+    );
+
+    $revision = (new AddBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        number: '1.0.0',
+        behaviorDigest:
+            'sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'steps' => [
+                'validate',
+                'score',
+            ],
+        ],
+        outputs: [
+            'type' => 'assessment-result',
+        ],
+        policies: [
+            'visibility' => 'public',
+        ],
+    );
+
+    $response = $this
+        ->actingAs($otherUser)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/revisions/{$revision->id()}/freeze",
+        );
+
+    $response->assertForbidden();
+});
+
+it('rejects unauthenticated revision freezing', function () {
+    $blueprintId = BlueprintId::generate();
+    $revisionId = RevisionId::generate();
+
+    $response = $this->postJson(
+        "/api/blueprints/{$blueprintId}/revisions/{$revisionId}/freeze",
+    );
+
+    $response->assertUnauthorized();
 });

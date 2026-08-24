@@ -19,12 +19,12 @@ Route::post(
     CreateBlueprintController::class,
 );
 
-Route::post(
+Route::middleware('auth:sanctum')->post(
     '/blueprints/{blueprint}/revisions',
     AddBlueprintRevisionController::class,
 );
 
-Route::post(
+Route::middleware('auth:sanctum')->post(
     '/blueprints/{blueprint}/revisions/{revision}/freeze',
     FreezeBlueprintRevisionController::class,
 );
@@ -79,4 +79,9 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->post(
     '/blueprints',
     CreateBlueprintController::class,
+);
+
+Route::middleware('auth:sanctum')->post(
+    '/blueprints/{blueprint}/revisions/{revision}/promote',
+    PromoteBlueprintRevisionController::class,
 );
