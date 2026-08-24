@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
 use App\Http\Controllers\Api\Auth\MeController;
 use App\Http\Controllers\Api\ListBlueprintsController;
+use App\Http\Controllers\Api\ListBlueprintRevisionsController;
 
 Route::middleware('auth:sanctum')->post(
     '/blueprints/{blueprint}/revisions',
@@ -82,3 +83,7 @@ Route::middleware('auth:sanctum')->get(
     ListBlueprintsController::class,
 );
 
+Route::middleware('auth:sanctum')->get(
+    '/blueprints/{blueprint}/revisions',
+    ListBlueprintRevisionsController::class,
+);
