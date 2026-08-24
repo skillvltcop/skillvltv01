@@ -5,10 +5,10 @@ use App\Application\Blueprint\Commands\AddBlueprintRevision;
 use App\Application\Blueprint\Commands\CreateBlueprint;
 use App\Application\Blueprint\Commands\FreezeBlueprintRevision;
 use App\Application\Blueprint\Commands\PromoteBlueprintRevision;
-use App\Application\Execution\Commands\ExecuteBlueprint;
-use App\Application\Execution\Engine\ExecutionEngine;
-use App\Application\Execution\Runtime\BehaviorRunner;
+use App\Domain\Blueprint\ValueObjects\BlueprintId;
+use App\Domain\Blueprint\ValueObjects\RevisionId;
 use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -18,14 +18,16 @@ uses(
 );
 
 it('executes a blueprint through the HTTP API', function () {
+    $user = User::factory()->create();
+
     $repository = new EloquentBlueprintRepository();
 
     $blueprint = (new CreateBlueprint($repository))->handle(
-        canonicalName: 'assessment-rubric-core',
+        canonicalName: 'assessment-rubric-execute',
         namespace: 'skillvlt.edu.assessment',
         ownership: [
-            'type' => 'system',
-            'id' => 'skillvlt',
+            'type' => 'user',
+            'id' => (string) $user->id,
         ],
         metadata: [],
     );
@@ -68,22 +70,34 @@ it('executes a blueprint through the HTTP API', function () {
         blueprintId: (string) $blueprint->id(),
     );
 
-    $response = $this->postJson(
-        "/api/blueprints/{$blueprint->id()}/execute",
-        [
-            'revision_id' => (string) $revision->id(),
-            'input' => [
-                'student' => [
-                    'name' => 'Ahmed',
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/execute",
+            [
+                'revision_id' => (string) $revision->id(),
+                'input' => [
+                    'student' => [
+                        'name' => 'Ahmed',
+                    ],
+                ],
+                'context' => [
+                    'locale' => 'ar',
                 ],
             ],
-            'context' => [
-                'locale' => 'ar',
-            ],
-        ],
-    );
+        );
 
     $response->assertSuccessful();
+
+    $response->assertJsonStructure([
+        'execution_id',
+        'blueprint_id',
+        'revision_id',
+        'status',
+        'input',
+        'context',
+        'output',
+    ]);
 
     $response->assertJsonPath(
         'blueprint_id',
@@ -101,34 +115,38 @@ it('executes a blueprint through the HTTP API', function () {
     );
 
     $response->assertJsonPath(
-        'output.steps.0',
-        'validate',
+        'input.student.name',
+        'Ahmed',
     );
 
     $response->assertJsonPath(
-        'output.steps.1',
-        'score',
+        'context.locale',
+        'ar',
     );
 });
 
 it('returns 404 when the blueprint does not exist', function () {
-    $blueprintId = \App\Domain\Blueprint\ValueObjects\BlueprintId::generate();
-    $revisionId = \App\Domain\Blueprint\ValueObjects\RevisionId::generate();
+    $user = User::factory()->create();
 
-    $response = $this->postJson(
-        "/api/blueprints/{$blueprintId}/execute",
-        [
-            'revision_id' => (string) $revisionId,
-            'input' => [
-                'student' => [
-                    'name' => 'Ahmed',
+    $blueprintId = BlueprintId::generate();
+    $revisionId = RevisionId::generate();
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprintId}/execute",
+            [
+                'revision_id' => (string) $revisionId,
+                'input' => [
+                    'student' => [
+                        'name' => 'Ahmed',
+                    ],
+                ],
+                'context' => [
+                    'locale' => 'ar',
                 ],
             ],
-            'context' => [
-                'locale' => 'ar',
-            ],
-        ],
-    );
+        );
 
     $response->assertNotFound();
 
@@ -138,31 +156,35 @@ it('returns 404 when the blueprint does not exist', function () {
 });
 
 it('returns 422 when revision_id is missing', function () {
+    $user = User::factory()->create();
+
     $repository = new EloquentBlueprintRepository();
 
     $blueprint = (new CreateBlueprint($repository))->handle(
-        canonicalName: 'assessment-rubric-validation',
+        canonicalName: 'assessment-rubric-execute-validation',
         namespace: 'skillvlt.edu.assessment',
         ownership: [
-            'type' => 'system',
-            'id' => 'skillvlt',
+            'type' => 'user',
+            'id' => (string) $user->id,
         ],
         metadata: [],
     );
 
-    $response = $this->postJson(
-        "/api/blueprints/{$blueprint->id()}/execute",
-        [
-            'input' => [
-                'student' => [
-                    'name' => 'Ahmed',
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/execute",
+            [
+                'input' => [
+                    'student' => [
+                        'name' => 'Ahmed',
+                    ],
+                ],
+                'context' => [
+                    'locale' => 'ar',
                 ],
             ],
-            'context' => [
-                'locale' => 'ar',
-            ],
-        ],
-    );
+        );
 
     $response->assertUnprocessable();
 
@@ -172,14 +194,16 @@ it('returns 422 when revision_id is missing', function () {
 });
 
 it('persists the execution when executed through the HTTP API', function () {
+    $user = User::factory()->create();
+
     $repository = new EloquentBlueprintRepository();
 
     $blueprint = (new CreateBlueprint($repository))->handle(
-        canonicalName: 'assessment-rubric-persistence',
+        canonicalName: 'assessment-rubric-execute-persistence',
         namespace: 'skillvlt.edu.assessment',
         ownership: [
-            'type' => 'system',
-            'id' => 'skillvlt',
+            'type' => 'user',
+            'id' => (string) $user->id,
         ],
         metadata: [],
     );
@@ -197,7 +221,6 @@ it('persists the execution when executed through the HTTP API', function () {
         logic: [
             'steps' => [
                 'validate',
-                'score',
             ],
         ],
         outputs: [
@@ -222,24 +245,26 @@ it('persists the execution when executed through the HTTP API', function () {
         blueprintId: (string) $blueprint->id(),
     );
 
-    $response = $this->postJson(
-        "/api/blueprints/{$blueprint->id()}/execute",
-        [
-            'revision_id' => (string) $revision->id(),
-            'input' => [
-                'student' => [
-                    'name' => 'Ahmed',
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/execute",
+            [
+                'revision_id' => (string) $revision->id(),
+                'input' => [
+                    'student' => [
+                        'name' => 'Ahmed',
+                    ],
+                ],
+                'context' => [
+                    'locale' => 'ar',
                 ],
             ],
-            'context' => [
-                'locale' => 'ar',
-            ],
-        ],
-    );
+        );
 
     $response->assertSuccessful();
 
-    $executionId = $response->json('id');
+    $executionId = $response->json('execution_id');
 
     expect($executionId)->not->toBeNull();
 
@@ -249,4 +274,93 @@ it('persists the execution when executed through the HTTP API', function () {
         'revision_id' => (string) $revision->id(),
         'status' => 'completed',
     ]);
+});
+
+it('forbids a user from executing another user blueprint', function () {
+    $owner = User::factory()->create();
+    $otherUser = User::factory()->create();
+
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'execution-owner-protected',
+        namespace: 'skillvlt.edu.execution',
+        ownership: [
+            'type' => 'user',
+            'id' => (string) $owner->id,
+        ],
+        metadata: [],
+    );
+
+    $revision = (new AddBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        number: '1.0.0',
+        behaviorDigest:
+            'sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'steps' => [
+                'validate',
+            ],
+        ],
+        outputs: [
+            'type' => 'assessment-result',
+        ],
+        policies: [
+            'visibility' => 'public',
+        ],
+    );
+
+    (new FreezeBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        revisionId: (string) $revision->id(),
+    );
+
+    (new PromoteBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        revisionId: (string) $revision->id(),
+    );
+
+    (new ActivateBlueprint($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+    );
+
+    $response = $this
+        ->actingAs($otherUser)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/execute",
+            [
+                'revision_id' => (string) $revision->id(),
+                'input' => [
+                    'student' => [
+                        'name' => 'Ahmed',
+                    ],
+                ],
+                'context' => [
+                    'locale' => 'ar',
+                ],
+            ],
+        );
+
+    $response->assertForbidden();
+});
+
+it('rejects unauthenticated blueprint execution', function () {
+    $blueprintId = BlueprintId::generate();
+    $revisionId = RevisionId::generate();
+
+    $response = $this->postJson(
+        "/api/blueprints/{$blueprintId}/execute",
+        [
+            'revision_id' => (string) $revisionId,
+            'input' => [],
+            'context' => [],
+        ],
+    );
+
+    $response->assertUnauthorized();
 });

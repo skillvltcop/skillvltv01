@@ -6,6 +6,7 @@ use App\Application\Blueprint\Commands\CreateBlueprint;
 use App\Application\Blueprint\Commands\FreezeBlueprintRevision;
 use App\Application\Blueprint\Commands\PromoteBlueprintRevision;
 use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -17,14 +18,16 @@ uses(
 it('executes a blueprint and retrieves the same execution through the API', function () {
     $blueprintRepository = new EloquentBlueprintRepository();
 
+    $user = User::factory()->create();
+
     $blueprint = (new CreateBlueprint(
         $blueprintRepository,
     ))->handle(
         canonicalName: 'assessment-rubric-lifecycle',
         namespace: 'skillvlt.edu.assessment',
         ownership: [
-            'type' => 'system',
-            'id' => 'skillvlt',
+            'type' => 'user',
+            'id' => (string) $user->id,
         ],
         metadata: [],
     );
@@ -75,25 +78,27 @@ it('executes a blueprint and retrieves the same execution through the API', func
         blueprintId: (string) $blueprint->id(),
     );
 
-    $executeResponse = $this->postJson(
-        "/api/blueprints/{$blueprint->id()}/execute",
-        [
-            'revision_id' => (string) $revision->id(),
-            'input' => [
-                'student' => [
-                    'name' => 'Ahmed',
+    $executeResponse = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/execute",
+            [
+                'revision_id' => (string) $revision->id(),
+                'input' => [
+                    'student' => [
+                        'name' => 'Ahmed',
+                    ],
+                ],
+                'context' => [
+                    'locale' => 'ar',
                 ],
             ],
-            'context' => [
-                'locale' => 'ar',
-            ],
-        ],
-    );
+        );
 
     $executeResponse->assertSuccessful();
 
     $executeResponse->assertJsonStructure([
-        'id',
+        'execution_id',
         'blueprint_id',
         'revision_id',
         'status',
@@ -131,13 +136,15 @@ it('executes a blueprint and retrieves the same execution through the API', func
         null,
     );
 
-    $executionId = $executeResponse->json('id');
+    $executionId = $executeResponse->json('execution_id');
 
     expect($executionId)->not->toBeNull();
 
-    $showResponse = $this->getJson(
-        "/api/executions/{$executionId}",
-    );
+    $showResponse = $this
+        ->actingAs($user)
+        ->getJson(
+            "/api/executions/{$executionId}",
+        );
 
     $showResponse->assertSuccessful();
 

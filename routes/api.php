@@ -14,11 +14,6 @@ use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
 use App\Http\Controllers\Api\Auth\MeController;
 
-Route::post(
-    '/blueprints',
-    CreateBlueprintController::class,
-);
-
 Route::middleware('auth:sanctum')->post(
     '/blueprints/{blueprint}/revisions',
     AddBlueprintRevisionController::class,
@@ -29,17 +24,12 @@ Route::middleware('auth:sanctum')->post(
     FreezeBlueprintRevisionController::class,
 );
 
-Route::post(
-    '/blueprints/{blueprint}/revisions/{revision}/promote',
-    PromoteBlueprintRevisionController::class,
-);
-
-Route::post(
+Route::middleware('auth:sanctum')->post(
     '/blueprints/{blueprint}/execute',
     ExecuteBlueprintController::class,
 );
 
-Route::get(
+Route::middleware('auth:sanctum')->get(
     '/executions/{execution}',
     ShowExecutionController::class,
 );
