@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ActivateBlueprintController;
 use App\Http\Controllers\Api\ShowBlueprintController;
 use App\Http\Controllers\Api\ShowBlueprintRevisionController;
+use App\Http\Controllers\Api\Auth\LoginController;
+use App\Http\Controllers\Api\Auth\LogoutController;
+use App\Http\Controllers\Api\Auth\MeController;
 
 Route::post(
     '/blueprints',
@@ -60,3 +63,20 @@ Route::get(
     '/blueprints/{blueprint}',
     ShowBlueprintController::class,
 );
+
+Route::post(
+    '/auth/login',
+    LoginController::class,
+);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get(
+        '/auth/me',
+        MeController::class,
+    );
+
+    Route::post(
+        '/auth/logout',
+        LogoutController::class,
+    );
+});
