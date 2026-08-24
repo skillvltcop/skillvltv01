@@ -171,4 +171,22 @@ public function save(Blueprint $blueprint): void
             )
             ->all();
     }
+
+    public function discover(): array
+    {
+        return BlueprintModel::query()
+            ->with([
+                'revisions.parentRevision',
+                'currentRevision',
+            ])
+            ->where('owner_type', 'system')
+            ->where('owner_id', 'skillvlt')
+            ->orderBy('created_at')
+            ->get()
+            ->map(
+                fn (BlueprintModel $model): Blueprint =>
+                    $this->toDomain($model),
+            )
+            ->all();
+    }
 }

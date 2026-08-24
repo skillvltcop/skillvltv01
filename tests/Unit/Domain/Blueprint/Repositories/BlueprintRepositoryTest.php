@@ -42,6 +42,21 @@ final class InMemoryBlueprintRepository implements BlueprintRepository
     {
         $this->items[(string) $blueprint->id()] = $blueprint;
     }
+    
+    public function discover(): array
+    {
+        return array_values(
+            array_filter(
+                $this->items,
+                static function (Blueprint $blueprint): bool {
+                    $ownership = $blueprint->ownership();
+
+                    return $ownership['type'] === 'system'
+                        && (string) $ownership['id'] === 'skillvlt';
+                },
+            ),
+        );
+    }
 }
 
 it('defines the blueprint repository contract', function () {

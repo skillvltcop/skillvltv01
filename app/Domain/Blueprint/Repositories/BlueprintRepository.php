@@ -16,5 +16,7 @@ interface BlueprintRepository
         string $ownerId,
     ): array;
 
+    public function discover(): array;
+
     public function save(Blueprint $blueprint): void;
 }
