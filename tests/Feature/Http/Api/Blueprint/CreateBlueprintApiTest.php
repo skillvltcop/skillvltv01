@@ -2,6 +2,7 @@
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use App\Models\User;
 
 uses(
     TestCase::class,
@@ -9,22 +10,18 @@ uses(
 );
 
 it('creates a blueprint through the HTTP API', function () {
-    $response = $this->postJson(
-        '/api/blueprints',
-        [
+    $user = User::factory()->create();
+    $response = $this
+        ->actingAs($user)
+        ->postJson('/api/blueprints', [
             'canonical_name' => 'assessment-rubric-core',
             'namespace' => 'skillvlt.edu.assessment',
-            'ownership' => [
-                'type' => 'system',
-                'id' => 'skillvlt',
-            ],
             'metadata' => [
                 'taxonomy' => [
-                    'domain' => 'education',
+                    'domain' => 'assessment',
                 ],
             ],
-        ],
-    );
+        ]);
 
     $response->assertCreated();
 
@@ -49,17 +46,17 @@ it('creates a blueprint through the HTTP API', function () {
 
     $response->assertJsonPath(
         'ownership.type',
-        'system',
+        'user',
     );
 
     $response->assertJsonPath(
         'ownership.id',
-        'skillvlt',
+        (string) $user->id,
     );
 
     $response->assertJsonPath(
         'metadata.taxonomy.domain',
-        'education',
+        'assessment',
     );
 
     $response->assertJsonPath(
@@ -75,8 +72,8 @@ it('creates a blueprint through the HTTP API', function () {
         'id' => $blueprintId,
         'canonical_name' => 'assessment-rubric-core',
         'namespace' => 'skillvlt.edu.assessment',
-        'owner_type' => 'system',
-        'owner_id' => 'skillvlt',
+        'owner_type' => 'user',
+        'owner_id' => (string) $user->id,
         'lifecycle_status' => 'draft',
     ]);
 
@@ -86,16 +83,60 @@ it('creates a blueprint through the HTTP API', function () {
 });
 
 it('returns 422 when required blueprint fields are missing', function () {
-    $response = $this->postJson(
-        '/api/blueprints',
-        [],
-    );
+    $user = User::factory()->create();
 
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            '/api/blueprints',
+            [],
+        );
     $response->assertUnprocessable();
 
     $response->assertJsonValidationErrors([
         'canonical_name',
         'namespace',
-        'ownership',
     ]);
+});
+
+it('assigns the authenticated user as blueprint owner', function () {
+    $user = User::factory()->create();
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson('/api/blueprints', [
+            'canonical_name' => 'test-blueprint',
+            'namespace' => 'test',
+        ]);
+
+    $response
+        ->assertCreated()
+        ->assertJsonPath(
+            'ownership.type',
+            'user',
+        )
+        ->assertJsonPath(
+            'ownership.id',
+            (string) $user->id,
+        );
+});
+
+it('does not allow the client to choose blueprint ownership', function () {
+    $user = User::factory()->create();
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson('/api/blueprints', [
+            'canonical_name' => 'test-blueprint',
+            'namespace' => 'test',
+            'ownership' => [
+                'type' => 'user',
+                'id' => 'someone-else',
+            ],
+        ]);
+
+    $response
+        ->assertCreated()
+        ->assertJsonPath('ownership.type', 'user')
+        ->assertJsonPath('ownership.id', (string) $user->id);
 });

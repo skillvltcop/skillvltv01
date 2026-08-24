@@ -7,6 +7,7 @@ use App\Application\Blueprint\Commands\PromoteBlueprintRevision;
 use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use App\Models\User;
 
 uses(
     TestCase::class,
@@ -14,14 +15,15 @@ uses(
 );
 
 it('retrieves a blueprint through the HTTP API', function () {
+    $user = User::factory()->create();
     $repository = new EloquentBlueprintRepository();
 
     $blueprint = (new CreateBlueprint($repository))->handle(
         canonicalName: 'assessment-rubric-show',
         namespace: 'skillvlt.edu.assessment',
         ownership: [
-            'type' => 'system',
-            'id' => 'skillvlt',
+            'type' => 'user',
+            'id' => (string) $user->id,
         ],
         metadata: [
             'taxonomy' => [
@@ -76,9 +78,11 @@ it('retrieves a blueprint through the HTTP API', function () {
         revisionId: (string) $revision->id(),
     );
 
-    $response = $this->getJson(
-        "/api/blueprints/{$blueprint->id()}",
-    );
+    $response = $this
+        ->actingAs($user)
+        ->getJson(
+            "/api/blueprints/{$blueprint->id()}",
+        );
 
     $response->assertSuccessful();
 
@@ -110,12 +114,12 @@ it('retrieves a blueprint through the HTTP API', function () {
 
     $response->assertJsonPath(
         'ownership.type',
-        'system',
+        'user',
     );
 
     $response->assertJsonPath(
         'ownership.id',
-        'skillvlt',
+        (string) $user->id,
     );
 
     $response->assertJsonPath(
@@ -162,13 +166,51 @@ it('retrieves a blueprint through the HTTP API', function () {
 it('returns 404 when the blueprint does not exist', function () {
     $blueprintId = \App\Domain\Blueprint\ValueObjects\BlueprintId::generate();
 
-    $response = $this->getJson(
-        "/api/blueprints/{$blueprintId}",
-    );
+    $user = User::factory()->create();
+
+    $response = $this
+        ->actingAs($user)
+        ->getJson(
+            "/api/blueprints/{$blueprintId}",
+        );
 
     $response->assertNotFound();
 
     $response->assertJson([
         'message' => 'Blueprint not found.',
     ]);
+});
+
+it('rejects unauthenticated blueprint access', function () {
+    $blueprintId = \App\Domain\Blueprint\ValueObjects\BlueprintId::generate();
+
+    $response = $this->getJson(
+        "/api/blueprints/{$blueprintId}",
+    );
+
+    $response->assertUnauthorized();
+});
+
+it('forbids a user from accessing another user blueprint', function () {
+    $owner = User::factory()->create();
+    $otherUser = User::factory()->create();
+
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'private-blueprint',
+        namespace: 'skillvlt.edu.private',
+        ownership: [
+            'type' => 'user',
+            'id' => (string) $owner->id,
+        ],
+    );
+
+    $response = $this
+        ->actingAs($otherUser)
+        ->getJson(
+            "/api/blueprints/{$blueprint->id()}",
+        );
+
+    $response->assertForbidden();
 });

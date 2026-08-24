@@ -49,7 +49,7 @@ Route::post(
     ActivateBlueprintController::class,
 );
 
-Route::get(
+Route::middleware('auth:sanctum')->get(
     '/blueprints/{blueprint}',
     ShowBlueprintController::class,
 );
@@ -57,11 +57,6 @@ Route::get(
 Route::get(
     '/blueprints/{blueprint}/revisions/{revision}',
     ShowBlueprintRevisionController::class,
-);
-
-Route::get(
-    '/blueprints/{blueprint}',
-    ShowBlueprintController::class,
 );
 
 Route::post(
@@ -80,3 +75,8 @@ Route::middleware('auth:sanctum')->group(function () {
         LogoutController::class,
     );
 });
+
+Route::middleware('auth:sanctum')->post(
+    '/blueprints',
+    CreateBlueprintController::class,
+);

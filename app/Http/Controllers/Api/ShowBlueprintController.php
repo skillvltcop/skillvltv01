@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api;
 use App\Domain\Blueprint\Repositories\BlueprintRepository;
 use App\Domain\Blueprint\ValueObjects\BlueprintId;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 final class ShowBlueprintController
 {
@@ -15,11 +16,13 @@ final class ShowBlueprintController
     ) {
     }
 
-    public function __invoke(string $blueprint): JsonResponse
-    {
-        $blueprintEntity = $this->repository->find(
-            new BlueprintId($blueprint),
-        );
+    public function __invoke(
+        Request $request,
+        string $blueprint,
+        ): JsonResponse {
+            $blueprintEntity = $this->repository->find(
+                new BlueprintId($blueprint),
+            );
 
         if ($blueprintEntity === null) {
             return response()->json([
@@ -27,11 +30,25 @@ final class ShowBlueprintController
             ], 404);
         }
 
+        $ownership = $blueprintEntity->ownership();
+
+        $user = $request->user();
+
+        $isOwner =
+            $ownership['type'] === 'user'
+            && (string) $ownership['id'] === (string) $user->id;
+
+        if (! $isOwner) {
+            return response()->json([
+                'message' => 'Forbidden.',
+            ], 403);
+        }
+
         return response()->json([
             'id' => (string) $blueprintEntity->id(),
             'canonical_name' => (string) $blueprintEntity->canonicalName(),
             'namespace' => (string) $blueprintEntity->namespace(),
-            'ownership' => $blueprintEntity->ownership(),
+            'ownership' => $ownership,
             'metadata' => $blueprintEntity->metadata(),
             'lifecycle_status' => $blueprintEntity->lifecycleStatus()->value,
             'current_revision_id' => $blueprintEntity->currentRevisionId()

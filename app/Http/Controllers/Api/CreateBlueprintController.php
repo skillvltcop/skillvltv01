@@ -31,20 +31,6 @@ final class CreateBlueprintController
                     'string',
                     'max:255',
                 ],
-                'ownership' => [
-                    'required',
-                    'array',
-                ],
-                'ownership.type' => [
-                    'required',
-                    'string',
-                    'max:255',
-                ],
-                'ownership.id' => [
-                    'required',
-                    'string',
-                    'max:255',
-                ],
                 'metadata' => [
                     'sometimes',
                     'array',
@@ -52,10 +38,15 @@ final class CreateBlueprintController
             ],
         )->validate();
 
+        $user = $request->user();
+
         $blueprint = $this->command->handle(
             canonicalName: $validated['canonical_name'],
             namespace: $validated['namespace'],
-            ownership: $validated['ownership'],
+            ownership: [
+                'type' => 'user',
+                'id' => (string) $user->id,
+            ],
             metadata: $validated['metadata'] ?? [],
         );
 
