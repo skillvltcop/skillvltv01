@@ -151,4 +151,24 @@ public function save(Blueprint $blueprint): void
             frozen: (bool) $model->frozen,
         );
     }
+
+    public function findOwnedBy(
+        string $ownerType,
+        string $ownerId,
+    ): array {
+        return BlueprintModel::query()
+            ->with([
+                'revisions.parentRevision',
+                'currentRevision',
+            ])
+            ->where('owner_type', $ownerType)
+            ->where('owner_id', $ownerId)
+            ->orderBy('created_at')
+            ->get()
+            ->map(
+                fn (BlueprintModel $model): Blueprint =>
+                    $this->toDomain($model),
+            )
+            ->all();
+    }
 }

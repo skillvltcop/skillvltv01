@@ -11,5 +11,10 @@ interface BlueprintRepository
 {
     public function find(BlueprintId $id): ?Blueprint;
 
+    public function findOwnedBy(
+        string $ownerType,
+        string $ownerId,
+    ): array;
+
     public function save(Blueprint $blueprint): void;
 }

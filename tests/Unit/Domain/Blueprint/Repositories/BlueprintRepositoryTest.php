@@ -18,6 +18,26 @@ final class InMemoryBlueprintRepository implements BlueprintRepository
         return $this->items[(string) $id] ?? null;
     }
 
+    public function findOwnedBy(
+        string $ownerType,
+        string $ownerId,
+    ): array {
+        return array_values(
+            array_filter(
+                $this->items,
+                static function (Blueprint $blueprint) use (
+                    $ownerType,
+                    $ownerId,
+                ): bool {
+                    $ownership = $blueprint->ownership();
+
+                    return $ownership['type'] === $ownerType
+                        && (string) $ownership['id'] === $ownerId;
+                },
+            ),
+        );
+    }
+
     public function save(Blueprint $blueprint): void
     {
         $this->items[(string) $blueprint->id()] = $blueprint;
