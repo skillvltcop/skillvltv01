@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\ShowExecutionController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ActivateBlueprintController;
 use App\Http\Controllers\Api\ShowBlueprintController;
+use App\Http\Controllers\Api\ShowBlueprintRevisionController;
 
 Route::post(
     '/blueprints',
@@ -43,6 +44,16 @@ Route::get(
 Route::post(
     '/blueprints/{blueprint}/activate',
     ActivateBlueprintController::class,
+);
+
+Route::get(
+    '/blueprints/{blueprint}',
+    ShowBlueprintController::class,
+);
+
+Route::get(
+    '/blueprints/{blueprint}/revisions/{revision}',
+    ShowBlueprintRevisionController::class,
 );
 
 Route::get(
