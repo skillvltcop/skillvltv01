@@ -170,3 +170,151 @@ it('updates an existing execution without changing its identity', function () {
     expect(\App\Models\Execution::query()->count())
         ->toBe(1);
 });
+
+it('persists and retrieves a completed execution with its output', function () {
+    $blueprintId = BlueprintId::generate();
+    $revisionId = RevisionId::generate();
+
+    Blueprint::query()->create([
+        'id' => (string) $blueprintId,
+        'canonical_name' => 'assessment-rubric-core',
+        'namespace' => 'skillvlt.edu.assessment',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'draft',
+    ]);
+
+    BlueprintRevision::query()->create([
+        'id' => (string) $revisionId,
+        'blueprint_id' => (string) $blueprintId,
+        'revision_number' => '1.0.0',
+        'parent_revision_id' => null,
+        'behavior_digest' =>
+            'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        'contracts' => [
+            'input' => ['type' => 'object'],
+        ],
+        'logic' => [
+            'steps' => ['validate'],
+        ],
+        'outputs' => [
+            'type' => 'assessment-result',
+        ],
+        'policies' => [
+            'visibility' => 'public',
+        ],
+        'frozen' => true,
+    ]);
+
+    $execution = Execution::create(
+        blueprintId: $blueprintId,
+        revisionId: $revisionId,
+        input: [
+            'student' => [
+                'name' => 'Ahmed',
+            ],
+        ],
+        context: [
+            'locale' => 'ar',
+        ],
+    );
+
+    $execution->start();
+
+    $execution->complete([
+        'score' => 18,
+        'steps' => ['validate'],
+    ]);
+
+    $repository = new EloquentExecutionRepository();
+
+    $repository->save($execution);
+
+    $found = $repository->find($execution->id());
+
+    expect($found)
+        ->not->toBeNull();
+
+    expect($found->status())
+        ->toBe(\App\Domain\Execution\Enums\ExecutionStatus::COMPLETED);
+
+    expect($found->output())
+        ->toBe([
+            'score' => 18,
+            'steps' => ['validate'],
+        ]);
+
+    expect($found->error())
+        ->toBeNull();
+});
+
+it('persists and retrieves a failed execution with its error', function () {
+    $blueprintId = BlueprintId::generate();
+    $revisionId = RevisionId::generate();
+
+    Blueprint::query()->create([
+        'id' => (string) $blueprintId,
+        'canonical_name' => 'assessment-rubric-core',
+        'namespace' => 'skillvlt.edu.assessment',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'draft',
+    ]);
+
+    BlueprintRevision::query()->create([
+        'id' => (string) $revisionId,
+        'blueprint_id' => (string) $blueprintId,
+        'revision_number' => '1.0.0',
+        'parent_revision_id' => null,
+        'behavior_digest' =>
+            'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        'contracts' => [
+            'input' => ['type' => 'object'],
+        ],
+        'logic' => [
+            'steps' => ['validate'],
+        ],
+        'outputs' => [
+            'type' => 'assessment-result',
+        ],
+        'policies' => [
+            'visibility' => 'public',
+        ],
+        'frozen' => true,
+    ]);
+
+    $execution = Execution::create(
+        blueprintId: $blueprintId,
+        revisionId: $revisionId,
+        input: [
+            'student' => [
+                'name' => 'Ahmed',
+            ],
+        ],
+        context: [
+            'locale' => 'ar',
+        ],
+    );
+
+    $execution->start();
+
+    $execution->fail('Behavior execution failed.');
+
+    $repository = new EloquentExecutionRepository();
+
+    $repository->save($execution);
+
+    $found = $repository->find($execution->id());
+
+    expect($found)
+        ->not->toBeNull();
+
+    expect($found->status())
+        ->toBe(\App\Domain\Execution\Enums\ExecutionStatus::FAILED);
+
+    expect($found->output())
+        ->toBeNull();
+
+    expect($found->error())
+        ->toBe('Behavior execution failed.');
+});

@@ -30,3 +30,18 @@ it('runs the declared steps and returns their execution trace', function () {
             ],
         ]);
 });
+
+it('returns an empty execution trace when no steps are declared', function () {
+    $runner = new BehaviorRunner();
+
+    $result = $runner->run(
+        logic: [],
+        input: [],
+        context: [],
+    );
+
+    expect($result)
+        ->toBe([
+            'steps' => [],
+        ]);
+});

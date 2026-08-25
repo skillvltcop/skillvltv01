@@ -319,3 +319,135 @@ it('fails an execution when the behavior runner throws an exception', function (
     expect($execution->error())
         ->toBe('Behavior execution failed.');
 });
+
+it('cannot execute a revision that does not belong to the blueprint', function () {
+    $blueprint = Blueprint::create(
+        canonicalName: new CanonicalName('assessment-rubric-core'),
+        namespace: new BlueprintNamespace('skillvlt.edu.assessment'),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revisionId = \App\Domain\Blueprint\ValueObjects\RevisionId::generate();
+
+    $runner = Mockery::mock(BehaviorRunnerContract::class);
+    $runner->shouldNotReceive('run');
+
+    $engine = new \App\Application\Execution\Engine\ExecutionEngine(
+        runner: $runner,
+    );
+
+    expect(fn () => $engine->execute(
+        blueprint: $blueprint,
+        revisionId: $revisionId,
+        input: [],
+        context: [],
+    ))->toThrow(
+        DomainException::class,
+        'Revision does not belong to the Blueprint.'
+    );
+});
+
+it('cannot execute a frozen revision that is not current', function () {
+    $blueprint = Blueprint::create(
+        canonicalName: new CanonicalName('assessment-rubric-core'),
+        namespace: new BlueprintNamespace('skillvlt.edu.assessment'),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision1 = $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('a', 64),
+        ),
+        contracts: [],
+        logic: ['steps' => ['validate']],
+        outputs: [],
+        policies: [],
+    );
+
+    $revision1->freeze();
+    $blueprint->promoteRevision($revision1->id());
+
+    $revision2 = $blueprint->addRevision(
+        number: new RevisionNumber('1.1.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('b', 64),
+        ),
+        contracts: [],
+        logic: ['steps' => ['validate', 'score']],
+        outputs: [],
+        policies: [],
+    );
+
+    $revision2->freeze();
+    $blueprint->promoteRevision($revision2->id());
+    $blueprint->activate();
+
+    $runner = Mockery::mock(BehaviorRunnerContract::class);
+    $runner->shouldNotReceive('run');
+
+    $engine = new \App\Application\Execution\Engine\ExecutionEngine(
+        runner: $runner,
+    );
+
+    expect(fn () => $engine->execute(
+        blueprint: $blueprint,
+        revisionId: $revision1->id(),
+        input: [],
+        context: [],
+    ))->toThrow(
+        DomainException::class,
+        'Only the current revision can be executed.'
+    );
+});
+
+it('cannot execute a current frozen revision of an inactive blueprint', function () {
+    $blueprint = Blueprint::create(
+        canonicalName: new CanonicalName('assessment-rubric-core'),
+        namespace: new BlueprintNamespace('skillvlt.edu.assessment'),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision = $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('a', 64),
+        ),
+        contracts: [],
+        logic: ['steps' => ['validate']],
+        outputs: [],
+        policies: [],
+    );
+
+    $revision->freeze();
+    $blueprint->promoteRevision($revision->id());
+
+    $runner = Mockery::mock(BehaviorRunnerContract::class);
+    $runner->shouldNotReceive('run');
+
+    $engine = new \App\Application\Execution\Engine\ExecutionEngine(
+        runner: $runner,
+    );
+
+    expect(fn () => $engine->execute(
+        blueprint: $blueprint,
+        revisionId: $revision->id(),
+        input: [],
+        context: [],
+    ))->toThrow(
+        DomainException::class,
+        'Only an active Blueprint can be executed.'
+    );
+});

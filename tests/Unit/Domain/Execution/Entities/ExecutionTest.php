@@ -275,3 +275,61 @@ it('reconstitutes an execution without changing its identity', function () {
             'score' => 18,
         ]);
 });
+
+it('returns a defensive copy of output', function () {
+    $execution = Execution::create(
+        blueprintId: BlueprintId::generate(),
+        revisionId: RevisionId::generate(),
+        input: [],
+        context: [],
+    );
+
+    $execution->start();
+
+    $execution->complete([
+        'result' => [
+            'score' => 18,
+        ],
+    ]);
+
+    $output = $execution->output();
+
+    $output['result']['score'] = 5;
+
+    expect($execution->output()['result']['score'])
+        ->toBe(18);
+});
+
+it('reconstitutes a failed execution with its error', function () {
+    $id = ExecutionId::generate();
+
+    $blueprintId = BlueprintId::generate();
+    $revisionId = RevisionId::generate();
+
+    $execution = Execution::reconstitute(
+        id: $id,
+        blueprintId: $blueprintId,
+        revisionId: $revisionId,
+        input: [
+            'student' => [
+                'name' => 'Ahmed',
+            ],
+        ],
+        context: [
+            'locale' => 'ar',
+        ],
+        status: ExecutionStatus::FAILED,
+        output: null,
+        error: 'Behavior execution failed.',
+    );
+
+    expect($execution->status())
+        ->toBe(ExecutionStatus::FAILED);
+
+    expect($execution->output())
+        ->toBeNull();
+
+    expect($execution->error())
+        ->toBe('Behavior execution failed.');
+});
+
