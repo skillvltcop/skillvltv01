@@ -5,6 +5,7 @@ use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
 use App\Models\Blueprint as BlueprintModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
+use App\Domain\Blueprint\ValueObjects\BlueprintId;
 
 uses(RefreshDatabase::class);
 
@@ -23,7 +24,7 @@ it('reconstitutes a blueprint from persistence without changing its identity', f
     $repository = new EloquentBlueprintRepository();
 
     $blueprint = $repository->find(
-        new \App\Domain\Blueprint\ValueObjects\BlueprintId($id)
+        new BlueprintId($id)
     );
 
     expect($blueprint)
@@ -71,7 +72,7 @@ it('reconstitutes blueprint metadata from persistence', function () {
     $repository = new EloquentBlueprintRepository();
 
     $blueprint = $repository->find(
-        new \App\Domain\Blueprint\ValueObjects\BlueprintId($id)
+        new BlueprintId($id)
     );
 
     expect($blueprint->metadata())
@@ -128,7 +129,7 @@ it('reconstitutes blueprint revisions from persistence', function () {
     $repository = new EloquentBlueprintRepository();
 
     $blueprint = $repository->find(
-        new \App\Domain\Blueprint\ValueObjects\BlueprintId($id)
+        new BlueprintId($id)
     );
 
     expect($blueprint->revisions())
@@ -212,7 +213,7 @@ it('reconstitutes parent revision relationships from persistence', function () {
     $repository = new EloquentBlueprintRepository();
 
     $blueprint = $repository->find(
-        new \App\Domain\Blueprint\ValueObjects\BlueprintId($id)
+        new BlueprintId($id)
     );
 
     expect($blueprint->revisions())
@@ -265,7 +266,7 @@ it('reconstitutes the current revision from persistence', function () {
     $repository = new EloquentBlueprintRepository();
 
     $blueprint = $repository->find(
-        new \App\Domain\Blueprint\ValueObjects\BlueprintId($id)
+        new BlueprintId($id)
     );
 
     expect($blueprint->currentRevision())
@@ -402,4 +403,89 @@ it('round trips a complete blueprint aggregate through persistence', function ()
 
     expect((string) $reconstituted->currentRevision()->parentRevisionId())
         ->toBe((string) $parentRevisionId);
+});
+
+it('preserves the current revision when saving a new draft revision', function () {
+    $blueprint = \App\Domain\Blueprint\Entities\Blueprint::create(
+        canonicalName: new \App\Domain\Blueprint\ValueObjects\CanonicalName(
+            'assessment-rubric-core'
+        ),
+        namespace: new \App\Domain\Blueprint\ValueObjects\BlueprintNamespace(
+            'skillvlt.edu.assessment'
+        ),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision1 = $blueprint->addRevision(
+        number: new \App\Domain\Blueprint\ValueObjects\RevisionNumber('1.0.0'),
+        behaviorDigest: new \App\Domain\Blueprint\ValueObjects\BehaviorDigest(
+            'sha256:' . str_repeat('a', 64),
+        ),
+        contracts: [],
+        logic: [
+            'steps' => ['validate'],
+        ],
+        outputs: [],
+        policies: [],
+    );
+
+    $revision1->freeze();
+
+    $blueprint->promoteRevision($revision1->id());
+    $blueprint->activate();
+
+    $repository = new EloquentBlueprintRepository();
+
+    $repository->save($blueprint);
+
+    $revision2 = $blueprint->addRevision(
+        number: new \App\Domain\Blueprint\ValueObjects\RevisionNumber('1.1.0'),
+        behaviorDigest: new \App\Domain\Blueprint\ValueObjects\BehaviorDigest(
+            'sha256:' . str_repeat('b', 64),
+        ),
+        contracts: [],
+        logic: [
+            'steps' => [
+                'validate',
+                'score',
+            ],
+        ],
+        outputs: [],
+        policies: [],
+    );
+
+    expect($revision2->isFrozen())
+        ->toBeFalse();
+
+    expect((string) $blueprint->currentRevisionId())
+        ->toBe((string) $revision1->id());
+
+    $repository->save($blueprint);
+
+    $reconstituted = $repository->find($blueprint->id());
+
+    expect($reconstituted)
+        ->not->toBeNull();
+
+    expect($reconstituted->revisions())
+        ->toHaveCount(2);
+
+    expect($reconstituted->currentRevision())
+        ->not->toBeNull();
+
+    expect((string) $reconstituted->currentRevision()->id())
+        ->toBe((string) $revision1->id());
+
+    expect($reconstituted->currentRevision()->isFrozen())
+        ->toBeTrue();
+
+    expect($reconstituted->revision($revision2->id()))
+        ->not->toBeNull();
+
+    expect($reconstituted->revision($revision2->id())->isFrozen())
+        ->toBeFalse();
 });

@@ -158,3 +158,15 @@ it('reconstitutes a revision without changing its identity', function () {
             'sha256:' . str_repeat('a', 64)
         );
 });
+
+it('cannot be frozen twice', function () {
+    $revision = makeRevision();
+
+    $revision->freeze();
+
+    expect(fn () => $revision->freeze())
+        ->toThrow(
+            DomainException::class,
+            'Revision is already frozen.'
+        );
+});

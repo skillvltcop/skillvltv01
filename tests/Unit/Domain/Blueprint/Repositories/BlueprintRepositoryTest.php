@@ -98,3 +98,100 @@ it('returns null when a blueprint does not exist', function () {
     expect($repository->find($id))
         ->toBeNull();
 });
+
+it('finds only blueprints owned by the requested owner', function () {
+    $repository = new InMemoryBlueprintRepository();
+
+    $userBlueprint = Blueprint::create(
+        canonicalName: new \App\Domain\Blueprint\ValueObjects\CanonicalName(
+            'user-blueprint',
+        ),
+        namespace: new \App\Domain\Blueprint\ValueObjects\BlueprintNamespace(
+            'skillvlt.edu.assessment',
+        ),
+        ownership: [
+            'type' => 'user',
+            'id' => 'user-1',
+        ],
+    );
+
+    $otherUserBlueprint = Blueprint::create(
+        canonicalName: new \App\Domain\Blueprint\ValueObjects\CanonicalName(
+            'other-user-blueprint',
+        ),
+        namespace: new \App\Domain\Blueprint\ValueObjects\BlueprintNamespace(
+            'skillvlt.edu.assessment',
+        ),
+        ownership: [
+            'type' => 'user',
+            'id' => 'user-2',
+        ],
+    );
+
+    $repository->save($userBlueprint);
+    $repository->save($otherUserBlueprint);
+
+    $results = $repository->findOwnedBy(
+        'user',
+        'user-1',
+    );
+
+    expect($results)
+        ->toHaveCount(1)
+        ->and($results[0])
+        ->toBe($userBlueprint);
+});
+
+it('discovers only system blueprints owned by skillvlt', function () {
+    $repository = new InMemoryBlueprintRepository();
+
+    $discoverable = Blueprint::create(
+        canonicalName: new \App\Domain\Blueprint\ValueObjects\CanonicalName(
+            'system-blueprint',
+        ),
+        namespace: new \App\Domain\Blueprint\ValueObjects\BlueprintNamespace(
+            'skillvlt.edu.assessment',
+        ),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+    );
+
+    $userBlueprint = Blueprint::create(
+        canonicalName: new \App\Domain\Blueprint\ValueObjects\CanonicalName(
+            'user-blueprint',
+        ),
+        namespace: new \App\Domain\Blueprint\ValueObjects\BlueprintNamespace(
+            'skillvlt.edu.assessment',
+        ),
+        ownership: [
+            'type' => 'user',
+            'id' => 'user-1',
+        ],
+    );
+
+    $otherSystemBlueprint = Blueprint::create(
+        canonicalName: new \App\Domain\Blueprint\ValueObjects\CanonicalName(
+            'other-system-blueprint',
+        ),
+        namespace: new \App\Domain\Blueprint\ValueObjects\BlueprintNamespace(
+            'skillvlt.edu.assessment',
+        ),
+        ownership: [
+            'type' => 'system',
+            'id' => 'other-system',
+        ],
+    );
+
+    $repository->save($discoverable);
+    $repository->save($userBlueprint);
+    $repository->save($otherSystemBlueprint);
+
+    $results = $repository->discover();
+
+    expect($results)
+        ->toHaveCount(1)
+        ->and($results[0])
+        ->toBe($discoverable);
+});

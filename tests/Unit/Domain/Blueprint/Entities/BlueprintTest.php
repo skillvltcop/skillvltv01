@@ -265,6 +265,40 @@ it('can activate after adding a revision', function () {
         ->toBe(LifecycleStatus::ACTIVE);
 });
 
+it('cannot activate an already active blueprint', function () {
+    $blueprint = Blueprint::create(
+        canonicalName: new CanonicalName('assessment-rubric-core'),
+        namespace: new BlueprintNamespace('skillvlt.edu.assessment'),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision = $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('a', 64),
+        ),
+        contracts: [],
+        logic: [],
+        outputs: [],
+        policies: [],
+    );
+
+    $revision->freeze();
+
+    $blueprint->promoteRevision($revision->id());
+    $blueprint->activate();
+
+    expect(fn () => $blueprint->activate())
+        ->toThrow(
+            DomainException::class,
+            'Invalid Blueprint lifecycle transition: active → active.'
+        );
+});
+
 it('can deprecate an active blueprint', function () {
     $blueprint = makeBlueprint();
 
@@ -491,4 +525,228 @@ it('reconstitutes a blueprint with its revision history and current revision', f
 
     expect($revisionThree->parentRevisionId())
         ->toBe($revisionTwoId);
+});
+
+it('maintains the revision parent chain in creation order', function () {
+    $blueprint = Blueprint::create(
+        canonicalName: new CanonicalName(
+            'assessment-rubric-core',
+        ),
+        namespace: new BlueprintNamespace(
+            'skillvlt.edu.assessment',
+        ),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision1 = $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        ),
+        contracts: [],
+        logic: [
+            'steps' => ['validate'],
+        ],
+        outputs: [],
+        policies: [],
+    );
+
+    $revision2 = $blueprint->addRevision(
+        number: new RevisionNumber('1.1.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        ),
+        contracts: [],
+        logic: [
+            'steps' => ['validate', 'score'],
+        ],
+        outputs: [],
+        policies: [],
+    );
+
+    $revision3 = $blueprint->addRevision(
+        number: new RevisionNumber('1.2.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+        ),
+        contracts: [],
+        logic: [
+            'steps' => ['validate', 'score', 'publish'],
+        ],
+        outputs: [],
+        policies: [],
+    );
+
+    expect($revision1->parentRevisionId())
+        ->toBeNull();
+
+    expect($revision2->parentRevisionId())
+        ->not->toBeNull();
+
+    expect((string) $revision2->parentRevisionId())
+        ->toBe((string) $revision1->id());
+
+    expect($revision3->parentRevisionId())
+        ->not->toBeNull();
+
+    expect((string) $revision3->parentRevisionId())
+        ->toBe((string) $revision2->id());
+
+    expect($blueprint->latestRevision())
+        ->toBe($revision3);
+});
+
+it('cannot promote an unfrozen revision', function () {
+    $blueprint = Blueprint::create(
+        canonicalName: new CanonicalName('assessment-rubric-core'),
+        namespace: new BlueprintNamespace('skillvlt.edu.assessment'),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision = $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('a', 64),
+        ),
+        contracts: [],
+        logic: [],
+        outputs: [],
+        policies: [],
+    );
+
+    expect(fn () => $blueprint->promoteRevision($revision->id()))
+        ->toThrow(
+            DomainException::class,
+            'A Revision must be frozen before it can become current.'
+        );
+});
+
+it('cannot promote a revision that does not belong to the blueprint', function () {
+    $blueprint = Blueprint::create(
+        canonicalName: new CanonicalName('assessment-rubric-core'),
+        namespace: new BlueprintNamespace('skillvlt.edu.assessment'),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $otherBlueprint = Blueprint::create(
+        canonicalName: new CanonicalName('assessment-rubric-other'),
+        namespace: new BlueprintNamespace('skillvlt.edu.assessment'),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision = $otherBlueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('b', 64),
+        ),
+        contracts: [],
+        logic: [],
+        outputs: [],
+        policies: [],
+    );
+
+    $revision->freeze();
+
+    expect(fn () => $blueprint->promoteRevision($revision->id()))
+        ->toThrow(
+            DomainException::class,
+            'Blueprint revision not found.'
+        );
+});
+
+it('allows an active blueprint to evolve without losing its current revision', function () {
+    $blueprint = Blueprint::create(
+        canonicalName: new CanonicalName('assessment-rubric-core'),
+        namespace: new BlueprintNamespace('skillvlt.edu.assessment'),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision1 = $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('a', 64),
+        ),
+        contracts: [],
+        logic: [
+            'steps' => ['validate'],
+        ],
+        outputs: [],
+        policies: [],
+    );
+
+    $revision1->freeze();
+
+    $blueprint->promoteRevision($revision1->id());
+    $blueprint->activate();
+
+    expect($blueprint->currentRevisionId())
+        ->not->toBeNull()
+        ->and((string) $blueprint->currentRevisionId())
+        ->toBe((string) $revision1->id());
+
+    $revision2 = $blueprint->addRevision(
+        number: new RevisionNumber('1.1.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('b', 64),
+        ),
+        contracts: [],
+        logic: [
+            'steps' => [
+                'validate',
+                'score',
+            ],
+        ],
+        outputs: [],
+        policies: [],
+    );
+
+    expect($revision2->parentRevisionId())
+        ->not->toBeNull()
+        ->and((string) $revision2->parentRevisionId())
+        ->toBe((string) $revision1->id());
+
+    expect((string) $blueprint->currentRevisionId())
+        ->toBe((string) $revision1->id());
+
+    expect($revision1->isFrozen())
+        ->toBeTrue();
+
+    $revision2->freeze();
+
+    $blueprint->promoteRevision($revision2->id());
+
+    expect((string) $blueprint->currentRevisionId())
+        ->toBe((string) $revision2->id());
+
+    expect($blueprint->revision($revision1->id()))
+        ->toBe($revision1);
+
+    expect($blueprint->revision($revision2->id()))
+        ->toBe($revision2);
+
+    expect($revision1->isFrozen())
+        ->toBeTrue();
+
+    expect($revision2->isFrozen())
+        ->toBeTrue();
 });
