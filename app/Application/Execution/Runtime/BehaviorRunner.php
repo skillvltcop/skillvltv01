@@ -19,8 +19,28 @@ final class BehaviorRunner implements BehaviorRunnerContract
         array $input,
         array $context = [],
     ): array {
+        if (! array_key_exists('steps', $logic)) {
+            throw new \DomainException(
+                'Behavior logic must define steps.'
+            );
+        }
+
+        if (! is_array($logic['steps'])) {
+            throw new \DomainException(
+                'Behavior logic steps must be an array.'
+            );
+        }
+
+        foreach ($logic['steps'] as $step) {
+            if (! is_string($step)) {
+                throw new \DomainException(
+                    'Behavior logic steps must contain only strings.'
+                );
+            }
+        }
+
         return [
-            'steps' => $logic['steps'] ?? [],
+            'steps' => $logic['steps'],
         ];
-    }
+    }   
 }
