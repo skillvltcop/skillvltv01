@@ -65,13 +65,17 @@ final class ExecutionEngine implements ExecutionEngineContract
 
         $execution->start();
 
-        $output = $this->runner->run(
-            logic: $revision->logic(),
-            input: $input,
-            context: $context,
-        );
+        try {
+            $output = $this->runner->run(
+                logic: $revision->logic(),
+                input: $input,
+                context: $context,
+            );
 
-        $execution->complete($output);
+            $execution->complete($output);
+        } catch (\Throwable $exception) {
+            $execution->fail($exception->getMessage());
+        }
 
         return $execution;
     }

@@ -11,6 +11,7 @@ use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use App\Domain\Execution\Entities\Execution;
 
 uses(
     TestCase::class,
@@ -363,4 +364,151 @@ it('rejects unauthenticated blueprint execution', function () {
     );
 
     $response->assertUnauthorized();
+});
+
+it('returns a failed execution when blueprint execution fails', function () {
+    $user = User::factory()->create();
+
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'assessment-rubric-failure',
+        namespace: 'skillvlt.edu.assessment',
+        ownership: [
+            'type' => 'user',
+            'id' => (string) $user->id,
+        ],
+        metadata: [],
+    );
+
+    $revision = (new AddBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        number: '1.0.0',
+        behaviorDigest:
+            'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'steps' => [
+                'validate',
+                'score',
+            ],
+        ],
+        outputs: [
+            'type' => 'assessment-result',
+        ],
+        policies: [
+            'visibility' => 'public',
+        ],
+    );
+
+    (new FreezeBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        revisionId: (string) $revision->id(),
+    );
+
+    (new PromoteBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        revisionId: (string) $revision->id(),
+    );
+
+    (new ActivateBlueprint($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+    );
+
+    $execution = Execution::create(
+        blueprintId: $blueprint->id(),
+        revisionId: $revision->id(),
+        input: [
+            'student' => [
+                'name' => 'Ahmed',
+            ],
+        ],
+        context: [
+            'locale' => 'ar',
+        ],
+    );
+
+    $execution->start();
+
+    $execution->fail(
+        'Behavior execution failed.',
+    );
+
+    $engine = Mockery::mock(
+        \App\Application\Execution\Engine\ExecutionEngineContract::class,
+    );
+
+    $engine
+        ->shouldReceive('execute')
+        ->once()
+        ->andReturn($execution);
+
+    $this->app->instance(
+        \App\Application\Execution\Engine\ExecutionEngineContract::class,
+        $engine,
+    );
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/execute",
+            [
+                'revision_id' => (string) $revision->id(),
+                'input' => [
+                    'student' => [
+                        'name' => 'Ahmed',
+                    ],
+                ],
+                'context' => [
+                    'locale' => 'ar',
+                ],
+            ],
+        );
+
+    $response->assertSuccessful();
+
+    $response->assertJsonStructure([
+        'execution_id',
+        'blueprint_id',
+        'revision_id',
+        'status',
+        'input',
+        'context',
+        'output',
+        'error',
+    ]);
+
+    $response->assertJsonPath(
+        'execution_id',
+        (string) $execution->id(),
+    );
+
+    $response->assertJsonPath(
+        'blueprint_id',
+        (string) $blueprint->id(),
+    );
+
+    $response->assertJsonPath(
+        'revision_id',
+        (string) $revision->id(),
+    );
+
+    $response->assertJsonPath(
+        'status',
+        'failed',
+    );
+
+    $response->assertJsonPath(
+        'output',
+        null,
+    );
+
+    $response->assertJsonPath(
+        'error',
+        'Behavior execution failed.',
+    );
 });

@@ -234,3 +234,88 @@ it('delegates behavior execution to the runner', function () {
     expect($execution->output())
         ->toBe($expectedOutput);
 });
+
+it('fails an execution when the behavior runner throws an exception', function () {
+    $blueprint = Blueprint::create(
+        canonicalName: new CanonicalName('assessment-rubric-core'),
+        namespace: new BlueprintNamespace('skillvlt.edu.assessment'),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision = $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+        ),
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'steps' => [
+                'validate',
+                'score',
+            ],
+        ],
+        outputs: [
+            'type' => 'assessment-result',
+        ],
+        policies: [
+            'visibility' => 'public',
+        ],
+    );
+
+    $revision->freeze();
+
+    $blueprint->promoteRevision($revision->id());
+    $blueprint->activate();
+
+    $input = [
+        'student' => [
+            'name' => 'Ahmed',
+        ],
+    ];
+
+    $context = [
+        'locale' => 'ar',
+    ];
+
+    $runner = Mockery::mock(BehaviorRunnerContract::class);
+
+    $runner
+        ->shouldReceive('run')
+        ->once()
+        ->with(
+            $revision->logic(),
+            $input,
+            $context,
+        )
+        ->andThrow(
+            new \RuntimeException('Behavior execution failed.')
+        );
+
+    $engine = new \App\Application\Execution\Engine\ExecutionEngine(
+        runner: $runner,
+    );
+
+    $execution = $engine->execute(
+        blueprint: $blueprint,
+        revisionId: $revision->id(),
+        input: $input,
+        context: $context,
+    );
+
+    expect($execution->status())
+        ->toBe(ExecutionStatus::FAILED);
+
+    expect($execution->output())
+        ->toBeNull();
+
+    expect($execution->error())
+        ->toBe('Behavior execution failed.');
+});

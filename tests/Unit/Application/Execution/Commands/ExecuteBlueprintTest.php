@@ -258,3 +258,117 @@ it('delegates an invalid revision to the execution engine', function () {
             'Revision does not belong to the Blueprint.',
         );
 });
+
+it('persists a failed execution returned by the execution engine', function () {
+    $repository = Mockery::mock(BlueprintRepository::class);
+    $executionRepository = Mockery::mock(ExecutionRepository::class);
+    $engine = Mockery::mock(ExecutionEngineContract::class);
+
+    $blueprint = Blueprint::create(
+        canonicalName: new CanonicalName(
+            'assessment-rubric-core',
+        ),
+        namespace: new BlueprintNamespace(
+            'skillvlt.edu.assessment',
+        ),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision = $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        ),
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'steps' => [
+                'validate',
+                'score',
+            ],
+        ],
+        outputs: [
+            'type' => 'assessment-result',
+        ],
+        policies: [
+            'visibility' => 'public',
+        ],
+    );
+
+    $revision->freeze();
+
+    $blueprint->promoteRevision($revision->id());
+    $blueprint->activate();
+
+    $repository
+        ->shouldReceive('find')
+        ->once()
+        ->with(Mockery::on(
+            fn ($id) => (string) $id === (string) $blueprint->id(),
+        ))
+        ->andReturn($blueprint);
+
+    $failedExecution = Execution::create(
+        blueprintId: $blueprint->id(),
+        revisionId: $revision->id(),
+        input: [
+            'student' => [
+                'name' => 'Ahmed',
+            ],
+        ],
+        context: [
+            'locale' => 'ar',
+        ],
+    );
+
+    $failedExecution->start();
+
+    $failedExecution->fail(
+        'Behavior execution failed.',
+    );
+
+    $engine
+        ->shouldReceive('execute')
+        ->once()
+        ->andReturn($failedExecution);
+
+    $executionRepository
+        ->shouldReceive('save')
+        ->once()
+        ->with($failedExecution);
+
+    $command = new ExecuteBlueprint(
+        blueprintRepository: $repository,
+        engine: $engine,
+        executionRepository: $executionRepository,
+    );
+
+    $result = $command->handle(
+        blueprintId: (string) $blueprint->id(),
+        revisionId: (string) $revision->id(),
+        input: [
+            'student' => [
+                'name' => 'Ahmed',
+            ],
+        ],
+        context: [
+            'locale' => 'ar',
+        ],
+    );
+
+    expect($result)
+        ->toBe($failedExecution);
+
+    expect($result->status())
+        ->toBe(ExecutionStatus::FAILED);
+
+    expect($result->error())
+        ->toBe('Behavior execution failed.');
+});
