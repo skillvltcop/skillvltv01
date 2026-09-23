@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Application\Blueprint\Commands\SunsetBlueprint;
 use App\Domain\Blueprint\Repositories\BlueprintRepository;
 use App\Domain\Blueprint\ValueObjects\BlueprintId;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use RuntimeException;
 
-final class ShowBlueprintController
+final class SunsetBlueprintController
 {
     public function __construct(
+        private SunsetBlueprint $command,
         private BlueprintRepository $repository,
     ) {
     }
@@ -19,10 +22,10 @@ final class ShowBlueprintController
     public function __invoke(
         Request $request,
         string $blueprint,
-        ): JsonResponse {
-            $blueprintEntity = $this->repository->find(
-                new BlueprintId($blueprint),
-            );
+    ): JsonResponse {
+        $blueprintEntity = $this->repository->find(
+            new BlueprintId($blueprint),
+        );
 
         if ($blueprintEntity === null) {
             return response()->json([
@@ -34,51 +37,44 @@ final class ShowBlueprintController
 
         $user = $request->user();
 
-        $isSystemOwned = $ownership['type'] === 'system';
-
         $isOwner =
             $ownership['type'] === 'user'
             && (string) $ownership['id'] === (string) $user->id;
 
-        if (! $isSystemOwned && ! $isOwner) {
+        if (! $isOwner) {
             return response()->json([
                 'message' => 'Forbidden.',
             ], 403);
+        }
+
+        try {
+            $blueprintEntity = $this->command->handle(
+                blueprintId: $blueprint,
+            );
+        } catch (RuntimeException $exception) {
+            if ($exception->getMessage() === 'Blueprint not found.') {
+                return response()->json([
+                    'message' => 'Blueprint not found.',
+                ], 404);
+            }
+
+            throw $exception;
+        } catch (\DomainException $exception) {
+            return response()->json([
+                'message' => $exception->getMessage(),
+            ], 422);
         }
 
         return response()->json([
             'id' => (string) $blueprintEntity->id(),
             'canonical_name' => (string) $blueprintEntity->canonicalName(),
             'namespace' => (string) $blueprintEntity->namespace(),
-            'ownership' => $ownership,
+            'ownership' => $blueprintEntity->ownership(),
             'metadata' => $blueprintEntity->metadata(),
             'lifecycle_status' => $blueprintEntity->lifecycleStatus()->value,
             'current_revision_id' => $blueprintEntity->currentRevisionId()
                 ? (string) $blueprintEntity->currentRevisionId()
                 : null,
-
-            'revisions' => array_values(
-                array_map(
-                    static function ($revision): array {
-                        return [
-                            'id' => (string) $revision->id(),
-                            'number' => (string) $revision->number(),
-                            'parent_revision_id' =>
-                                $revision->parentRevisionId()
-                                    ? (string) $revision->parentRevisionId()
-                                    : null,
-                            'behavior_digest' =>
-                                (string) $revision->behaviorDigest(),
-                            'contracts' => $revision->contracts(),
-                            'logic' => $revision->logic(),
-                            'outputs' => $revision->outputs(),
-                            'policies' => $revision->policies(),
-                            'frozen' => $revision->isFrozen(),
-                        ];
-                    },
-                    $blueprintEntity->revisions(),
-                ),
-            ),
         ]);
     }
 }

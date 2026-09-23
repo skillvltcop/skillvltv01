@@ -6,6 +6,35 @@ use App\Domain\Blueprint\Repositories\BlueprintRepository;
 use App\Domain\Blueprint\ValueObjects\BehaviorDigest;
 use App\Domain\Blueprint\ValueObjects\BlueprintId;
 use App\Domain\Blueprint\ValueObjects\RevisionNumber;
+use App\Application\Behavior\BehaviorContractValidator;
+use App\Domain\Behavior\Exceptions\InvalidBehaviorContractException;
+
+function validBehaviorLogic(): array
+{
+    return [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'evaluate_rule',
+                'condition' => [
+                    'field' => 'input.score',
+                    'operator' => 'gte',
+                    'value' => 10,
+                ],
+                'assign_to' => 'result_status',
+                'true_value' => 'pass',
+                'false_value' => 'fail',
+            ],
+            [
+                'type' => 'return',
+                'data' => [
+                    'status' => '{state.result_status}',
+                ],
+            ],
+        ],
+    ];
+}
 
 it('adds a revision to an existing blueprint and persists it', function () {
     $blueprint = Blueprint::create(
@@ -35,7 +64,10 @@ it('adds a revision to an existing blueprint and persists it', function () {
         ->once()
         ->with($blueprint);
 
-    $command = new AddBlueprintRevision($repository);
+    $command = new AddBlueprintRevision(
+        repository: $repository,
+        behaviorContractValidator: new BehaviorContractValidator(),
+    );
 
     $revision = $command->handle(
         blueprintId: (string) $blueprint->id(),
@@ -44,9 +76,7 @@ it('adds a revision to an existing blueprint and persists it', function () {
         contracts: [
             'input' => ['type' => 'object'],
         ],
-        logic: [
-            'steps' => ['validate'],
-        ],
+        logic: validBehaviorLogic(),
         outputs: [
             'type' => 'assessment-result',
         ],
@@ -103,14 +133,17 @@ it('links a new revision to the previous revision', function () {
         ->twice()
         ->with($blueprint);
 
-    $command = new AddBlueprintRevision($repository);
+    $command = new AddBlueprintRevision(
+        repository: $repository,
+        behaviorContractValidator: new BehaviorContractValidator(),
+    );
 
     $firstRevision = $command->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
         behaviorDigest: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         contracts: ['input' => ['type' => 'object']],
-        logic: ['steps' => ['validate']],
+        logic: validBehaviorLogic(),
         outputs: ['type' => 'assessment-result'],
         policies: ['visibility' => 'public'],
     );
@@ -120,7 +153,7 @@ it('links a new revision to the previous revision', function () {
         number: '1.1.0',
         behaviorDigest: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
         contracts: ['input' => ['type' => 'object']],
-        logic: ['steps' => ['validate', 'score']],
+        logic: validBehaviorLogic(),
         outputs: ['type' => 'assessment-result'],
         policies: ['visibility' => 'public'],
     );
@@ -166,14 +199,17 @@ it('keeps the current revision unchanged when adding a new revision', function (
         ->twice()
         ->with($blueprint);
 
-    $command = new AddBlueprintRevision($repository);
+    $command = new AddBlueprintRevision(
+        repository: $repository,
+        behaviorContractValidator: new BehaviorContractValidator(),
+    );
 
     $firstRevision = $command->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
         behaviorDigest: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         contracts: ['input' => ['type' => 'object']],
-        logic: ['steps' => ['validate']],
+        logic: validBehaviorLogic(),
         outputs: ['type' => 'assessment-result'],
         policies: ['visibility' => 'public'],
     );
@@ -191,7 +227,7 @@ it('keeps the current revision unchanged when adding a new revision', function (
         number: '1.1.0',
         behaviorDigest: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
         contracts: ['input' => ['type' => 'object']],
-        logic: ['steps' => ['validate', 'score']],
+        logic: validBehaviorLogic(),
         outputs: ['type' => 'assessment-result'],
         policies: ['visibility' => 'public'],
     );
@@ -229,9 +265,7 @@ it('allows adding a new revision to an active blueprint without changing the cur
         contracts: [
             'input' => ['type' => 'object'],
         ],
-        logic: [
-            'steps' => ['validate'],
-        ],
+        logic: validBehaviorLogic(),
         outputs: [
             'type' => 'assessment-result',
         ],
@@ -261,7 +295,10 @@ it('allows adding a new revision to an active blueprint without changing the cur
         ->once()
         ->with($blueprint);
 
-    $command = new AddBlueprintRevision($repository);
+    $command = new AddBlueprintRevision(
+        repository: $repository,
+        behaviorContractValidator: new BehaviorContractValidator(),
+    );
 
     $secondRevision = $command->handle(
         blueprintId: (string) $blueprint->id(),
@@ -271,9 +308,7 @@ it('allows adding a new revision to an active blueprint without changing the cur
         contracts: [
             'input' => ['type' => 'object'],
         ],
-        logic: [
-            'steps' => ['validate', 'score'],
-        ],
+        logic: validBehaviorLogic(),
         outputs: [
             'type' => 'assessment-result',
         ],
@@ -301,4 +336,125 @@ it('allows adding a new revision to an active blueprint without changing the cur
 
     expect((string) $blueprint->latestRevision()->number())
         ->toBe('1.1.0');
+});
+
+it('rejects an invalid behavior contract before persistence', function () {
+    $blueprint = Blueprint::create(
+        canonicalName: new \App\Domain\Blueprint\ValueObjects\CanonicalName(
+            'assessment-rubric-core'
+        ),
+        namespace: new \App\Domain\Blueprint\ValueObjects\BlueprintNamespace(
+            'skillvlt.edu.assessment'
+        ),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $repository = Mockery::mock(BlueprintRepository::class);
+
+    $repository
+        ->shouldReceive('find')
+        ->once()
+        ->with(Mockery::type(BlueprintId::class))
+        ->andReturn($blueprint);
+
+    $repository
+        ->shouldReceive('save')
+        ->never();
+
+    $command = new AddBlueprintRevision(
+        repository: $repository,
+        behaviorContractValidator: new BehaviorContractValidator(),
+    );
+
+    expect(fn () => $command->handle(
+        blueprintId: (string) $blueprint->id(),
+        number: '1.0.0',
+        behaviorDigest:
+            'sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+        contracts: [
+            'input' => ['type' => 'object'],
+        ],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'format_template',
+                    'template' => '{user.name}',
+                    'assign_to' => 'message',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'message' => '{state.message}',
+                    ],
+                ],
+            ],
+        ],
+        outputs: [
+            'type' => 'assessment-result',
+        ],
+        policies: [
+            'visibility' => 'public',
+        ],
+    ))->toThrow(InvalidBehaviorContractException::class);
+});
+
+it('validates behavior before creating the revision', function () {
+    $blueprint = Blueprint::create(
+        canonicalName: new \App\Domain\Blueprint\ValueObjects\CanonicalName(
+            'behavior-validation-test'
+        ),
+        namespace: new \App\Domain\Blueprint\ValueObjects\BlueprintNamespace(
+            'skillvlt.test'
+        ),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $repository = Mockery::mock(BlueprintRepository::class);
+
+    $repository
+        ->shouldReceive('find')
+        ->once()
+        ->andReturn($blueprint);
+
+    $repository
+        ->shouldReceive('save')
+        ->once()
+        ->with($blueprint);
+
+    $command = new AddBlueprintRevision(
+        repository: $repository,
+        behaviorContractValidator: new BehaviorContractValidator(),
+    );
+
+    $revision = $command->handle(
+        blueprintId: (string) $blueprint->id(),
+        number: '1.0.0',
+        behaviorDigest:
+            'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+        contracts: [
+            'input' => ['type' => 'object'],
+        ],
+        logic: validBehaviorLogic(),
+        outputs: [
+            'type' => 'assessment-result',
+        ],
+        policies: [
+            'visibility' => 'public',
+        ],
+    );
+
+    expect($revision)
+        ->toBeInstanceOf(
+            \App\Domain\Blueprint\Entities\BlueprintRevision::class
+        );
 });

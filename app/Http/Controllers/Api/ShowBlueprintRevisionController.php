@@ -8,6 +8,7 @@ use App\Domain\Blueprint\Repositories\BlueprintRepository;
 use App\Domain\Blueprint\ValueObjects\BlueprintId;
 use App\Domain\Blueprint\ValueObjects\RevisionId;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 final class ShowBlueprintRevisionController
 {
@@ -17,6 +18,7 @@ final class ShowBlueprintRevisionController
     }
 
     public function __invoke(
+        Request $request,
         string $blueprint,
         string $revision,
     ): JsonResponse {
@@ -34,6 +36,22 @@ final class ShowBlueprintRevisionController
 
         if ($revisionEntity === null) {
             abort(404, 'Blueprint revision not found.');
+        }
+
+        $ownership = $blueprintEntity->ownership();
+
+        $user = $request->user();
+
+        $isSystemOwned = $ownership['type'] === 'system';
+
+        $isOwner =
+            $ownership['type'] === 'user'
+            && (string) $ownership['id'] === (string) $user->id;
+
+        if (! $isSystemOwned && ! $isOwner) {
+            return response()->json([
+                'message' => 'Forbidden.',
+            ], 403);
         }
 
         return response()->json([

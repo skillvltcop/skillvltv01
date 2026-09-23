@@ -40,9 +40,15 @@ $response = $this
                 ],
             ],
             'logic' => [
+                'type' => 'steps',
+                'version' => 1,
                 'steps' => [
-                    'validate',
-                    'score',
+                    [
+                        'type' => 'return',
+                        'data' => [
+                            'status' => 'ok',
+                        ],
+                    ],
                 ],
             ],
             'outputs' => [
@@ -89,13 +95,23 @@ $response = $this
     );
 
     $response->assertJsonPath(
-        'logic.steps.0',
-        'validate',
+        'logic.type',
+        'steps',
     );
 
     $response->assertJsonPath(
-        'logic.steps.1',
-        'score',
+        'logic.version',
+        1,
+    );
+
+    $response->assertJsonPath(
+        'logic.steps.0.type',
+        'return',
+    );
+
+    $response->assertJsonPath(
+        'logic.steps.0.data.status',
+        'ok',
     );
 
     $response->assertJsonPath(
@@ -146,9 +162,15 @@ $response = $this
                 ],
             ],
             'logic' => [
+                'type' => 'steps',
+                'version' => 1,
                 'steps' => [
-                    'validate',
-                    'score',
+                    [
+                        'type' => 'return',
+                        'data' => [
+                            'status' => 'ok',
+                        ],
+                    ],
                 ],
             ],
             'outputs' => [
@@ -231,9 +253,15 @@ it('forbids a user from adding a revision to another user blueprint', function (
                     ],
                 ],
                 'logic' => [
+                    'type' => 'steps',
+                    'version' => 1,
                     'steps' => [
-                        'validate',
-                        'score',
+                        [
+                            'type' => 'return',
+                            'data' => [
+                                'status' => 'ok',
+                            ],
+                        ],
                     ],
                 ],
                 'outputs' => [

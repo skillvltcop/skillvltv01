@@ -2,6 +2,7 @@
 
 use App\Application\Blueprint\Commands\AddBlueprintRevision;
 use App\Application\Blueprint\Commands\CreateBlueprint;
+use App\Application\Behavior\BehaviorContractValidator;
 use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -25,7 +26,10 @@ it('creates and persists a blueprint revision through the application layer', fu
         ],
     );
 
-    $command = new AddBlueprintRevision($repository);
+    $command = new AddBlueprintRevision(
+        repository: $repository,
+        behaviorContractValidator: new BehaviorContractValidator(),
+    );
 
     $revision = $command->handle(
         blueprintId: (string) $blueprint->id(),
@@ -35,7 +39,16 @@ it('creates and persists a blueprint revision through the application layer', fu
             'input' => ['type' => 'object'],
         ],
         logic: [
-            'steps' => ['validate', 'score'],
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'status' => 'ok',
+                    ],
+                ],
+            ],
         ],
         outputs: [
             'type' => 'assessment-result',
@@ -76,14 +89,28 @@ it('persists the parent revision relationship for a subsequent revision', functi
         metadata: [],
     );
 
-    $command = new AddBlueprintRevision($repository);
+    $command = new AddBlueprintRevision(
+        repository: $repository,
+        behaviorContractValidator: new BehaviorContractValidator(),
+    );
 
     $firstRevision = $command->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
         behaviorDigest: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         contracts: ['input' => ['type' => 'object']],
-        logic: ['steps' => ['validate']],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'status' => 'ok',
+                    ],
+                ],
+            ],
+        ],
         outputs: ['type' => 'assessment-result'],
         policies: ['visibility' => 'public'],
     );
@@ -93,7 +120,18 @@ it('persists the parent revision relationship for a subsequent revision', functi
         number: '1.1.0',
         behaviorDigest: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
         contracts: ['input' => ['type' => 'object']],
-        logic: ['steps' => ['validate', 'score']],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'status' => 'ok',
+                    ],
+                ],
+            ],
+        ],
         outputs: ['type' => 'assessment-result'],
         policies: ['visibility' => 'public'],
     );

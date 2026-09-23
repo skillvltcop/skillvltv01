@@ -132,10 +132,10 @@ final class BlueprintRevision
             number: $number,
             parentRevisionId: $parentRevisionId,
             behaviorDigest: $behaviorDigest,
-            contracts: $contracts,
-            logic: $logic,
-            outputs: $outputs,
-            policies: $policies,
+            contracts: self::copy($contracts),
+            logic: self::copy($logic),
+            outputs: self::copy($outputs),
+            policies: self::copy($policies),
         );
 
         $revision->frozen = $frozen;

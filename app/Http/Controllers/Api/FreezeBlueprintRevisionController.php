@@ -23,9 +23,6 @@ final class FreezeBlueprintRevisionController
         string $blueprint,
         string $revision,
     ): JsonResponse {
-        $blueprintEntity = $this->repository->find(
-            new BlueprintId($blueprint),
-        );
 
         $blueprintEntity = $this->repository->find(
             new BlueprintId($blueprint),

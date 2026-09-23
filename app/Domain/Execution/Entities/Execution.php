@@ -139,6 +139,39 @@ final class Execution
         ?array $output,
         ?string $error,
     ): self {
+        if (
+            $status === ExecutionStatus::COMPLETED
+            && ($output === null || $error !== null)
+        ) {
+            throw new \DomainException(
+                'A completed execution must have output and no error.'
+            );
+        }
+
+        if (
+            $status === ExecutionStatus::FAILED
+            && ($output !== null || $error === null)
+        ) {
+            throw new \DomainException(
+                'A failed execution must have an error and no output.'
+            );
+        }
+
+        if (
+            in_array(
+                $status,
+                [
+                    ExecutionStatus::PENDING,
+                    ExecutionStatus::RUNNING,
+                ],
+                true,
+            )
+            && ($output !== null || $error !== null)
+        ) {
+            throw new \DomainException(
+                'A pending or running execution cannot have output or error.'
+            );
+        }
         return new self(
             id: $id,
             blueprintId: $blueprintId,

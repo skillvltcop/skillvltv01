@@ -1,153 +1,359 @@
 <?php
 
+use App\Application\Behavior\ValueResolver;
 use App\Application\Execution\Runtime\BehaviorRunner;
+use App\Domain\Behavior\Exceptions\UnresolvablePathException;
 
-it('runs the declared steps and returns their execution trace', function () {
-    $runner = new BehaviorRunner();
+function createBehaviorRunner(): BehaviorRunner
+{
+    return new BehaviorRunner(
+        new ValueResolver(),
+    );
+}
 
-    $result = $runner->run(
-        logic: [
-            'steps' => [
-                'validate',
-                'score',
+function executableBehavior(): array
+{
+    return [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'evaluate_rule',
+                'condition' => [
+                    'field' => 'input.score',
+                    'operator' => 'gte',
+                    'value' => 10,
+                ],
+                'assign_to' => 'result_status',
+                'true_value' => 'pass',
+                'false_value' => 'fail',
+            ],
+            [
+                'type' => 'format_template',
+                'template' => 'Student {input.student_name} got {state.result_status}.',
+                'assign_to' => 'final_feedback',
+            ],
+            [
+                'type' => 'return',
+                'data' => [
+                    'status' => '{state.result_status}',
+                    'message' => '{state.final_feedback}',
+                ],
             ],
         ],
+    ];
+}
+
+it('executes evaluate_rule and return steps', function () {
+    $runner = createBehaviorRunner();
+
+    $result = $runner->run(
+        logic: executableBehavior(),
+        input: [
+            'student_name' => 'Ahmed',
+            'score' => 14,
+        ],
+        context: [],
+    );
+
+    expect($result)->toBe([
+        'status' => 'pass',
+        'message' => 'Student Ahmed got pass.',
+    ]);
+});
+
+it('assigns the false value when the rule does not match', function () {
+    $runner = createBehaviorRunner();
+
+    $result = $runner->run(
+        logic: executableBehavior(),
+        input: [
+            'student_name' => 'Ahmed',
+            'score' => 7,
+        ],
+        context: [],
+    );
+
+    expect($result)->toBe([
+        'status' => 'fail',
+        'message' => 'Student Ahmed got fail.',
+    ]);
+});
+
+it('resolves values from context', function () {
+    $runner = createBehaviorRunner();
+
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'format_template',
+                'template' => 'Locale: {context.locale}',
+                'assign_to' => 'message',
+            ],
+            [
+                'type' => 'return',
+                'data' => [
+                    'message' => '{state.message}',
+                ],
+            ],
+        ],
+    ];
+
+    expect($runner->run(
+        logic: $logic,
+        input: [],
+        context: ['locale' => 'ar'],
+    ))->toBe([
+        'message' => 'Locale: ar',
+    ]);
+});
+
+it('uses state values produced by previous steps', function () {
+    $runner = createBehaviorRunner();
+
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'evaluate_rule',
+                'condition' => [
+                    'field' => 'input.score',
+                    'operator' => 'gte',
+                    'value' => 10,
+                ],
+                'assign_to' => 'status',
+                'true_value' => 'pass',
+                'false_value' => 'fail',
+            ],
+            [
+                'type' => 'format_template',
+                'template' => 'Result: {state.status}',
+                'assign_to' => 'message',
+            ],
+            [
+                'type' => 'return',
+                'data' => [
+                    'message' => '{state.message}',
+                ],
+            ],
+        ],
+    ];
+
+    expect($runner->run(
+        logic: $logic,
+        input: ['score' => 12],
+        context: [],
+    ))->toBe([
+        'message' => 'Result: pass',
+    ]);
+});
+
+it('resolves nested return data recursively', function () {
+    $runner = createBehaviorRunner();
+
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'format_template',
+                'template' => 'Hello {input.student.name}',
+                'assign_to' => 'message',
+            ],
+            [
+                'type' => 'return',
+                'data' => [
+                    'student' => [
+                        'name' => '{input.student.name}',
+                    ],
+                    'result' => [
+                        'status' => '{state.message}',
+                    ],
+                    'score' => 14,
+                    'passed' => true,
+                    'metadata' => null,
+                ],
+            ],
+        ],
+    ];
+
+    expect($runner->run(
+        logic: $logic,
         input: [
             'student' => [
                 'name' => 'Ahmed',
             ],
         ],
-        context: [
-            'locale' => 'ar',
-        ],
-    );
-
-    expect($result)
-        ->toBe([
-            'steps' => [
-                'validate',
-                'score',
-            ],
-        ]);
-});
-
-it('returns an empty execution trace when steps are declared but empty', function () {
-    $runner = new BehaviorRunner();
-
-    $result = $runner->run(
-        logic: [
-            'steps' => [],
-        ],
-        input: [],
         context: [],
-    );
-
-    expect($result)
-        ->toBe([
-            'steps' => [],
-        ]);
-});
-
-it('executes declared steps in order', function () {
-    $runner = new BehaviorRunner();
-
-    $result = $runner->run(
-        logic: [
-            'steps' => [
-                'validate',
-                'score',
-                'finalize',
-            ],
+    ))->toBe([
+        'student' => [
+            'name' => 'Ahmed',
         ],
-        input: [],
-        context: [],
-    );
-
-    expect($result['steps'])
-        ->toBe([
-            'validate',
-            'score',
-            'finalize',
-        ]);
-});
-
-it('returns an execution trace for the declared steps', function () {
-    $runner = new BehaviorRunner();
-
-    $result = $runner->run(
-        logic: [
-            'steps' => [
-                'validate',
-                'score',
-            ],
+        'result' => [
+            'status' => 'Hello Ahmed',
         ],
-        input: [],
-        context: [],
-    );
-
-    expect($result)
-        ->toHaveKey('steps')
-        ->and($result['steps'])
-        ->toBe([
-            'validate',
-            'score',
-        ]);
+        'score' => 14,
+        'passed' => true,
+        'metadata' => null,
+    ]);
 });
 
-it('does not mutate the declared logic', function () {
-    $runner = new BehaviorRunner();
+it('supports all numeric comparison operators', function ($operator, $expected) {
+    $runner = createBehaviorRunner();
+
+    $logic = executableBehavior();
+    $logic['steps'][0]['condition']['operator'] = $operator;
+    $logic['steps'][0]['condition']['value'] = 14;
+    $logic['steps'][0]['true_value'] = 'yes';
+    $logic['steps'][0]['false_value'] = 'no';
+
+    expect($runner->run(
+        logic: $logic,
+        input: [
+            'student_name' => 'Ahmed',
+            'score' => 14,
+        ],
+        context: [],
+    )['status'])->toBe($expected);
+})->with([
+    ['gt', 'no'],
+    ['gte', 'yes'],
+    ['lt', 'no'],
+    ['lte', 'yes'],
+]);
+
+it('supports strict equality comparisons', function () {
+    $runner = createBehaviorRunner();
+
+    $logic = executableBehavior();
+    $logic['steps'][0]['condition']['operator'] = 'eq';
+    $logic['steps'][0]['condition']['value'] = 14;
+
+    expect($runner->run(
+        logic: $logic,
+        input: [
+            'student_name' => 'Ahmed',
+            'score' => 14,
+        ],
+        context: [],
+    )['status'])->toBe('pass');
+});
+
+it('supports strict inequality comparisons', function () {
+    $runner = createBehaviorRunner();
+
+    $logic = executableBehavior();
+    $logic['steps'][0]['condition']['operator'] = 'neq';
+    $logic['steps'][0]['condition']['value'] = 10;
+
+    expect($runner->run(
+        logic: $logic,
+        input: [
+            'student_name' => 'Ahmed',
+            'score' => 14,
+        ],
+        context: [],
+    )['status'])->toBe('pass');
+});
+
+it('propagates unresolved paths', function () {
+    $runner = createBehaviorRunner();
 
     $logic = [
+        'type' => 'steps',
+        'version' => 1,
         'steps' => [
-            'validate',
-            'score',
+            [
+                'type' => 'format_template',
+                'template' => 'Hello {input.student_name}',
+                'assign_to' => 'message',
+            ],
+            [
+                'type' => 'return',
+                'data' => [
+                    'message' => '{state.message}',
+                ],
+            ],
         ],
     ];
 
-    $runner->run(
+    expect(fn () => $runner->run(
         logic: $logic,
         input: [],
         context: [],
-    );
-
-    expect($logic)
-        ->toBe([
-            'steps' => [
-                'validate',
-                'score',
-            ],
-        ]);
+    ))->toThrow(UnresolvablePathException::class);
 });
 
-it('rejects invalid behavior logic', function () {
-    $runner = new BehaviorRunner();
+it('rejects non-scalar interpolation values', function () {
+    $runner = createBehaviorRunner();
+
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'format_template',
+                'template' => 'Tags: {input.tags}',
+                'assign_to' => 'message',
+            ],
+            [
+                'type' => 'return',
+                'data' => [
+                    'message' => '{state.message}',
+                ],
+            ],
+        ],
+    ];
 
     expect(fn () => $runner->run(
-        logic: [
-            'invalid' => true,
+        logic: $logic,
+        input: [
+            'tags' => ['math', 'science'],
         ],
-        input: [],
         context: [],
     ))->toThrow(
         DomainException::class,
-        'Behavior logic must define steps.'
+        'Interpolation value for "input.tags" must be scalar.'
     );
 });
 
-it('rejects behavior steps that are not strings', function () {
-    $runner = new BehaviorRunner();
+it('rejects numeric comparison when values are not numeric', function () {
+    $runner = createBehaviorRunner();
+
+    $logic = executableBehavior();
+    $logic['steps'][0]['condition']['operator'] = 'gt';
+    $logic['steps'][0]['condition']['value'] = 10;
 
     expect(fn () => $runner->run(
-        logic: [
-            'steps' => [
-                'validate',
-                ['type' => 'score'],
-            ],
+        logic: $logic,
+        input: [
+            'student_name' => 'Ahmed',
+            'score' => '14',
         ],
-        input: [],
         context: [],
     ))->toThrow(
         DomainException::class,
-        'Behavior logic steps must contain only strings.'
+        'Numeric comparison requires numeric values.'
     );
+});
+
+it('does not mutate the declared logic', function () {
+    $runner = createBehaviorRunner();
+
+    $logic = executableBehavior();
+    $original = $logic;
+
+    $runner->run(
+        logic: $logic,
+        input: [
+            'student_name' => 'Ahmed',
+            'score' => 14,
+        ],
+        context: [],
+    );
+
+    expect($logic)->toBe($original);
 });

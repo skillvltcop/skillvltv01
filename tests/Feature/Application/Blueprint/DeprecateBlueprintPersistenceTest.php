@@ -4,6 +4,7 @@ use App\Application\Blueprint\Commands\ActivateBlueprint;
 use App\Application\Blueprint\Commands\AddBlueprintRevision;
 use App\Application\Blueprint\Commands\CreateBlueprint;
 use App\Application\Blueprint\Commands\DeprecateBlueprint;
+use App\Application\Behavior\BehaviorContractValidator;
 use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Application\Blueprint\Commands\FreezeBlueprintRevision;
@@ -26,7 +27,10 @@ it('deprecates and persists a blueprint through the application layer', function
         metadata: [],
     );
 
-    $addRevision = new AddBlueprintRevision($repository);
+    $addRevision = new AddBlueprintRevision(
+        repository: $repository,
+        behaviorContractValidator: new BehaviorContractValidator(),
+    );
 
     $revision = $addRevision->handle(
         blueprintId: (string) $blueprint->id(),
@@ -36,7 +40,16 @@ it('deprecates and persists a blueprint through the application layer', function
             'input' => ['type' => 'object'],
         ],
         logic: [
-            'steps' => ['validate'],
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'status' => 'ok',
+                    ],
+                ],
+            ],
         ],
         outputs: [
             'type' => 'assessment-result',

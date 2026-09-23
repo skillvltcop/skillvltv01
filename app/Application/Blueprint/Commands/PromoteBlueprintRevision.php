@@ -31,9 +31,9 @@ final class PromoteBlueprintRevision
             );
         }
 
-        $revision = $blueprint->revision(
-            new RevisionId($revisionId)
-        );
+        $revisionId = new RevisionId($revisionId);
+
+        $revision = $blueprint->revision($revisionId);
 
         if ($revision === null) {
             throw new RuntimeException(
@@ -41,9 +41,7 @@ final class PromoteBlueprintRevision
             );
         }
 
-        $blueprint->promoteRevision(
-            new RevisionId($revisionId)
-        );
+        $blueprint->promoteRevision($revisionId);
 
         $this->repository->save($blueprint);
 

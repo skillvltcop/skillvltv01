@@ -7,6 +7,7 @@ use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Application\Blueprint\Commands\FreezeBlueprintRevision;
 use App\Application\Blueprint\Commands\PromoteBlueprintRevision;
+use App\Application\Behavior\BehaviorContractValidator;
 
 uses(RefreshDatabase::class);
 
@@ -27,7 +28,10 @@ it('activates and persists a blueprint through the application layer', function 
         metadata: [],
     );
 
-    $addRevision = new AddBlueprintRevision($repository);
+    $addRevision = new AddBlueprintRevision(
+        repository: $repository,
+        behaviorContractValidator: new BehaviorContractValidator(),
+    );
 
     $revision = $addRevision->handle(
         blueprintId: (string) $blueprint->id(),
@@ -37,7 +41,16 @@ it('activates and persists a blueprint through the application layer', function 
             'input' => ['type' => 'object'],
         ],
         logic: [
-            'steps' => ['validate'],
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'status' => 'ok',
+                    ],
+                ],
+            ],
         ],
         outputs: [
             'type' => 'assessment-result',

@@ -49,11 +49,13 @@ final class ShowExecutionController
 
         $user = $request->user();
 
+        $isSystemOwned = $ownership['type'] === 'system';
+
         $isOwner =
             $ownership['type'] === 'user'
             && (string) $ownership['id'] === (string) $user->id;
 
-        if (! $isOwner) {
+        if (! $isSystemOwned && ! $isOwner) {
             return response()->json([
                 'message' => 'Forbidden.',
             ], 403);

@@ -750,3 +750,28 @@ it('allows an active blueprint to evolve without losing its current revision', f
     expect($revision2->isFrozen())
         ->toBeTrue();
 });
+
+it('rejects a current revision that does not belong to the blueprint', function () {
+    $currentRevisionId = RevisionId::generate();
+
+    expect(fn () => Blueprint::reconstitute(
+        id: BlueprintId::generate(),
+        canonicalName: new CanonicalName(
+            'assessment-rubric-core'
+        ),
+        namespace: new BlueprintNamespace(
+            'skillvlt.edu.assessment'
+        ),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+        lifecycleStatus: LifecycleStatus::DRAFT,
+        currentRevisionId: $currentRevisionId,
+        revisions: [],
+    ))->toThrow(
+        DomainException::class,
+        'Current revision does not belong to the Blueprint.'
+    );
+});

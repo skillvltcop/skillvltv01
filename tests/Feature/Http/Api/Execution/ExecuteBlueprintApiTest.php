@@ -3,15 +3,17 @@
 use App\Application\Blueprint\Commands\ActivateBlueprint;
 use App\Application\Blueprint\Commands\AddBlueprintRevision;
 use App\Application\Blueprint\Commands\CreateBlueprint;
+use App\Application\Blueprint\Commands\DeprecateBlueprint;
 use App\Application\Blueprint\Commands\FreezeBlueprintRevision;
 use App\Application\Blueprint\Commands\PromoteBlueprintRevision;
 use App\Domain\Blueprint\ValueObjects\BlueprintId;
 use App\Domain\Blueprint\ValueObjects\RevisionId;
+use App\Domain\Execution\Entities\Execution;
 use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
+use App\Application\Behavior\BehaviorContractValidator;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
-use App\Domain\Execution\Entities\Execution;
 
 uses(
     TestCase::class,
@@ -33,7 +35,10 @@ it('executes a blueprint through the HTTP API', function () {
         metadata: [],
     );
 
-    $revision = (new AddBlueprintRevision($repository))->handle(
+    $revision = (new AddBlueprintRevision(
+    repository: $repository,
+    behaviorContractValidator: new BehaviorContractValidator(),
+))->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
         behaviorDigest:
@@ -44,9 +49,15 @@ it('executes a blueprint through the HTTP API', function () {
             ],
         ],
         logic: [
+            'type' => 'steps',
+            'version' => 1,
             'steps' => [
-                'validate',
-                'score',
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'ok',
+                    ],
+                ],
             ],
         ],
         outputs: [
@@ -209,7 +220,10 @@ it('persists the execution when executed through the HTTP API', function () {
         metadata: [],
     );
 
-    $revision = (new AddBlueprintRevision($repository))->handle(
+    $revision = (new AddBlueprintRevision(
+    repository: $repository,
+    behaviorContractValidator: new BehaviorContractValidator(),
+))->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
         behaviorDigest:
@@ -220,8 +234,15 @@ it('persists the execution when executed through the HTTP API', function () {
             ],
         ],
         logic: [
+            'type' => 'steps',
+            'version' => 1,
             'steps' => [
-                'validate',
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'ok',
+                    ],
+                ],
             ],
         ],
         outputs: [
@@ -293,7 +314,10 @@ it('forbids a user from executing another user blueprint', function () {
         metadata: [],
     );
 
-    $revision = (new AddBlueprintRevision($repository))->handle(
+    $revision = (new AddBlueprintRevision(
+    repository: $repository,
+    behaviorContractValidator: new BehaviorContractValidator(),
+))->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
         behaviorDigest:
@@ -304,8 +328,15 @@ it('forbids a user from executing another user blueprint', function () {
             ],
         ],
         logic: [
+            'type' => 'steps',
+            'version' => 1,
             'steps' => [
-                'validate',
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'ok',
+                    ],
+                ],
             ],
         ],
         outputs: [
@@ -381,7 +412,10 @@ it('returns a failed execution when blueprint execution fails', function () {
         metadata: [],
     );
 
-    $revision = (new AddBlueprintRevision($repository))->handle(
+    $revision = (new AddBlueprintRevision(
+    repository: $repository,
+    behaviorContractValidator: new BehaviorContractValidator(),
+))->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
         behaviorDigest:
@@ -392,9 +426,15 @@ it('returns a failed execution when blueprint execution fails', function () {
             ],
         ],
         logic: [
+            'type' => 'steps',
+            'version' => 1,
             'steps' => [
-                'validate',
-                'score',
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'ok',
+                    ],
+                ],
             ],
         ],
         outputs: [
@@ -511,4 +551,574 @@ it('returns a failed execution when blueprint execution fails', function () {
         'error',
         'Behavior execution failed.',
     );
+});
+
+it('allows a user to execute an active system-owned blueprint', function () {
+    $user = User::factory()->create();
+
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'system-execution-public',
+        namespace: 'skillvlt.edu.system',
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision = (new AddBlueprintRevision(
+    repository: $repository,
+    behaviorContractValidator: new BehaviorContractValidator(),
+))->handle(
+        blueprintId: (string) $blueprint->id(),
+        number: '1.0.0',
+        behaviorDigest:
+            'sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'ok',
+                    ],
+                ],
+            ],
+        ],
+        outputs: [
+            'type' => 'assessment-result',
+        ],
+        policies: [
+            'visibility' => 'public',
+        ],
+    );
+
+    (new FreezeBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        revisionId: (string) $revision->id(),
+    );
+
+    (new PromoteBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        revisionId: (string) $revision->id(),
+    );
+
+    (new ActivateBlueprint($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+    );
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/execute",
+            [
+                'revision_id' => (string) $revision->id(),
+                'input' => [],
+                'context' => [],
+            ],
+        );
+
+    $response->assertSuccessful();
+
+    $response->assertJsonPath(
+        'blueprint_id',
+        (string) $blueprint->id(),
+    );
+
+    $response->assertJsonPath(
+        'revision_id',
+        (string) $revision->id(),
+    );
+
+    $response->assertJsonPath(
+        'status',
+        'completed',
+    );
+});
+
+it('returns 422 when executing a deprecated blueprint', function () {
+    $user = User::factory()->create();
+
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'execution-deprecated',
+        namespace: 'skillvlt.edu.execution',
+        ownership: [
+            'type' => 'user',
+            'id' => (string) $user->id,
+        ],
+        metadata: [],
+    );
+
+    $revision = (new AddBlueprintRevision(
+    repository: $repository,
+    behaviorContractValidator: new BehaviorContractValidator(),
+))->handle(
+        blueprintId: (string) $blueprint->id(),
+        number: '1.0.0',
+        behaviorDigest:
+            'sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'ok',
+                    ],
+                ],
+            ],
+        ],
+        outputs: [
+            'type' => 'assessment-result',
+        ],
+        policies: [
+            'visibility' => 'public',
+        ],
+    );
+
+    (new FreezeBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        revisionId: (string) $revision->id(),
+    );
+
+    (new PromoteBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        revisionId: (string) $revision->id(),
+    );
+
+    (new ActivateBlueprint($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+    );
+
+    (new DeprecateBlueprint($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+    );
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/execute",
+            [
+                'revision_id' => (string) $revision->id(),
+                'input' => [],
+                'context' => [],
+            ],
+        );
+
+    $response->assertUnprocessable();
+
+    $response->assertJson([
+        'message' => 'Only an active Blueprint can be executed.',
+    ]);
+});
+
+it('returns 422 when executing a sunset blueprint', function () {
+    $user = User::factory()->create();
+
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'execution-sunset',
+        namespace: 'skillvlt.edu.execution',
+        ownership: [
+            'type' => 'user',
+            'id' => (string) $user->id,
+        ],
+        metadata: [],
+    );
+
+    $revision = (new AddBlueprintRevision(
+    repository: $repository,
+    behaviorContractValidator: new BehaviorContractValidator(),
+))->handle(
+        blueprintId: (string) $blueprint->id(),
+        number: '1.0.0',
+        behaviorDigest:
+            'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'ok',
+                    ],
+                ],
+            ],
+        ],
+        outputs: [
+            'type' => 'assessment-result',
+        ],
+        policies: [
+            'visibility' => 'public',
+        ],
+    );
+
+    (new FreezeBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        revisionId: (string) $revision->id(),
+    );
+
+    (new PromoteBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        revisionId: (string) $revision->id(),
+    );
+
+    (new ActivateBlueprint($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+    );
+
+    $blueprint = $repository->find(
+        new BlueprintId((string) $blueprint->id()),
+    );
+
+    $blueprint->sunset();
+
+    $repository->save($blueprint);
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/execute",
+            [
+                'revision_id' => (string) $revision->id(),
+                'input' => [],
+                'context' => [],
+            ],
+        );
+
+    $response->assertUnprocessable();
+
+    $response->assertJson([
+        'message' => 'Only an active Blueprint can be executed.',
+    ]);
+});
+
+it('returns 422 when executing a revision that does not belong to the blueprint', function () {
+    $user = User::factory()->create();
+
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprintA = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'execution-blueprint-a',
+        namespace: 'skillvlt.edu.execution',
+        ownership: [
+            'type' => 'user',
+            'id' => (string) $user->id,
+        ],
+        metadata: [],
+    );
+
+    $revisionA = (new AddBlueprintRevision(
+    repository: $repository,
+    behaviorContractValidator: new BehaviorContractValidator(),
+))->handle(
+        blueprintId: (string) $blueprintA->id(),
+        number: '1.0.0',
+        behaviorDigest:
+            'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'ok',
+                    ],
+                ],
+            ],
+        ],
+        outputs: [
+            'type' => 'assessment-result',
+        ],
+        policies: [
+            'visibility' => 'public',
+        ],
+    );
+
+    (new FreezeBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprintA->id(),
+        revisionId: (string) $revisionA->id(),
+    );
+
+    (new PromoteBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprintA->id(),
+        revisionId: (string) $revisionA->id(),
+    );
+
+    (new ActivateBlueprint($repository))->handle(
+        blueprintId: (string) $blueprintA->id(),
+    );
+
+    $blueprintB = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'execution-blueprint-b',
+        namespace: 'skillvlt.edu.execution',
+        ownership: [
+            'type' => 'user',
+            'id' => (string) $user->id,
+        ],
+        metadata: [],
+    );
+
+    $revisionB = (new AddBlueprintRevision(
+    repository: $repository,
+    behaviorContractValidator: new BehaviorContractValidator(),
+))->handle(
+        blueprintId: (string) $blueprintB->id(),
+        number: '1.0.0',
+        behaviorDigest:
+            'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'ok',
+                    ],
+                ],
+            ],
+        ],
+        outputs: [
+            'type' => 'assessment-result',
+        ],
+        policies: [
+            'visibility' => 'public',
+        ],
+    );
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprintA->id()}/execute",
+            [
+                'revision_id' => (string) $revisionB->id(),
+                'input' => [],
+                'context' => [],
+            ],
+        );
+
+    $response->assertUnprocessable();
+
+    $response->assertJson([
+        'message' => 'Revision does not belong to the Blueprint.',
+    ]);
+});
+
+it('returns 422 when executing a non-current revision', function () {
+    $user = User::factory()->create();
+
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'execution-non-current',
+        namespace: 'skillvlt.edu.execution',
+        ownership: [
+            'type' => 'user',
+            'id' => (string) $user->id,
+        ],
+        metadata: [],
+    );
+
+    $revisionOne = (new AddBlueprintRevision(
+    repository: $repository,
+    behaviorContractValidator: new BehaviorContractValidator(),
+))->handle(
+        blueprintId: (string) $blueprint->id(),
+        number: '1.0.0',
+        behaviorDigest:
+            'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'ok',
+                    ],
+                ],
+            ],
+        ],
+        outputs: [
+            'type' => 'assessment-result',
+        ],
+        policies: [
+            'visibility' => 'public',
+        ],
+    );
+
+    (new FreezeBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        revisionId: (string) $revisionOne->id(),
+    );
+
+    (new PromoteBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        revisionId: (string) $revisionOne->id(),
+    );
+
+    $revisionTwo = (new AddBlueprintRevision(
+    repository: $repository,
+    behaviorContractValidator: new BehaviorContractValidator(),
+))->handle(
+        blueprintId: (string) $blueprint->id(),
+        number: '2.0.0',
+        behaviorDigest:
+            'sha256:5555555555555555555555555555555555555555555555555555555555555555',
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'ok',
+                    ],
+                ],
+            ],
+        ],
+        outputs: [
+            'type' => 'assessment-result',
+        ],
+        policies: [
+            'visibility' => 'public',
+        ],
+    );
+
+    (new FreezeBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        revisionId: (string) $revisionTwo->id(),
+    );
+
+    (new ActivateBlueprint($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+    );
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/execute",
+            [
+                'revision_id' => (string) $revisionTwo->id(),
+                'input' => [],
+                'context' => [],
+            ],
+        );
+
+    $response->assertUnprocessable();
+
+    $response->assertJson([
+        'message' => 'Only the current revision can be executed.',
+    ]);
+});
+
+it('returns 422 when executing an unfrozen revision', function () {
+    $user = User::factory()->create();
+
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'execution-unfrozen',
+        namespace: 'skillvlt.edu.execution',
+        ownership: [
+            'type' => 'user',
+            'id' => (string) $user->id,
+        ],
+        metadata: [],
+    );
+
+    $revision = (new AddBlueprintRevision(
+    repository: $repository,
+    behaviorContractValidator: new BehaviorContractValidator(),
+))->handle(
+        blueprintId: (string) $blueprint->id(),
+        number: '1.0.0',
+        behaviorDigest:
+            'sha256:6666666666666666666666666666666666666666666666666666666666666666',
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'ok',
+                    ],
+                ],
+            ],
+        ],
+        outputs: [
+            'type' => 'assessment-result',
+        ],
+        policies: [
+            'visibility' => 'public',
+        ],
+    );
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/execute",
+            [
+                'revision_id' => (string) $revision->id(),
+                'input' => [],
+                'context' => [],
+            ],
+        );
+
+    $response->assertUnprocessable();
+
+    $response->assertJson([
+        'message' => 'Only a frozen revision can be executed.',
+    ]);
 });

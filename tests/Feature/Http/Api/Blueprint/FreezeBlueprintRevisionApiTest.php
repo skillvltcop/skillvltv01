@@ -6,6 +6,7 @@ use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
 use App\Domain\Blueprint\ValueObjects\BlueprintId;
 use App\Domain\Blueprint\ValueObjects\RevisionId;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Application\Behavior\BehaviorContractValidator;
 use Tests\TestCase;
 use App\Models\User;
 
@@ -28,7 +29,10 @@ ownership: [
         metadata: [],
     );
 
-    $revision = (new AddBlueprintRevision($repository))->handle(
+    $revision = (new AddBlueprintRevision(
+            repository: $repository,
+            behaviorContractValidator: new BehaviorContractValidator(),
+        ))->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
         behaviorDigest:
@@ -39,9 +43,15 @@ ownership: [
             ],
         ],
         logic: [
+            'type' => 'steps',
+            'version' => 1,
             'steps' => [
-                'validate',
-                'score',
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'status' => 'ok',
+                    ],
+                ],
             ],
         ],
         outputs: [
@@ -164,7 +174,10 @@ it('forbids a user from freezing another user blueprint revision', function () {
         metadata: [],
     );
 
-    $revision = (new AddBlueprintRevision($repository))->handle(
+    $revision = (new AddBlueprintRevision(
+            repository: $repository,
+            behaviorContractValidator: new BehaviorContractValidator(),
+        ))->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
         behaviorDigest:
@@ -175,9 +188,15 @@ it('forbids a user from freezing another user blueprint revision', function () {
             ],
         ],
         logic: [
+            'type' => 'steps',
+            'version' => 1,
             'steps' => [
-                'validate',
-                'score',
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'status' => 'ok',
+                    ],
+                ],
             ],
         ],
         outputs: [
@@ -206,4 +225,65 @@ it('rejects unauthenticated revision freezing', function () {
     );
 
     $response->assertUnauthorized();
+});
+
+it('forbids a user from freezing a system-owned blueprint revision', function () {
+    $user = User::factory()->create();
+
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'system-freeze-protected',
+        namespace: 'skillvlt.edu.freeze',
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision = (new AddBlueprintRevision(
+            repository: $repository,
+            behaviorContractValidator: new BehaviorContractValidator(),
+        ))->handle(
+        blueprintId: (string) $blueprint->id(),
+        number: '1.0.0',
+        behaviorDigest:
+            'sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'status' => 'ok',
+                    ],
+                ],
+            ],
+        ],
+        outputs: [
+            'type' => 'assessment-result',
+        ],
+        policies: [
+            'visibility' => 'public',
+        ],
+    );
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/revisions/{$revision->id()}/freeze",
+        );
+
+    $response
+        ->assertForbidden()
+        ->assertJson([
+            'message' => 'Forbidden.',
+        ]);
 });

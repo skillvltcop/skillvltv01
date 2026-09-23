@@ -10,6 +10,8 @@ use App\Application\Execution\Runtime\BehaviorRunner;
 use App\Domain\Execution\ValueObjects\ExecutionId;
 use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
 use App\Infrastructure\Persistence\Eloquent\EloquentExecutionRepository;
+use App\Application\Behavior\BehaviorContractValidator;
+use App\Application\Behavior\ValueResolver;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -33,7 +35,10 @@ it('retrieves a completed execution through the HTTP API', function () {
         metadata: [],
     );
 
-    $revision = (new AddBlueprintRevision($blueprintRepository))->handle(
+    $revision = (new AddBlueprintRevision(
+    repository: $blueprintRepository,
+    behaviorContractValidator: new \App\Application\Behavior\BehaviorContractValidator(),
+))->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
         behaviorDigest:
@@ -44,9 +49,15 @@ it('retrieves a completed execution through the HTTP API', function () {
             ],
         ],
         logic: [
+            'type' => 'steps',
+            'version' => 1,
             'steps' => [
-                'validate',
-                'score',
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'steps' => ['validate', 'score'],
+                    ],
+                ],
             ],
         ],
         outputs: [
@@ -76,7 +87,9 @@ it('retrieves a completed execution through the HTTP API', function () {
     expect($blueprint)->not->toBeNull();
 
     $engine = new ExecutionEngine(
-        runner: new BehaviorRunner(),
+       runner: new BehaviorRunner(
+            new ValueResolver(),
+        ),
     );
 
     $execution = $engine->execute(
@@ -194,7 +207,10 @@ it('forbids a user from reading another user execution', function () {
         metadata: [],
     );
 
-    $revision = (new AddBlueprintRevision($blueprintRepository))->handle(
+    $revision = (new AddBlueprintRevision(
+    repository: $blueprintRepository,
+    behaviorContractValidator: new \App\Application\Behavior\BehaviorContractValidator(),
+))->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
         behaviorDigest:
@@ -205,9 +221,15 @@ it('forbids a user from reading another user execution', function () {
             ],
         ],
         logic: [
+            'type' => 'steps',
+            'version' => 1,
             'steps' => [
-                'validate',
-                'score',
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'steps' => ['validate', 'score'],
+                    ],
+                ],
             ],
         ],
         outputs: [
@@ -237,7 +259,9 @@ it('forbids a user from reading another user execution', function () {
     expect($blueprint)->not->toBeNull();
 
     $engine = new ExecutionEngine(
-        runner: new BehaviorRunner(),
+        $runner = new BehaviorRunner(
+            new ValueResolver(),
+        )
     );
 
     $execution = $engine->execute(

@@ -6,6 +6,7 @@ use App\Application\Blueprint\Commands\FreezeBlueprintRevision;
 use App\Application\Blueprint\Commands\PromoteBlueprintRevision;
 use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Application\Behavior\BehaviorContractValidator;
 use Tests\TestCase;
 use App\Models\User;
 
@@ -44,7 +45,10 @@ it('retrieves a blueprint through the HTTP API', function () {
         ],
     );
 
-    $revision = (new AddBlueprintRevision($repository))->handle(
+    $revision = (new AddBlueprintRevision(
+    repository: $repository,
+    behaviorContractValidator: new BehaviorContractValidator(),
+))->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
         behaviorDigest:
@@ -55,9 +59,15 @@ it('retrieves a blueprint through the HTTP API', function () {
             ],
         ],
         logic: [
+            'type' => 'steps',
+            'version' => 1,
             'steps' => [
-                'validate',
-                'score',
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'ok',
+                    ],
+                ],
             ],
         ],
         outputs: [
@@ -213,4 +223,52 @@ it('forbids a user from accessing another user blueprint', function () {
         );
 
     $response->assertForbidden();
+});
+
+it('allows an authenticated user to access a system-owned blueprint', function () {
+    $user = User::factory()->create();
+
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'system-blueprint-show',
+        namespace: 'skillvlt.edu.system',
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [
+            'documentation' => [
+                'description' => 'System blueprint.',
+            ],
+        ],
+    );
+
+    $response = $this
+        ->actingAs($user)
+        ->getJson(
+            "/api/blueprints/{$blueprint->id()}",
+        );
+
+    $response->assertSuccessful();
+
+    $response->assertJsonPath(
+        'id',
+        (string) $blueprint->id(),
+    );
+
+    $response->assertJsonPath(
+        'ownership.type',
+        'system',
+    );
+
+    $response->assertJsonPath(
+        'ownership.id',
+        'skillvlt',
+    );
+
+    $response->assertJsonPath(
+        'metadata.documentation.description',
+        'System blueprint.',
+    );
 });

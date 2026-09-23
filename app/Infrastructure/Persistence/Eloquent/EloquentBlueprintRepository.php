@@ -14,6 +14,7 @@ use App\Domain\Blueprint\ValueObjects\BehaviorDigest;
 use App\Domain\Blueprint\ValueObjects\RevisionId;
 use App\Domain\Blueprint\ValueObjects\RevisionNumber;
 use App\Models\Blueprint as BlueprintModel;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 final class EloquentBlueprintRepository implements BlueprintRepository
@@ -34,69 +35,69 @@ final class EloquentBlueprintRepository implements BlueprintRepository
         return $this->toDomain($model);
     }
 
-public function save(Blueprint $blueprint): void
-{
-    $ownership = $blueprint->ownership();
+    public function save(Blueprint $blueprint): void
+    {
+        DB::transaction(function () use ($blueprint): void {
+            $ownership = $blueprint->ownership();
 
-    $model = BlueprintModel::query()->updateOrCreate(
-        [
-            'id' => (string) $blueprint->id(),
-        ],
-        [
-            'canonical_name' => (string) $blueprint->canonicalName(),
-            'namespace' => (string) $blueprint->namespace(),
-            'owner_type' => $ownership['type'],
-            'owner_id' => $ownership['id'],
-            'lifecycle_status' => $blueprint->lifecycleStatus()->value,
+            $model = BlueprintModel::query()->updateOrCreate(
+                [
+                    'id' => (string) $blueprint->id(),
+                ],
+                [
+                    'canonical_name' => (string) $blueprint->canonicalName(),
+                    'namespace' => (string) $blueprint->namespace(),
+                    'owner_type' => $ownership['type'],
+                    'owner_id' => $ownership['id'],
+                    'lifecycle_status' => $blueprint->lifecycleStatus()->value,
 
-            // Important:
-            // current_revision_id is set only after revisions are persisted.
-            'current_revision_id' => null,
-        ],
-    );
+                    // current_revision_id is set only after revisions are persisted.
+                    'current_revision_id' => null,
+                ],
+            );
 
-    $metadata = $blueprint->metadata();
+            $metadata = $blueprint->metadata();
 
-    $model->metadata()->updateOrCreate(
-        [
-            'blueprint_id' => $model->id,
-        ],
-        [
-            'taxonomy' => $metadata['taxonomy'] ?? [],
-            'documentation' => $metadata['documentation'] ?? [],
-            'discovery' => $metadata['discovery'] ?? null,
-            'lifecycle_metadata' => $metadata['lifecycle_metadata'] ?? [],
-        ],
-    );
+            $model->metadata()->updateOrCreate(
+                [
+                    'blueprint_id' => $model->id,
+                ],
+                [
+                    'taxonomy' => $metadata['taxonomy'] ?? [],
+                    'documentation' => $metadata['documentation'] ?? [],
+                    'discovery' => $metadata['discovery'] ?? null,
+                    'lifecycle_metadata' => $metadata['lifecycle_metadata'] ?? [],
+                ],
+            );
 
-    foreach ($blueprint->revisions() as $revision) {
-        $model->revisions()->updateOrCreate(
-            [
-                'id' => (string) $revision->id(),
-            ],
-            [
-                'blueprint_id' => $model->id,
-                'revision_number' => (string) $revision->number(),
-                'parent_revision_id' => $revision->parentRevisionId()
-                    ? (string) $revision->parentRevisionId()
-                    : null,
-                'behavior_digest' => (string) $revision->behaviorDigest(),
-                'contracts' => $revision->contracts(),
-                'logic' => $revision->logic(),
-                'outputs' => $revision->outputs(),
-                'policies' => $revision->policies(),
-                'frozen' => $revision->isFrozen(),
-            ],
-        );
+            foreach ($blueprint->revisions() as $revision) {
+                $model->revisions()->updateOrCreate(
+                    [
+                        'id' => (string) $revision->id(),
+                    ],
+                    [
+                        'blueprint_id' => $model->id,
+                        'revision_number' => (string) $revision->number(),
+                        'parent_revision_id' => $revision->parentRevisionId()
+                            ? (string) $revision->parentRevisionId()
+                            : null,
+                        'behavior_digest' => (string) $revision->behaviorDigest(),
+                        'contracts' => $revision->contracts(),
+                        'logic' => $revision->logic(),
+                        'outputs' => $revision->outputs(),
+                        'policies' => $revision->policies(),
+                        'frozen' => $revision->isFrozen(),
+                    ],
+                );
+            }
+
+            if ($blueprint->currentRevisionId() !== null) {
+                $model->update([
+                    'current_revision_id' => (string) $blueprint->currentRevisionId(),
+                ]);
+            }
+        });
     }
-
-    // Now the referenced revision definitely exists.
-    if ($blueprint->currentRevisionId() !== null) {
-        $model->update([
-            'current_revision_id' => (string) $blueprint->currentRevisionId(),
-        ]);
-    }
-}
 
     private function toDomain(BlueprintModel $model): Blueprint
     {

@@ -5,6 +5,7 @@ use App\Application\Blueprint\Commands\CreateBlueprint;
 use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Application\Behavior\BehaviorContractValidator;
 use Tests\TestCase;
 
 uses(
@@ -27,7 +28,10 @@ it('lists blueprint revisions through the HTTP API', function () {
         metadata: [],
     );
 
-    $firstRevision = (new AddBlueprintRevision($repository))->handle(
+    $firstRevision = (new AddBlueprintRevision(
+            repository: $repository,
+            behaviorContractValidator: new BehaviorContractValidator(),
+        ))->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
         behaviorDigest:
@@ -38,8 +42,15 @@ it('lists blueprint revisions through the HTTP API', function () {
             ],
         ],
         logic: [
+            'type' => 'steps',
+            'version' => 1,
             'steps' => [
-                'validate',
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'status' => 'ok',
+                    ],
+                ],
             ],
         ],
         outputs: [
@@ -50,7 +61,10 @@ it('lists blueprint revisions through the HTTP API', function () {
         ],
     );
 
-    $secondRevision = (new AddBlueprintRevision($repository))->handle(
+    $secondRevision = (new AddBlueprintRevision(
+            repository: $repository,
+            behaviorContractValidator: new BehaviorContractValidator(),
+        ))->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.1.0',
         behaviorDigest:
@@ -61,9 +75,15 @@ it('lists blueprint revisions through the HTTP API', function () {
             ],
         ],
         logic: [
+            'type' => 'steps',
+            'version' => 1,
             'steps' => [
-                'validate',
-                'score',
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'status' => 'ok',
+                    ],
+                ],
             ],
         ],
         outputs: [
@@ -222,7 +242,10 @@ it('forbids a user from listing revisions of another user blueprint', function (
         metadata: [],
     );
 
-    (new AddBlueprintRevision($repository))->handle(
+    (new AddBlueprintRevision(
+        repository: $repository,
+        behaviorContractValidator: new BehaviorContractValidator(),
+    ))->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
         behaviorDigest:
@@ -233,8 +256,15 @@ it('forbids a user from listing revisions of another user blueprint', function (
             ],
         ],
         logic: [
+            'type' => 'steps',
+            'version' => 1,
             'steps' => [
-                'validate',
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'status' => 'ok',
+                    ],
+                ],
             ],
         ],
         outputs: [

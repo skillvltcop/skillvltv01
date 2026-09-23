@@ -8,6 +8,7 @@ use App\Domain\Blueprint\ValueObjects\BehaviorDigest;
 use App\Domain\Blueprint\ValueObjects\BlueprintNamespace;
 use App\Domain\Blueprint\ValueObjects\CanonicalName;
 use App\Domain\Blueprint\ValueObjects\RevisionNumber;
+use RuntimeException;
 
 it('activates a blueprint with at least one revision and persists it', function () {
     $blueprint = Blueprint::create(
@@ -187,3 +188,23 @@ it('activates a blueprint using the frozen current revision even when a newer re
         ->toBe(\App\Domain\Blueprint\Enums\LifecycleStatus::ACTIVE);
 });
 
+it('fails when the blueprint does not exist', function () {
+    $repository = Mockery::mock(BlueprintRepository::class);
+
+    $repository
+        ->shouldReceive('find')
+        ->once()
+        ->with(Mockery::type(BlueprintId::class))
+        ->andReturn(null);
+
+    $repository->shouldNotReceive('save');
+
+    $command = new ActivateBlueprint($repository);
+
+    expect(fn () => $command->handle(
+        blueprintId: (string) BlueprintId::generate(),
+    ))->toThrow(
+        RuntimeException::class,
+        'Blueprint not found.'
+    );
+});

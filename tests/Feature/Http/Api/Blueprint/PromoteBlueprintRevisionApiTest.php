@@ -7,6 +7,7 @@ use App\Domain\Blueprint\ValueObjects\BlueprintId;
 use App\Domain\Blueprint\ValueObjects\RevisionId;
 use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Application\Behavior\BehaviorContractValidator;
 use Tests\TestCase;
 use App\Models\User;
 
@@ -29,7 +30,10 @@ it('promotes a frozen blueprint revision through the HTTP API', function () {
         metadata: [],
     );
 
-    $revision = (new AddBlueprintRevision($repository))->handle(
+    $revision = (new AddBlueprintRevision(
+    repository: $repository,
+    behaviorContractValidator: new BehaviorContractValidator(),
+))->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
         behaviorDigest:
@@ -40,11 +44,17 @@ it('promotes a frozen blueprint revision through the HTTP API', function () {
             ],
         ],
         logic: [
+            'type' => 'steps',
+            'version' => 1,
             'steps' => [
-                'validate',
-                'score',
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'ok',
+                    ],
+                ],
             ],
-        ],
+],
         outputs: [
             'type' => 'assessment-result',
         ],
@@ -170,7 +180,10 @@ it('rejects promoting an unfrozen revision', function () {
         metadata: [],
     );
 
-    $revision = (new AddBlueprintRevision($repository))->handle(
+    $revision = (new AddBlueprintRevision(
+    repository: $repository,
+    behaviorContractValidator: new BehaviorContractValidator(),
+))->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
         behaviorDigest:
@@ -181,8 +194,15 @@ it('rejects promoting an unfrozen revision', function () {
             ],
         ],
         logic: [
+            'type' => 'steps',
+            'version' => 1,
             'steps' => [
-                'validate',
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'ok',
+                    ],
+                ],
             ],
         ],
         outputs: [
@@ -223,7 +243,10 @@ it('forbids a user from promoting another user blueprint revision', function () 
         metadata: [],
     );
 
-    $revision = (new AddBlueprintRevision($repository))->handle(
+    $revision = (new AddBlueprintRevision(
+    repository: $repository,
+    behaviorContractValidator: new BehaviorContractValidator(),
+))->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
         behaviorDigest:
@@ -234,9 +257,15 @@ it('forbids a user from promoting another user blueprint revision', function () 
             ],
         ],
         logic: [
+            'type' => 'steps',
+            'version' => 1,
             'steps' => [
-                'validate',
-                'score',
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'ok',
+                    ],
+                ],
             ],
         ],
         outputs: [
@@ -270,4 +299,75 @@ it('rejects unauthenticated revision promotion', function () {
     );
 
     $response->assertUnauthorized();
+});
+
+it('forbids a user from promoting a system-owned blueprint revision', function () {
+    $user = User::factory()->create();
+
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'system-promote-protected',
+        namespace: 'skillvlt.edu.promote',
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision = (new AddBlueprintRevision(
+            repository: $repository,
+            behaviorContractValidator: new BehaviorContractValidator(),
+        ))->handle(
+        blueprintId: (string) $blueprint->id(),
+        number: '1.0.0',
+        behaviorDigest:
+            'sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'ok',
+                    ],
+                ],
+            ],
+        ],
+        outputs: [
+            'type' => 'assessment-result',
+        ],
+        policies: [
+            'visibility' => 'public',
+        ],
+    );
+
+    (new FreezeBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        revisionId: (string) $revision->id(),
+    );
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/revisions/{$revision->id()}/promote",
+        );
+
+    $response
+        ->assertForbidden()
+        ->assertJson([
+            'message' => 'Forbidden.',
+        ]);
+
+    $this->assertDatabaseMissing('blueprints', [
+        'id' => (string) $blueprint->id(),
+        'current_revision_id' => (string) $revision->id(),
+    ]);
 });

@@ -10,6 +10,8 @@ use App\Application\Execution\Runtime\BehaviorRunner;
 use App\Domain\Execution\Enums\ExecutionStatus;
 use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Application\Behavior\BehaviorContractValidator;
+use App\Application\Behavior\ValueResolver;
 
 uses(RefreshDatabase::class);
 
@@ -26,7 +28,10 @@ it('executes an activated blueprint revision from creation to completion', funct
         metadata: [],
     );
 
-    $revision = (new AddBlueprintRevision($repository))->handle(
+    $revision = (new AddBlueprintRevision(
+        repository: $repository,
+        behaviorContractValidator: new BehaviorContractValidator(),
+    ))->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
         behaviorDigest:
@@ -37,9 +42,33 @@ it('executes an activated blueprint revision from creation to completion', funct
             ],
         ],
         logic: [
+            'type' => 'steps',
+            'version' => 1,
             'steps' => [
-                'validate',
-                'score',
+                [
+                    'type' => 'evaluate_rule',
+                    'condition' => [
+                        'field' => 'input.score',
+                        'operator' => 'gte',
+                        'value' => 10,
+                    ],
+                    'assign_to' => 'result_status',
+                    'true_value' => 'pass',
+                    'false_value' => 'fail',
+                ],
+                [
+                    'type' => 'format_template',
+                    'template' => 'Student {input.student.name} got {state.result_status}.',
+                    'assign_to' => 'final_feedback',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'status' => '{state.result_status}',
+                        'message' => '{state.final_feedback}',
+                        'locale' => '{context.locale}',
+                    ],
+                ],
             ],
         ],
         outputs: [
@@ -69,7 +98,9 @@ it('executes an activated blueprint revision from creation to completion', funct
     expect($blueprint)->not->toBeNull();
 
     $engine = new ExecutionEngine(
-        runner: new BehaviorRunner(),
+        runner: new BehaviorRunner(
+            new ValueResolver(),
+        ),
     );
 
     $execution = $engine->execute(
@@ -79,6 +110,7 @@ it('executes an activated blueprint revision from creation to completion', funct
             'student' => [
                 'name' => 'Ahmed',
             ],
+            'score' => 14,
             'answers' => [
                 1 => 'A',
                 2 => 'B',
@@ -100,9 +132,8 @@ it('executes an activated blueprint revision from creation to completion', funct
 
     expect($execution->output())
         ->toBe([
-            'steps' => [
-                'validate',
-                'score',
-            ],
+            'status' => 'pass',
+            'message' => 'Student Ahmed got pass.',
+            'locale' => 'ar',
         ]);
 });

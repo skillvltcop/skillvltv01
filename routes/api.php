@@ -1,61 +1,23 @@
 <?php
 
-use App\Http\Controllers\Api\AddBlueprintRevisionController;
-use App\Http\Controllers\Api\CreateBlueprintController;
-use App\Http\Controllers\Api\ExecuteBlueprintController;
-use App\Http\Controllers\Api\FreezeBlueprintRevisionController;
-use App\Http\Controllers\Api\PromoteBlueprintRevisionController;
-use App\Http\Controllers\Api\ShowExecutionController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ActivateBlueprintController;
-use App\Http\Controllers\Api\ShowBlueprintController;
-use App\Http\Controllers\Api\ShowBlueprintRevisionController;
+use App\Http\Controllers\Api\AddBlueprintRevisionController;
 use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
 use App\Http\Controllers\Api\Auth\MeController;
-use App\Http\Controllers\Api\ListBlueprintsController;
-use App\Http\Controllers\Api\ListBlueprintRevisionsController;
+use App\Http\Controllers\Api\CreateBlueprintController;
 use App\Http\Controllers\Api\DiscoverBlueprintsController;
-
-Route::middleware('auth:sanctum')->post(
-    '/blueprints/{blueprint}/revisions',
-    AddBlueprintRevisionController::class,
-);
-
-Route::middleware('auth:sanctum')->post(
-    '/blueprints/{blueprint}/revisions/{revision}/freeze',
-    FreezeBlueprintRevisionController::class,
-);
-
-Route::middleware('auth:sanctum')->post(
-    '/blueprints/{blueprint}/execute',
-    ExecuteBlueprintController::class,
-);
-
-Route::middleware('auth:sanctum')->get(
-    '/executions/{execution}',
-    ShowExecutionController::class,
-);
-
-Route::post(
-    '/blueprints/{blueprint}/activate',
-    ActivateBlueprintController::class,
-);
-
-Route::middleware('auth:sanctum')->get(
-    '/blueprints/discover',
-    DiscoverBlueprintsController::class,
-);
-
-Route::middleware('auth:sanctum')->get(
-    '/blueprints/{blueprint}',
-    ShowBlueprintController::class,
-);
-
-Route::get(
-    '/blueprints/{blueprint}/revisions/{revision}',
-    ShowBlueprintRevisionController::class,
-);
+use App\Http\Controllers\Api\ExecuteBlueprintController;
+use App\Http\Controllers\Api\FreezeBlueprintRevisionController;
+use App\Http\Controllers\Api\ListBlueprintRevisionsController;
+use App\Http\Controllers\Api\ListBlueprintsController;
+use App\Http\Controllers\Api\PromoteBlueprintRevisionController;
+use App\Http\Controllers\Api\ShowBlueprintController;
+use App\Http\Controllers\Api\ShowBlueprintRevisionController;
+use App\Http\Controllers\Api\ShowExecutionController;
+use App\Http\Controllers\Api\DeprecateBlueprintController;
+use App\Http\Controllers\Api\SunsetBlueprintController;
+use Illuminate\Support\Facades\Route;
 
 Route::post(
     '/auth/login',
@@ -63,6 +25,12 @@ Route::post(
 );
 
 Route::middleware('auth:sanctum')->group(function () {
+    /*
+    |--------------------------------------------------------------------------
+    | Authentication
+    |--------------------------------------------------------------------------
+    */
+
     Route::get(
         '/auth/me',
         MeController::class,
@@ -72,24 +40,94 @@ Route::middleware('auth:sanctum')->group(function () {
         '/auth/logout',
         LogoutController::class,
     );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Blueprint discovery and reading
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/blueprints',
+        ListBlueprintsController::class,
+    );
+
+    Route::get(
+        '/blueprints/discover',
+        DiscoverBlueprintsController::class,
+    );
+
+    Route::get(
+        '/blueprints/{blueprint}',
+        ShowBlueprintController::class,
+    );
+
+    Route::get(
+        '/blueprints/{blueprint}/revisions',
+        ListBlueprintRevisionsController::class,
+    );
+
+    Route::get(
+        '/blueprints/{blueprint}/revisions/{revision}',
+        ShowBlueprintRevisionController::class,
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Blueprint mutations
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post(
+        '/blueprints',
+        CreateBlueprintController::class,
+    );
+
+    Route::post(
+        '/blueprints/{blueprint}/revisions',
+        AddBlueprintRevisionController::class,
+    );
+
+    Route::post(
+        '/blueprints/{blueprint}/revisions/{revision}/freeze',
+        FreezeBlueprintRevisionController::class,
+    );
+
+    Route::post(
+        '/blueprints/{blueprint}/revisions/{revision}/promote',
+        PromoteBlueprintRevisionController::class,
+    );
+
+    Route::post(
+        '/blueprints/{blueprint}/activate',
+        ActivateBlueprintController::class,
+    );
+
+    Route::post(
+        '/blueprints/{blueprint}/deprecate',
+        DeprecateBlueprintController::class,
+    );
+
+    Route::post(
+        '/blueprints/{blueprint}/sunset',
+        SunsetBlueprintController::class,
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Execution
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post(
+        '/blueprints/{blueprint}/execute',
+        ExecuteBlueprintController::class,
+    );
+
+    Route::get(
+        '/executions/{execution}',
+        ShowExecutionController::class,
+    );
+
 });
 
-Route::middleware('auth:sanctum')->post(
-    '/blueprints',
-    CreateBlueprintController::class,
-);
-
-Route::middleware('auth:sanctum')->post(
-    '/blueprints/{blueprint}/revisions/{revision}/promote',
-    PromoteBlueprintRevisionController::class,
-);
-
-Route::middleware('auth:sanctum')->get(
-    '/blueprints',
-    ListBlueprintsController::class,
-);
-
-Route::middleware('auth:sanctum')->get(
-    '/blueprints/{blueprint}/revisions',
-    ListBlueprintRevisionsController::class,
-);

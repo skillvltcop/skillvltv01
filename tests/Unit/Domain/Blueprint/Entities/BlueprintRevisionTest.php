@@ -170,3 +170,38 @@ it('cannot be frozen twice', function () {
             'Revision is already frozen.'
         );
 });
+
+it('returns defensive copies of reconstituted behavioral data', function () {
+    $revision = BlueprintRevision::reconstitute(
+        id: RevisionId::generate(),
+        number: new RevisionNumber('1.1.0'),
+        parentRevisionId: null,
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('a', 64)
+        ),
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'variables' => [
+                'question_count' => 10,
+            ],
+        ],
+        outputs: [
+            'type' => 'assessment',
+        ],
+        policies: [
+            'visibility' => 'public',
+        ],
+        frozen: false,
+    );
+
+    $logic = $revision->logic();
+
+    $logic['variables']['question_count'] = 999;
+
+    expect($revision->logic()['variables']['question_count'])
+        ->toBe(10);
+});

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Blueprint\Commands;
 
+use App\Application\Behavior\BehaviorContractValidator;
 use App\Domain\Blueprint\Entities\BlueprintRevision;
 use App\Domain\Blueprint\Repositories\BlueprintRepository;
 use App\Domain\Blueprint\ValueObjects\BehaviorDigest;
@@ -14,6 +15,7 @@ final class AddBlueprintRevision
 {
     public function __construct(
         private BlueprintRepository $repository,
+        private BehaviorContractValidator $behaviorContractValidator,
     ) {
     }
 
@@ -35,6 +37,8 @@ final class AddBlueprintRevision
                 'Blueprint not found.'
             );
         }
+
+        $this->behaviorContractValidator->validate($logic);
 
         $revision = $blueprint->addRevision(
             number: new RevisionNumber($number),

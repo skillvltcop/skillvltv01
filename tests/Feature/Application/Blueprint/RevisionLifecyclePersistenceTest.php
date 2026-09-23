@@ -5,6 +5,7 @@ use App\Application\Blueprint\Commands\AddBlueprintRevision;
 use App\Application\Blueprint\Commands\CreateBlueprint;
 use App\Application\Blueprint\Commands\FreezeBlueprintRevision;
 use App\Application\Blueprint\Commands\PromoteBlueprintRevision;
+use App\Application\Behavior\BehaviorContractValidator;
 use App\Domain\Blueprint\ValueObjects\BlueprintId;
 use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -26,7 +27,10 @@ it('publishes a new revision on an active blueprint through persistence', functi
         metadata: [],
     );
 
-    $addRevision = new AddBlueprintRevision($repository);
+    $addRevision = new AddBlueprintRevision(
+        repository: $repository,
+        behaviorContractValidator: new BehaviorContractValidator(),
+    );
 
     $firstRevision = $addRevision->handle(
         blueprintId: (string) $blueprint->id(),
@@ -37,7 +41,16 @@ it('publishes a new revision on an active blueprint through persistence', functi
             'input' => ['type' => 'object'],
         ],
         logic: [
-            'steps' => ['validate'],
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'status' => 'ok',
+                    ],
+                ],
+            ],
         ],
         outputs: [
             'type' => 'assessment-result',
@@ -80,7 +93,16 @@ it('publishes a new revision on an active blueprint through persistence', functi
             'input' => ['type' => 'object'],
         ],
         logic: [
-            'steps' => ['validate', 'score'],
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'status' => 'ok',
+                    ],
+                ],
+            ],
         ],
         outputs: [
             'type' => 'assessment-result',

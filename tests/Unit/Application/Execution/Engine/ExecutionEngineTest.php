@@ -10,6 +10,7 @@ use App\Domain\Blueprint\Commands\PromoteBlueprintRevision;
 use App\Application\Execution\Runtime\BehaviorRunner;
 use App\Application\Execution\Runtime\Contracts\BehaviorRunner as BehaviorRunnerContract;
 use App\Application\Execution\Engine\ExecutionEngineContract;
+use App\Application\Behavior\ValueResolver;
 
 it('executes a frozen blueprint revision and completes an execution', function () {
     $blueprint = Blueprint::create(
@@ -33,9 +34,26 @@ it('executes a frozen blueprint revision and completes an execution', function (
             ],
         ],
         logic: [
+            'type' => 'steps',
+            'version' => 1,
             'steps' => [
-                'validate',
-                'score',
+                [
+                    'type' => 'evaluate_rule',
+                    'condition' => [
+                        'field' => 'input.score',
+                        'operator' => 'gte',
+                        'value' => 10,
+                    ],
+                    'assign_to' => 'result_status',
+                    'true_value' => 'pass',
+                    'false_value' => 'fail',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'status' => '{state.result_status}',
+                    ],
+                ],
             ],
         ],
         outputs: [
@@ -52,7 +70,9 @@ it('executes a frozen blueprint revision and completes an execution', function (
 
     $blueprint->activate();
 
-    $runner = new BehaviorRunner();
+    $runner = new BehaviorRunner(
+        new ValueResolver(),
+    );
 
     $engine = new \App\Application\Execution\Engine\ExecutionEngine(
         runner: $runner,
@@ -65,6 +85,7 @@ it('executes a frozen blueprint revision and completes an execution', function (
             'student' => [
                 'name' => 'Ahmed',
             ],
+            'score' => 14,
             'answers' => [
                 1 => 'A',
                 2 => 'B',
@@ -104,9 +125,26 @@ it('uses the revision logic to produce the execution output', function () {
             ],
         ],
         logic: [
+            'type' => 'steps',
+            'version' => 1,
             'steps' => [
-                'validate',
-                'score',
+                [
+                    'type' => 'evaluate_rule',
+                    'condition' => [
+                        'field' => 'input.score',
+                        'operator' => 'gte',
+                        'value' => 10,
+                    ],
+                    'assign_to' => 'result_status',
+                    'true_value' => 'pass',
+                    'false_value' => 'fail',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'status' => '{state.result_status}',
+                    ],
+                ],
             ],
         ],
         outputs: [
@@ -122,7 +160,9 @@ it('uses the revision logic to produce the execution output', function () {
     $blueprint->promoteRevision($revision->id());
     $blueprint->activate();
 
-    $runner = new BehaviorRunner();
+    $runner = new BehaviorRunner(
+        new ValueResolver(),
+    );
 
     $engine = new \App\Application\Execution\Engine\ExecutionEngine(
         runner: $runner,
@@ -135,6 +175,7 @@ it('uses the revision logic to produce the execution output', function () {
             'student' => [
                 'name' => 'Ahmed',
             ],
+            'score' => 14,
             'answers' => [
                 1 => 'A',
                 2 => 'B',
@@ -147,10 +188,7 @@ it('uses the revision logic to produce the execution output', function () {
 
     expect($execution->output())
         ->toBe([
-            'steps' => [
-                'validate',
-                'score',
-            ],
+            'status' => 'pass',
         ]);
 });
 

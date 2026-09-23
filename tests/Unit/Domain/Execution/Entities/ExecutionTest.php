@@ -333,3 +333,34 @@ it('reconstitutes a failed execution with its error', function () {
         ->toBe('Behavior execution failed.');
 });
 
+it('rejects an invalid completed execution state', function () {
+    expect(fn () => Execution::reconstitute(
+        id: ExecutionId::generate(),
+        blueprintId: BlueprintId::generate(),
+        revisionId: RevisionId::generate(),
+        input: [],
+        context: [],
+        status: ExecutionStatus::COMPLETED,
+        output: null,
+        error: null,
+    ))->toThrow(
+        DomainException::class,
+        'A completed execution must have output and no error.'
+    );
+});
+
+it('rejects an invalid failed execution state', function () {
+    expect(fn () => Execution::reconstitute(
+        id: ExecutionId::generate(),
+        blueprintId: BlueprintId::generate(),
+        revisionId: RevisionId::generate(),
+        input: [],
+        context: [],
+        status: ExecutionStatus::FAILED,
+        output: null,
+        error: null,
+    ))->toThrow(
+        DomainException::class,
+        'A failed execution must have an error and no output.'
+    );
+});

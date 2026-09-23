@@ -32,26 +32,42 @@ final class ExecuteBlueprintController
             ], 404);
         }
 
+        /*
+         * Execution authorization:
+         *
+         * - User-owned Blueprint → only its owner may execute it.
+         * - System-owned Blueprint → authenticated users may execute it.
+         *
+         * Lifecycle, revision ownership, frozen state, and current
+         * revision are domain rules and are handled by the Engine.
+         */
         $ownership = $blueprintEntity->ownership();
-
         $user = $request->user();
+
+        $isSystemOwned = $ownership['type'] === 'system';
 
         $isOwner =
             $ownership['type'] === 'user'
             && (string) $ownership['id'] === (string) $user->id;
 
-        if (! $isOwner) {
+        if (! $isSystemOwned && ! $isOwner) {
             return response()->json([
                 'message' => 'Forbidden.',
             ], 403);
         }
 
-        $execution = $this->executeBlueprint->handle(
-            blueprintId: $blueprint,
-            revisionId: $request->string('revision_id')->toString(),
-            input: $request->input('input', []),
-            context: $request->input('context', []),
-        );
+        try {
+            $execution = $this->executeBlueprint->handle(
+                blueprintId: $blueprint,
+                revisionId: $request->string('revision_id')->toString(),
+                input: $request->input('input', []),
+                context: $request->input('context', []),
+            );
+        } catch (\DomainException $exception) {
+            return response()->json([
+                'message' => $exception->getMessage(),
+            ], 422);
+        }
 
         return response()->json([
             'execution_id' => (string) $execution->id(),

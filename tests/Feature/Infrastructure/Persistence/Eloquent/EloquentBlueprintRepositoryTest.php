@@ -489,3 +489,49 @@ it('preserves the current revision when saving a new draft revision', function (
     expect($reconstituted->revision($revision2->id())->isFrozen())
         ->toBeFalse();
 });
+
+it('round trips the blueprint lifecycle status', function () {
+    $blueprint = \App\Domain\Blueprint\Entities\Blueprint::create(
+        canonicalName: new \App\Domain\Blueprint\ValueObjects\CanonicalName(
+            'assessment-rubric-core'
+        ),
+        namespace: new \App\Domain\Blueprint\ValueObjects\BlueprintNamespace(
+            'skillvlt.edu.assessment'
+        ),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision = $blueprint->addRevision(
+        number: new \App\Domain\Blueprint\ValueObjects\RevisionNumber('1.0.0'),
+        behaviorDigest: new \App\Domain\Blueprint\ValueObjects\BehaviorDigest(
+            'sha256:' . str_repeat('a', 64),
+        ),
+        contracts: [],
+        logic: [
+            'steps' => ['validate'],
+        ],
+        outputs: [],
+        policies: [],
+    );
+
+    $revision->freeze();
+
+    $blueprint->promoteRevision($revision->id());
+    $blueprint->activate();
+
+    $repository = new EloquentBlueprintRepository();
+
+    $repository->save($blueprint);
+
+    $reconstituted = $repository->find($blueprint->id());
+
+    expect($reconstituted)
+        ->not->toBeNull();
+
+    expect($reconstituted->lifecycleStatus())
+        ->toBe(\App\Domain\Blueprint\Enums\LifecycleStatus::ACTIVE);
+});

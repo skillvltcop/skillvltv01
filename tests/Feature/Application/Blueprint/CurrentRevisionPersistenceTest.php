@@ -4,6 +4,7 @@ use App\Application\Blueprint\Commands\AddBlueprintRevision;
 use App\Application\Blueprint\Commands\CreateBlueprint;
 use App\Application\Blueprint\Commands\FreezeBlueprintRevision;
 use App\Application\Blueprint\Commands\PromoteBlueprintRevision;
+use App\Application\Behavior\BehaviorContractValidator;
 use App\Domain\Blueprint\Repositories\BlueprintRepository;
 use App\Domain\Blueprint\ValueObjects\BlueprintId;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -25,7 +26,10 @@ it('keeps the current revision unchanged when a new revision is added', function
         metadata: [],
     );
 
-    $addRevision = new AddBlueprintRevision($repository);
+    $addRevision = new AddBlueprintRevision(
+        repository: $repository,
+        behaviorContractValidator: new BehaviorContractValidator(),
+    );
 
     $firstRevision = $addRevision->handle(
         blueprintId: (string) $blueprint->id(),
@@ -35,9 +39,18 @@ it('keeps the current revision unchanged when a new revision is added', function
         contracts: [
             'input' => ['type' => 'object'],
         ],
-        logic: [
-            'steps' => ['validate'],
+    logic: [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'return',
+                'data' => [
+                    'status' => 'ok',
+                ],
+            ],
         ],
+    ],
         outputs: [
             'type' => 'assessment-result',
         ],
@@ -69,7 +82,16 @@ it('keeps the current revision unchanged when a new revision is added', function
             'input' => ['type' => 'object'],
         ],
         logic: [
-            'steps' => ['validate', 'score'],
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'status' => 'ok',
+                    ],
+                ],
+            ],
         ],
         outputs: [
             'type' => 'assessment-result',

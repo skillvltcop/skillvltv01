@@ -5,7 +5,10 @@ use App\Application\Blueprint\Commands\CreateBlueprint;
 use App\Application\Blueprint\Commands\FreezeBlueprintRevision;
 use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Application\Behavior\BehaviorContractValidator;
 use Tests\TestCase;
+use App\Models\User;
+
 
 uses(
     TestCase::class,
@@ -14,6 +17,8 @@ uses(
 
 it('retrieves a blueprint revision through the HTTP API', function () {
     $repository = new EloquentBlueprintRepository();
+
+    $user = User::factory()->create();
 
     $blueprint = (new CreateBlueprint($repository))->handle(
         canonicalName: 'assessment-rubric-revision-show',
@@ -25,7 +30,10 @@ it('retrieves a blueprint revision through the HTTP API', function () {
         metadata: [],
     );
 
-    $revision = (new AddBlueprintRevision($repository))->handle(
+    $revision = (new AddBlueprintRevision(
+    repository: $repository,
+    behaviorContractValidator: new BehaviorContractValidator(),
+))->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
         behaviorDigest:
@@ -39,9 +47,15 @@ it('retrieves a blueprint revision through the HTTP API', function () {
             ],
         ],
         logic: [
+            'type' => 'steps',
+            'version' => 1,
             'steps' => [
-                'validate',
-                'score',
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'ok',
+                    ],
+                ],
             ],
         ],
         outputs: [
@@ -52,9 +66,11 @@ it('retrieves a blueprint revision through the HTTP API', function () {
         ],
     );
 
-    $response = $this->getJson(
-        "/api/blueprints/{$blueprint->id()}/revisions/{$revision->id()}",
-    );
+    $response = $this
+        ->actingAs($user)
+        ->getJson(
+            "/api/blueprints/{$blueprint->id()}/revisions/{$revision->id()}",
+        );
 
     $response->assertSuccessful();
 
@@ -107,13 +123,23 @@ it('retrieves a blueprint revision through the HTTP API', function () {
     );
 
     $response->assertJsonPath(
-        'logic.steps.0',
-        'validate',
+        'logic.type',
+        'steps',
     );
 
     $response->assertJsonPath(
-        'logic.steps.1',
-        'score',
+        'logic.version',
+        1,
+    );
+
+    $response->assertJsonPath(
+        'logic.steps.0.type',
+        'return',
+    );
+
+    $response->assertJsonPath(
+        'logic.steps.0.data.result',
+        'ok',
     );
 
     $response->assertJsonPath(
@@ -135,6 +161,8 @@ it('retrieves a blueprint revision through the HTTP API', function () {
 it('retrieves a frozen blueprint revision through the HTTP API', function () {
     $repository = new EloquentBlueprintRepository();
 
+    $user = User::factory()->create();
+
     $blueprint = (new CreateBlueprint($repository))->handle(
         canonicalName: 'assessment-rubric-frozen-revision',
         namespace: 'skillvlt.edu.assessment',
@@ -145,7 +173,10 @@ it('retrieves a frozen blueprint revision through the HTTP API', function () {
         metadata: [],
     );
 
-    $revision = (new AddBlueprintRevision($repository))->handle(
+    $revision = (new AddBlueprintRevision(
+    repository: $repository,
+    behaviorContractValidator: new BehaviorContractValidator(),
+))->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
         behaviorDigest:
@@ -156,8 +187,15 @@ it('retrieves a frozen blueprint revision through the HTTP API', function () {
             ],
         ],
         logic: [
+            'type' => 'steps',
+            'version' => 1,
             'steps' => [
-                'validate',
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'ok',
+                    ],
+                ],
             ],
         ],
         outputs: [
@@ -173,9 +211,11 @@ it('retrieves a frozen blueprint revision through the HTTP API', function () {
         revisionId: (string) $revision->id(),
     );
 
-    $response = $this->getJson(
-        "/api/blueprints/{$blueprint->id()}/revisions/{$revision->id()}",
-    );
+    $response = $this
+        ->actingAs($user)
+        ->getJson(
+            "/api/blueprints/{$blueprint->id()}/revisions/{$revision->id()}",
+        );
 
     $response->assertSuccessful();
 
@@ -203,6 +243,8 @@ it('retrieves a frozen blueprint revision through the HTTP API', function () {
 it('returns the parent revision id for a subsequent revision', function () {
     $repository = new EloquentBlueprintRepository();
 
+    $user = User::factory()->create();
+
     $blueprint = (new CreateBlueprint($repository))->handle(
         canonicalName: 'assessment-rubric-parent-revision',
         namespace: 'skillvlt.edu.assessment',
@@ -213,7 +255,10 @@ it('returns the parent revision id for a subsequent revision', function () {
         metadata: [],
     );
 
-    $firstRevision = (new AddBlueprintRevision($repository))->handle(
+    $firstRevision = (new AddBlueprintRevision(
+    repository: $repository,
+    behaviorContractValidator: new BehaviorContractValidator(),
+))->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
         behaviorDigest:
@@ -224,8 +269,15 @@ it('returns the parent revision id for a subsequent revision', function () {
             ],
         ],
         logic: [
+            'type' => 'steps',
+            'version' => 1,
             'steps' => [
-                'validate',
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'ok',
+                    ],
+                ],
             ],
         ],
         outputs: [
@@ -236,7 +288,10 @@ it('returns the parent revision id for a subsequent revision', function () {
         ],
     );
 
-    $secondRevision = (new AddBlueprintRevision($repository))->handle(
+    $secondRevision = (new AddBlueprintRevision(
+    repository: $repository,
+    behaviorContractValidator: new BehaviorContractValidator(),
+))->handle(
         blueprintId: (string) $blueprint->id(),
         number: '2.0.0',
         behaviorDigest:
@@ -247,9 +302,15 @@ it('returns the parent revision id for a subsequent revision', function () {
             ],
         ],
         logic: [
+            'type' => 'steps',
+            'version' => 1,
             'steps' => [
-                'validate',
-                'score',
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'ok',
+                    ],
+                ],
             ],
         ],
         outputs: [
@@ -260,9 +321,11 @@ it('returns the parent revision id for a subsequent revision', function () {
         ],
     );
 
-    $response = $this->getJson(
-        "/api/blueprints/{$blueprint->id()}/revisions/{$secondRevision->id()}",
-    );
+    $response = $this
+        ->actingAs($user)
+        ->getJson(
+            "/api/blueprints/{$blueprint->id()}/revisions/{$secondRevision->id()}",
+        );
 
     $response->assertSuccessful();
 
@@ -283,14 +346,19 @@ it('returns the parent revision id for a subsequent revision', function () {
 });
 
 it('returns 404 when the blueprint does not exist', function () {
-    $repository = new EloquentBlueprintRepository();
+    $user = User::factory()->create();
 
-    $blueprintId = \App\Domain\Blueprint\ValueObjects\BlueprintId::generate();
-    $revisionId = \App\Domain\Blueprint\ValueObjects\RevisionId::generate();
+    $blueprintId =
+        \App\Domain\Blueprint\ValueObjects\BlueprintId::generate();
 
-    $response = $this->getJson(
-        "/api/blueprints/{$blueprintId}/revisions/{$revisionId}",
-    );
+    $revisionId =
+        \App\Domain\Blueprint\ValueObjects\RevisionId::generate();
+
+    $response = $this
+        ->actingAs($user)
+        ->getJson(
+            "/api/blueprints/{$blueprintId}/revisions/{$revisionId}",
+        );
 
     $response->assertNotFound();
 
@@ -300,6 +368,8 @@ it('returns 404 when the blueprint does not exist', function () {
 });
 
 it('returns 404 when the revision does not exist', function () {
+    $user = User::factory()->create();
+
     $repository = new EloquentBlueprintRepository();
 
     $blueprint = (new CreateBlueprint($repository))->handle(
@@ -315,13 +385,130 @@ it('returns 404 when the revision does not exist', function () {
     $missingRevisionId =
         \App\Domain\Blueprint\ValueObjects\RevisionId::generate();
 
-    $response = $this->getJson(
-        "/api/blueprints/{$blueprint->id()}/revisions/{$missingRevisionId}",
-    );
+    $response = $this
+        ->actingAs($user)
+        ->getJson(
+            "/api/blueprints/{$blueprint->id()}/revisions/{$missingRevisionId}",
+        );
 
     $response->assertNotFound();
 
     $response->assertJson([
         'message' => 'Blueprint revision not found.',
     ]);
+});
+
+it('forbids a user from accessing another user blueprint revision', function () {
+    $repository = new EloquentBlueprintRepository();
+
+    $owner = User::factory()->create();
+    $otherUser = User::factory()->create();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'private-revision',
+        namespace: 'skillvlt.edu.private',
+        ownership: [
+            'type' => 'user',
+            'id' => (string) $owner->id,
+        ],
+        metadata: [],
+    );
+
+    $revision = (new AddBlueprintRevision(
+    repository: $repository,
+    behaviorContractValidator: new BehaviorContractValidator(),
+))->handle(
+        blueprintId: (string) $blueprint->id(),
+        number: '1.0.0',
+        behaviorDigest:
+            'sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'ok',
+                    ],
+                ],
+            ],
+        ],
+        outputs: [
+            'type' => 'assessment-result',
+        ],
+        policies: [
+            'visibility' => 'private',
+        ],
+    );
+
+    $response = $this
+        ->actingAs($otherUser)
+        ->getJson(
+            "/api/blueprints/{$blueprint->id()}/revisions/{$revision->id()}",
+        );
+
+    $response
+        ->assertForbidden()
+        ->assertJson([
+            'message' => 'Forbidden.',
+        ]);
+});
+
+it('rejects unauthenticated blueprint revision access', function () {
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'revision-auth-protected',
+        namespace: 'skillvlt.edu.assessment',
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision = (new AddBlueprintRevision(
+    repository: $repository,
+    behaviorContractValidator: new BehaviorContractValidator(),
+))->handle(
+        blueprintId: (string) $blueprint->id(),
+        number: '1.0.0',
+        behaviorDigest:
+            'sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'ok',
+                    ],
+                ],
+            ],
+        ],
+        outputs: [
+            'type' => 'assessment-result',
+        ],
+        policies: [
+            'visibility' => 'public',
+        ],
+    );
+
+    $response = $this->getJson(
+        "/api/blueprints/{$blueprint->id()}/revisions/{$revision->id()}",
+    );
+
+    $response->assertUnauthorized();
 });

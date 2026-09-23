@@ -285,6 +285,15 @@ final class Blueprint
         ?RevisionId $currentRevisionId,
         array $revisions = [],
     ): self {
+        if (
+            $currentRevisionId !== null
+            && ! array_key_exists((string) $currentRevisionId, $revisions)
+        ) {
+            throw new \DomainException(
+                'Current revision does not belong to the Blueprint.'
+            );
+        }
+
         $blueprint = new self(
             id: $id,
             canonicalName: $canonicalName,
