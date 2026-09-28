@@ -35,6 +35,19 @@ final readonly class RevisionNumber
         return (int) explode('.', $this->value)[2];
     }
 
+    public function isGreaterThan(self $other): bool
+    {
+        return [
+            $this->major(),
+            $this->minor(),
+            $this->patch(),
+        ] > [
+            $other->major(),
+            $other->minor(),
+            $other->patch(),
+        ];
+    }
+
     public function equals(self $other): bool
     {
         return $this->value === $other->value;

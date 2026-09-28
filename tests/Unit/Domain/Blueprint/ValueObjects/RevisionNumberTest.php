@@ -59,3 +59,37 @@ it('compares different revision numbers correctly', function () {
 
     expect($first->equals($second))->toBeFalse();
 });
+
+it('detects a greater revision number', function () {
+    $current = new RevisionNumber('1.2.0');
+    $next = new RevisionNumber('1.3.0');
+
+    expect($next->isGreaterThan($current))->toBeTrue();
+});
+
+it('compares semantic version components numerically', function () {
+    $current = new RevisionNumber('1.2.0');
+    $next = new RevisionNumber('1.10.0');
+
+    expect($next->isGreaterThan($current))->toBeTrue();
+});
+
+it('detects a greater major revision', function () {
+    $current = new RevisionNumber('1.9.9');
+    $next = new RevisionNumber('2.0.0');
+
+    expect($next->isGreaterThan($current))->toBeTrue();
+});
+
+it('rejects equal and lower revision numbers', function () {
+    $current = new RevisionNumber('1.2.0');
+
+    expect($current->isGreaterThan(new RevisionNumber('1.2.0')))
+        ->toBeFalse();
+
+    expect($current->isGreaterThan(new RevisionNumber('1.1.9')))
+        ->toBeTrue();
+
+    expect($current->isGreaterThan(new RevisionNumber('1.3.0')))
+        ->toBeFalse();
+});

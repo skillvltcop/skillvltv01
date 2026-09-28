@@ -127,6 +127,17 @@ final class Blueprint
             }
         }
 
+        $latestRevision = $this->latestRevision();
+
+        if (
+            $latestRevision !== null
+            && ! $number->isGreaterThan($latestRevision->number())
+        ) {
+            throw new \DomainException(
+                'A new Revision number must be greater than the latest Revision number.'
+            );
+        }
+
         $parentRevisionId = $this->latestRevisionId();
 
         $revision = BlueprintRevision::create(

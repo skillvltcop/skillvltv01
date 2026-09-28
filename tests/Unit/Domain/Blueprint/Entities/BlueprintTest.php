@@ -883,3 +883,28 @@ it('cannot add two revisions with the same revision number', function () {
         policies: makePolicies(),
     ))->toThrow(DomainException::class);
 });
+
+it('cannot add a revision with a lower revision number than the latest revision', function () {
+    $blueprint = makeBlueprint();
+
+    $blueprint->addRevision(
+        number: new RevisionNumber('1.1.0'),
+        behaviorDigest: makeDigest(),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+    );
+
+    expect(fn () => $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('b', 64),
+        ),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+    ))->toThrow(DomainException::class);
+});
+
