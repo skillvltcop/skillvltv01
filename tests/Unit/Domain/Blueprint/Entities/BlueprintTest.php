@@ -775,3 +775,111 @@ it('rejects a current revision that does not belong to the blueprint', function 
         'Current revision does not belong to the Blueprint.'
     );
 });
+
+it('cannot add a revision to a sunset blueprint', function () {
+    $blueprint = Blueprint::create(
+        canonicalName: new CanonicalName('assessment-rubric-sunset'),
+        namespace: new BlueprintNamespace('skillvlt.edu.assessment'),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision = $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: makeDigest(),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+    );
+
+    $revision->freeze();
+
+    $blueprint->promoteRevision($revision->id());
+    $blueprint->activate();
+    $blueprint->sunset();
+
+    expect(fn () => $blueprint->addRevision(
+        number: new RevisionNumber('1.1.0'),
+        behaviorDigest: makeDigest(),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+    ))->toThrow(DomainException::class);
+});
+
+it('allows a deprecated blueprint to receive a new revision', function () {
+    $blueprint = Blueprint::create(
+        canonicalName: new CanonicalName('assessment-rubric-deprecated-evolution'),
+        namespace: new BlueprintNamespace('skillvlt.edu.assessment'),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision1 = $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: makeDigest(),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+    );
+
+    $revision1->freeze();
+
+    $blueprint->promoteRevision($revision1->id());
+    $blueprint->activate();
+    $blueprint->deprecate();
+
+    $revision2 = $blueprint->addRevision(
+        number: new RevisionNumber('1.1.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('b', 64),
+        ),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+    );
+
+    expect($revision2->parentRevisionId())
+        ->not->toBeNull()
+        ->and((string) $revision2->parentRevisionId())
+        ->toBe((string) $revision1->id());
+
+    expect($blueprint->currentRevisionId())
+        ->not->toBeNull()
+        ->and((string) $blueprint->currentRevisionId())
+        ->toBe((string) $revision1->id());
+});
+
+it('cannot add two revisions with the same revision number', function () {
+    $blueprint = makeBlueprint();
+
+    $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: makeDigest(),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+    );
+
+    expect(fn () => $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('b', 64),
+        ),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+    ))->toThrow(DomainException::class);
+});

@@ -113,6 +113,20 @@ final class Blueprint
         array $outputs,
         array $policies,
     ): BlueprintRevision {
+        if ($this->lifecycleStatus === LifecycleStatus::SUNSET) {
+            throw new \DomainException(
+                'A sunset Blueprint cannot receive new Revisions.'
+            );
+        }
+
+        foreach ($this->revisions as $existingRevision) {
+            if ((string) $existingRevision->number() === (string) $number) {
+                throw new \DomainException(
+                    'A Blueprint cannot have duplicate Revision numbers.'
+                );
+            }
+        }
+
         $parentRevisionId = $this->latestRevisionId();
 
         $revision = BlueprintRevision::create(
