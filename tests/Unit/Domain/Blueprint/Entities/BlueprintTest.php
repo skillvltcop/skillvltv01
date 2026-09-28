@@ -478,7 +478,7 @@ it('reconstitutes a blueprint with its revision history and current revision', f
         logic: [],
         outputs: [],
         policies: [],
-        frozen: false,
+        frozen: true,
     );
 
     $blueprint = Blueprint::reconstitute(
@@ -906,5 +906,247 @@ it('cannot add a revision with a lower revision number than the latest revision'
         outputs: makeOutputs(),
         policies: makePolicies(),
     ))->toThrow(DomainException::class);
+});
+
+it('determines the latest revision by semantic revision number', function () {
+    $revision1 = BlueprintRevision::reconstitute(
+        id: RevisionId::generate(),
+        number: new RevisionNumber('1.0.0'),
+        parentRevisionId: null,
+        behaviorDigest: makeDigest(),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+        frozen: true,
+    );
+
+    $revision2 = BlueprintRevision::reconstitute(
+        id: RevisionId::generate(),
+        number: new RevisionNumber('1.10.0'),
+        parentRevisionId: $revision1->id(),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('b', 64),
+        ),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+        frozen: true,
+    );
+
+    $blueprint = Blueprint::reconstitute(
+        id: BlueprintId::generate(),
+        canonicalName: new CanonicalName(
+            'assessment-rubric-latest-revision'
+        ),
+        namespace: new BlueprintNamespace(
+            'skillvlt.edu.assessment'
+        ),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+        lifecycleStatus: LifecycleStatus::ACTIVE,
+        currentRevisionId: $revision2->id(),
+        revisions: [
+            (string) $revision2->id() => $revision2,
+            (string) $revision1->id() => $revision1,
+        ],
+    );
+
+    expect($blueprint->latestRevision())
+        ->toBe($revision2);
+});
+
+it('rejects an unfrozen current revision during reconstitution', function () {
+    $revisionId = RevisionId::generate();
+
+    $revision = BlueprintRevision::reconstitute(
+        id: $revisionId,
+        number: new RevisionNumber('1.0.0'),
+        parentRevisionId: null,
+        behaviorDigest: makeDigest(),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+        frozen: false,
+    );
+
+    expect(fn () => Blueprint::reconstitute(
+        id: BlueprintId::generate(),
+        canonicalName: new CanonicalName(
+            'assessment-rubric-invalid-current'
+        ),
+        namespace: new BlueprintNamespace(
+            'skillvlt.edu.assessment'
+        ),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+        lifecycleStatus: LifecycleStatus::ACTIVE,
+        currentRevisionId: $revisionId,
+        revisions: [
+            (string) $revisionId => $revision,
+        ],
+    ))->toThrow(
+        DomainException::class,
+        'Current revision must be frozen.'
+    );
+});
+
+
+it('rejects a revision whose parent does not belong to the blueprint', function () {
+    $foreignParentId = RevisionId::generate();
+    $revisionId = RevisionId::generate();
+
+    $revision = BlueprintRevision::reconstitute(
+        id: $revisionId,
+        number: new RevisionNumber('1.1.0'),
+        parentRevisionId: $foreignParentId,
+        behaviorDigest: makeDigest(),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+        frozen: true,
+    );
+
+    expect(fn () => Blueprint::reconstitute(
+        id: BlueprintId::generate(),
+        canonicalName: new CanonicalName(
+            'assessment-rubric-invalid-parent'
+        ),
+        namespace: new BlueprintNamespace(
+            'skillvlt.edu.assessment'
+        ),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+        lifecycleStatus: LifecycleStatus::DRAFT,
+        currentRevisionId: null,
+        revisions: [
+            (string) $revisionId => $revision,
+        ],
+    ))->toThrow(
+        DomainException::class,
+        'Revision parent does not belong to the Blueprint.'
+    );
+});
+
+it('rejects a revision whose parent has a greater revision number', function () {
+    $parentRevisionId = RevisionId::generate();
+    $childRevisionId = RevisionId::generate();
+
+    $parentRevision = BlueprintRevision::reconstitute(
+        id: $parentRevisionId,
+        number: new RevisionNumber('2.0.0'),
+        parentRevisionId: null,
+        behaviorDigest: makeDigest(),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+        frozen: true,
+    );
+
+    $childRevision = BlueprintRevision::reconstitute(
+        id: $childRevisionId,
+        number: new RevisionNumber('1.0.0'),
+        parentRevisionId: $parentRevisionId,
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('b', 64),
+        ),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+        frozen: true,
+    );
+
+    expect(fn () => Blueprint::reconstitute(
+        id: BlueprintId::generate(),
+        canonicalName: new CanonicalName(
+            'assessment-rubric-invalid-parent-order'
+        ),
+        namespace: new BlueprintNamespace(
+            'skillvlt.edu.assessment'
+        ),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+        lifecycleStatus: LifecycleStatus::DRAFT,
+        currentRevisionId: null,
+        revisions: [
+            (string) $parentRevisionId => $parentRevision,
+            (string) $childRevisionId => $childRevision,
+        ],
+    ))->toThrow(
+        DomainException::class,
+        'Revision parent must be older than the Revision.'
+    );
+});
+
+it('rejects revision history with multiple root revisions', function () {
+    $revisionOneId = RevisionId::generate();
+    $revisionTwoId = RevisionId::generate();
+
+    $revisionOne = BlueprintRevision::reconstitute(
+        id: $revisionOneId,
+        number: new RevisionNumber('1.0.0'),
+        parentRevisionId: null,
+        behaviorDigest: makeDigest(),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+        frozen: true,
+    );
+
+    $revisionTwo = BlueprintRevision::reconstitute(
+        id: $revisionTwoId,
+        number: new RevisionNumber('1.1.0'),
+        parentRevisionId: null,
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('b', 64),
+        ),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+        frozen: true,
+    );
+
+    expect(fn () => Blueprint::reconstitute(
+        id: BlueprintId::generate(),
+        canonicalName: new CanonicalName(
+            'assessment-rubric-multiple-roots'
+        ),
+        namespace: new BlueprintNamespace(
+            'skillvlt.edu.assessment'
+        ),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+        lifecycleStatus: LifecycleStatus::DRAFT,
+        currentRevisionId: null,
+        revisions: [
+            (string) $revisionOneId => $revisionOne,
+            (string) $revisionTwoId => $revisionTwo,
+        ],
+    ))->toThrow(
+        DomainException::class,
+        'Revision history must contain exactly one root Revision.'
+    );
 });
 

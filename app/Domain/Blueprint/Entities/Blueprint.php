@@ -174,9 +174,18 @@ final class Blueprint
             return null;
         }
 
-        $revisions = array_values($this->revisions);
+        $latest = null;
 
-        return $revisions[array_key_last($revisions)];
+        foreach ($this->revisions as $revision) {
+            if (
+                $latest === null
+                || $revision->number()->isGreaterThan($latest->number())
+            ) {
+                $latest = $revision;
+            }
+        }
+
+        return $latest;
     }
 
     private function latestRevisionId(): ?RevisionId
@@ -310,13 +319,56 @@ final class Blueprint
         ?RevisionId $currentRevisionId,
         array $revisions = [],
     ): self {
-        if (
-            $currentRevisionId !== null
-            && ! array_key_exists((string) $currentRevisionId, $revisions)
-        ) {
-            throw new \DomainException(
-                'Current revision does not belong to the Blueprint.'
-            );
+        if ($currentRevisionId !== null) {
+            if (! array_key_exists((string) $currentRevisionId, $revisions)) {
+                throw new \DomainException(
+                    'Current revision does not belong to the Blueprint.'
+                );
+            }
+
+            if (! $revisions[(string) $currentRevisionId]->isFrozen()) {
+                throw new \DomainException(
+                    'Current revision must be frozen.'
+                );
+            }
+        }
+
+        foreach ($revisions as $revision) {
+            $parentRevisionId = $revision->parentRevisionId();
+
+            if ($parentRevisionId === null) {
+                continue;
+            }
+
+            if (! array_key_exists((string) $parentRevisionId, $revisions)) {
+                throw new \DomainException(
+                    'Revision parent does not belong to the Blueprint.'
+                );
+            }
+
+            $parentRevision = $revisions[(string) $parentRevisionId];
+
+            if (! $revision->number()->isGreaterThan($parentRevision->number())) {
+                throw new \DomainException(
+                    'Revision parent must be older than the Revision.'
+                );
+            }
+        }
+
+        if ($revisions !== []) {
+            $rootCount = 0;
+
+            foreach ($revisions as $revision) {
+                if ($revision->parentRevisionId() === null) {
+                    $rootCount++;
+                }
+            }
+
+            if ($rootCount !== 1) {
+                throw new \DomainException(
+                    'Revision history must contain exactly one root Revision.'
+                );
+            }
         }
 
         $blueprint = new self(

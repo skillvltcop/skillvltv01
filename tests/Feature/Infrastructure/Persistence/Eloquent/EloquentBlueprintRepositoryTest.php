@@ -257,6 +257,7 @@ it('reconstitutes the current revision from persistence', function () {
         'outputs' => ['type' => 'assessment-result'],
         'policies' => ['visibility' => 'public'],
         'lifecycle_status' => 'draft',
+        'frozen' => true,
     ]);
 
     $model->update([
@@ -534,4 +535,65 @@ it('round trips the blueprint lifecycle status', function () {
 
     expect($reconstituted->lifecycleStatus())
         ->toBe(\App\Domain\Blueprint\Enums\LifecycleStatus::ACTIVE);
+});
+
+it('rejects a parent revision belonging to another blueprint', function () {
+    $firstBlueprint = \App\Domain\Blueprint\Entities\Blueprint::create(
+        canonicalName: new \App\Domain\Blueprint\ValueObjects\CanonicalName(
+            'assessment-rubric-first'
+        ),
+        namespace: new \App\Domain\Blueprint\ValueObjects\BlueprintNamespace(
+            'skillvlt.edu.assessment'
+        ),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $secondBlueprint = \App\Domain\Blueprint\Entities\Blueprint::create(
+        canonicalName: new \App\Domain\Blueprint\ValueObjects\CanonicalName(
+            'assessment-rubric-second'
+        ),
+        namespace: new \App\Domain\Blueprint\ValueObjects\BlueprintNamespace(
+            'skillvlt.edu.assessment'
+        ),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $parentRevision = $firstBlueprint->addRevision(
+        number: new \App\Domain\Blueprint\ValueObjects\RevisionNumber('1.0.0'),
+        behaviorDigest: new \App\Domain\Blueprint\ValueObjects\BehaviorDigest(
+            'sha256:' . str_repeat('a', 64),
+        ),
+        contracts: [],
+        logic: [],
+        outputs: [],
+        policies: [],
+    );
+
+    $repository = new EloquentBlueprintRepository();
+
+    $repository->save($firstBlueprint);
+    $repository->save($secondBlueprint);
+
+    expect(fn () => \Illuminate\Support\Facades\DB::table('blueprint_revisions')->insert([
+        'id' => (string) \App\Domain\Blueprint\ValueObjects\RevisionId::generate(),
+        'blueprint_id' => (string) $secondBlueprint->id(),
+        'revision_number' => '1.1.0',
+        'parent_revision_id' => (string) $parentRevision->id(),
+        'behavior_digest' => 'sha256:' . str_repeat('b', 64),
+        'contracts' => json_encode([]),
+        'logic' => json_encode([]),
+        'outputs' => json_encode([]),
+        'policies' => json_encode([]),
+        'frozen' => false,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]))->toThrow(\Illuminate\Database\QueryException::class);
 });
