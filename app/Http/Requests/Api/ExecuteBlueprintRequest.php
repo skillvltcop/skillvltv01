@@ -25,11 +25,9 @@ final class ExecuteBlueprintRequest extends FormRequest
                 'ulid',
             ],
             'input' => [
-                'nullable',
                 'array',
             ],
             'context' => [
-                'nullable',
                 'array',
             ],
         ];

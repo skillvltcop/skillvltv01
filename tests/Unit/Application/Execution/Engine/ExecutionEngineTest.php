@@ -489,3 +489,140 @@ it('cannot execute a current frozen revision of an inactive blueprint', function
         'Only an active Blueprint can be executed.'
     );
 });
+
+it('cannot execute an unfrozen revision', function () {
+    $blueprint = Blueprint::create(
+        canonicalName: new CanonicalName('assessment-rubric-core'),
+        namespace: new BlueprintNamespace('skillvlt.edu.assessment'),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision = $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('a', 64),
+        ),
+        contracts: [],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'ok',
+                    ],
+                ],
+            ],
+        ],
+        outputs: [],
+        policies: [],
+    );
+
+    $runner = Mockery::mock(BehaviorRunnerContract::class);
+    $runner->shouldNotReceive('run');
+
+    $engine = new \App\Application\Execution\Engine\ExecutionEngine(
+        runner: $runner,
+    );
+
+    expect(fn () => $engine->execute(
+        blueprint: $blueprint,
+        revisionId: $revision->id(),
+        input: [],
+        context: [],
+    ))->toThrow(
+        DomainException::class,
+        'Only a frozen revision can be executed.'
+    );
+});
+
+it('keeps the executed revision identity after the blueprint promotes a newer revision', function () {
+    $blueprint = Blueprint::create(
+        canonicalName: new CanonicalName('assessment-rubric-core'),
+        namespace: new BlueprintNamespace('skillvlt.edu.assessment'),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision1 = $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('a', 64),
+        ),
+        contracts: [],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'version' => '1.0.0',
+                    ],
+                ],
+            ],
+        ],
+        outputs: [],
+        policies: [],
+    );
+
+    $revision1->freeze();
+    $blueprint->promoteRevision($revision1->id());
+    $blueprint->activate();
+
+    $runner = new BehaviorRunner(
+        new ValueResolver(),
+    );
+
+    $engine = new \App\Application\Execution\Engine\ExecutionEngine(
+        runner: $runner,
+    );
+
+    $execution = $engine->execute(
+        blueprint: $blueprint,
+        revisionId: $revision1->id(),
+        input: [],
+        context: [],
+    );
+
+    $revision2 = $blueprint->addRevision(
+        number: new RevisionNumber('1.1.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('b', 64),
+        ),
+        contracts: [],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'version' => '1.1.0',
+                    ],
+                ],
+            ],
+        ],
+        outputs: [],
+        policies: [],
+    );
+
+    $revision2->freeze();
+    $blueprint->promoteRevision($revision2->id());
+
+    expect((string) $execution->revisionId())
+        ->toBe((string) $revision1->id());
+
+    expect($execution->output())
+        ->toBe([
+            'version' => '1.0.0',
+        ]);
+});

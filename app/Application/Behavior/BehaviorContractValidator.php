@@ -25,7 +25,7 @@ final class BehaviorContractValidator
 
     private const IDENTIFIER_REGEX = '/^[a-zA-Z_][a-zA-Z0-9_]*$/';
 
-    private const PLACEHOLDER_REGEX = '/{([^{}\s]+)}/';
+    private const PLACEHOLDER_REGEX = '/{([^{}]*)}/';
 
     /**
      * @throws InvalidBehaviorContractException
@@ -303,6 +303,13 @@ final class BehaviorContractValidator
         string $errorKey,
         array &$errors,
     ): void {
+        if (substr_count($text, '{') !== substr_count($text, '}')) {
+            $errors["{$errorKey}.placeholder"] =
+                'Placeholder braces must be balanced.';
+
+            return;
+        }
+
         preg_match_all(
             self::PLACEHOLDER_REGEX,
             $text,

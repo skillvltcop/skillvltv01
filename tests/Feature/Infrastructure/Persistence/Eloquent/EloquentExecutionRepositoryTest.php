@@ -318,3 +318,113 @@ it('persists and retrieves a failed execution with its error', function () {
     expect($found->error())
         ->toBe('Behavior execution failed.');
 });
+
+it('prevents deleting a revision that has executions', function () {
+    $blueprintId = BlueprintId::generate();
+    $revisionId = RevisionId::generate();
+
+    Blueprint::query()->create([
+        'id' => (string) $blueprintId,
+        'canonical_name' => 'assessment-rubric-core',
+        'namespace' => 'skillvlt.edu.assessment',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'draft',
+    ]);
+
+    BlueprintRevision::query()->create([
+        'id' => (string) $revisionId,
+        'blueprint_id' => (string) $blueprintId,
+        'revision_number' => '1.0.0',
+        'parent_revision_id' => null,
+        'behavior_digest' =>
+            'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        'contracts' => [
+            'input' => ['type' => 'object'],
+        ],
+        'logic' => [
+            'steps' => ['validate'],
+        ],
+        'outputs' => [
+            'type' => 'assessment-result',
+        ],
+        'policies' => [
+            'visibility' => 'public',
+        ],
+        'frozen' => true,
+    ]);
+
+    \App\Models\Execution::query()->create([
+        'id' => (string) \App\Domain\Execution\ValueObjects\ExecutionId::generate(),
+        'blueprint_id' => (string) $blueprintId,
+        'revision_id' => (string) $revisionId,
+        'input' => [],
+        'context' => [],
+        'status' => 'completed',
+        'output' => ['result' => 'ok'],
+        'error' => null,
+    ]);
+
+    expect(fn () => BlueprintRevision::query()
+        ->whereKey((string) $revisionId)
+        ->delete())
+        ->toThrow(\Illuminate\Database\QueryException::class);
+});
+
+it('rejects an execution referencing a revision from another blueprint', function () {
+    $blueprintAId = BlueprintId::generate();
+    $revisionAId = RevisionId::generate();
+    $blueprintBId = BlueprintId::generate();
+
+    Blueprint::query()->create([
+        'id' => (string) $blueprintAId,
+        'canonical_name' => 'blueprint-a',
+        'namespace' => 'skillvlt.edu.test',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'draft',
+    ]);
+
+    BlueprintRevision::query()->create([
+        'id' => (string) $revisionAId,
+        'blueprint_id' => (string) $blueprintAId,
+        'revision_number' => '1.0.0',
+        'parent_revision_id' => null,
+        'behavior_digest' =>
+            'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        'contracts' => [
+            'input' => ['type' => 'object'],
+        ],
+        'logic' => [
+            'steps' => ['validate'],
+        ],
+        'outputs' => [
+            'type' => 'assessment-result',
+        ],
+        'policies' => [
+            'visibility' => 'public',
+        ],
+        'frozen' => true,
+    ]);
+
+    Blueprint::query()->create([
+        'id' => (string) $blueprintBId,
+        'canonical_name' => 'blueprint-b',
+        'namespace' => 'skillvlt.edu.test',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'draft',
+    ]);
+
+    $execution = Execution::create(
+        blueprintId: $blueprintBId,
+        revisionId: $revisionAId,
+        input: [],
+        context: [],
+    );
+
+    $repository = new EloquentExecutionRepository();
+
+    expect(fn () => $repository->save($execution))
+        ->toThrow(\Illuminate\Database\QueryException::class);
+});

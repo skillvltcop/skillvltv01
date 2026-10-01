@@ -408,6 +408,20 @@ it('sets the new revision as current revision', function () {
 it('reconstitutes a blueprint without changing its identity', function () {
     $originalId = BlueprintId::generate();
 
+    $revisionId = RevisionId::generate();
+
+    $revision = BlueprintRevision::reconstitute(
+        id: $revisionId,
+        number: new RevisionNumber('1.0.0'),
+        parentRevisionId: null,
+        behaviorDigest: makeDigest(),
+        contracts: [],
+        logic: [],
+        outputs: [],
+        policies: [],
+        frozen: true,
+    );
+
     $blueprint = Blueprint::reconstitute(
         id: $originalId,
         canonicalName: new CanonicalName('assessment-rubric-core'),
@@ -422,7 +436,10 @@ it('reconstitutes a blueprint without changing its identity', function () {
             ],
         ],
         lifecycleStatus: LifecycleStatus::ACTIVE,
-        currentRevisionId: null,
+        currentRevisionId: $revisionId,
+        revisions: [
+            (string) $revisionId => $revision,
+        ],
     );
 
     expect($blueprint->id())
@@ -1150,3 +1167,153 @@ it('rejects revision history with multiple root revisions', function () {
     );
 });
 
+it('cannot promote a revision on a sunset blueprint', function () {
+    $blueprint = Blueprint::create(
+        canonicalName: new CanonicalName('assessment-rubric-sunset-promotion'),
+        namespace: new BlueprintNamespace('skillvlt.edu.assessment'),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision1 = $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: makeDigest(),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+    );
+
+    $revision1->freeze();
+
+    $blueprint->promoteRevision($revision1->id());
+    $blueprint->activate();
+    $blueprint->sunset();
+
+    expect(fn () => $blueprint->promoteRevision($revision1->id()))
+        ->toThrow(
+            DomainException::class,
+            'A sunset Blueprint cannot promote a Revision.'
+        );
+});
+
+it('rejects non-draft lifecycle states without a current revision', function ($status) {
+    expect(fn () => Blueprint::reconstitute(
+        id: BlueprintId::generate(),
+        canonicalName: new CanonicalName(
+            'assessment-rubric-invalid-lifecycle'
+        ),
+        namespace: new BlueprintNamespace(
+            'skillvlt.edu.assessment'
+        ),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+        lifecycleStatus: $status,
+        currentRevisionId: null,
+        revisions: [],
+    ))->toThrow(
+        DomainException::class,
+        'A non-draft Blueprint must have a current Revision.'
+    );
+})->with([
+    LifecycleStatus::ACTIVE,
+    LifecycleStatus::DEPRECATED,
+    LifecycleStatus::SUNSET,
+]);
+
+it('rejects branching revision history', function () {
+    $rootRevisionId = RevisionId::generate();
+    $childOneRevisionId = RevisionId::generate();
+    $childTwoRevisionId = RevisionId::generate();
+
+    $rootRevision = BlueprintRevision::reconstitute(
+        id: $rootRevisionId,
+        number: new RevisionNumber('1.0.0'),
+        parentRevisionId: null,
+        behaviorDigest: makeDigest(),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+        frozen: true,
+    );
+
+    $childOne = BlueprintRevision::reconstitute(
+        id: $childOneRevisionId,
+        number: new RevisionNumber('1.1.0'),
+        parentRevisionId: $rootRevisionId,
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('b', 64),
+        ),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+        frozen: true,
+    );
+
+    $childTwo = BlueprintRevision::reconstitute(
+        id: $childTwoRevisionId,
+        number: new RevisionNumber('1.2.0'),
+        parentRevisionId: $rootRevisionId,
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('c', 64),
+        ),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+        frozen: true,
+    );
+
+    expect(fn () => Blueprint::reconstitute(
+        id: BlueprintId::generate(),
+        canonicalName: new CanonicalName(
+            'assessment-rubric-branching-history'
+        ),
+        namespace: new BlueprintNamespace(
+            'skillvlt.edu.assessment'
+        ),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+        lifecycleStatus: LifecycleStatus::DRAFT,
+        currentRevisionId: $childTwoRevisionId,
+        revisions: [
+            (string) $rootRevisionId => $rootRevision,
+            (string) $childOneRevisionId => $childOne,
+            (string) $childTwoRevisionId => $childTwo,
+        ],
+    ))->toThrow(
+        DomainException::class,
+        'Revision history must be linear.'
+    );
+});
+
+it('cannot sunset a draft blueprint', function () {
+    $blueprint = makeBlueprint();
+
+    expect(fn () => $blueprint->sunset())
+        ->toThrow(DomainException::class);
+});
+
+it('does not expose mutable metadata state', function () {
+    $blueprint = makeBlueprint();
+
+    $originalMetadata = $blueprint->metadata();
+    $metadata = $blueprint->metadata();
+
+    $metadata['taxonomy']['domain'] = 'modified';
+    $metadata['taxonomy']['tags'][] = 'modified';
+
+    expect($blueprint->metadata())
+        ->toBe($originalMetadata);
+});

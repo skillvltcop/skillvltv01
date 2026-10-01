@@ -405,3 +405,33 @@ test('it rejects return data that is not an array', function () {
             ->toHaveKey('steps.2.data');
     }
 });
+
+test('it rejects placeholders containing whitespace', function () {
+    $contract = validBehaviorContract();
+
+    $contract['steps'][1]['template'] =
+        'Value: {input.student name}';
+
+    expect(fn () => $this->validator->validate($contract))
+        ->toThrow(InvalidBehaviorContractException::class);
+});
+
+test('it rejects malformed placeholders with unmatched braces', function () {
+    $contract = validBehaviorContract();
+
+    $contract['steps'][1]['template'] =
+        'Value: {input.score';
+
+    expect(fn () => $this->validator->validate($contract))
+        ->toThrow(InvalidBehaviorContractException::class);
+});
+
+test('it rejects empty placeholders', function () {
+    $contract = validBehaviorContract();
+
+    $contract['steps'][1]['template'] =
+        'Value: {}';
+
+    expect(fn () => $this->validator->validate($contract))
+        ->toThrow(InvalidBehaviorContractException::class);
+});

@@ -6,6 +6,7 @@ use App\Models\Blueprint as BlueprintModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use App\Domain\Blueprint\ValueObjects\BlueprintId;
+use App\Models\BlueprintRevision;
 
 uses(RefreshDatabase::class);
 
@@ -597,3 +598,192 @@ it('rejects a parent revision belonging to another blueprint', function () {
         'updated_at' => now(),
     ]))->toThrow(\Illuminate\Database\QueryException::class);
 });
+
+it('rejects duplicate revision numbers for the same blueprint', function () {
+    $blueprint = BlueprintModel::query()->create([
+        'id' => (string) Str::ulid(),
+        'canonical_name' => 'duplicate-revision-number',
+        'namespace' => 'skillvlt.edu.test',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'draft',
+    ]);
+
+    $blueprint->revisions()->create([
+        'id' => (string) Str::ulid(),
+        'revision_number' => '1.0.0',
+        'parent_revision_id' => null,
+        'behavior_digest' => 'sha256:' . str_repeat('a', 64),
+        'contracts' => [],
+        'logic' => [],
+        'outputs' => [],
+        'policies' => [],
+        'frozen' => false,
+    ]);
+
+    expect(fn () => $blueprint->revisions()->create([
+        'id' => (string) Str::ulid(),
+        'revision_number' => '1.0.0',
+        'parent_revision_id' => null,
+        'behavior_digest' => 'sha256:' . str_repeat('b', 64),
+        'contracts' => [],
+        'logic' => [],
+        'outputs' => [],
+        'policies' => [],
+        'frozen' => false,
+    ]))->toThrow(
+        \Illuminate\Database\QueryException::class
+    );
+});
+
+it('rejects a current revision belonging to another blueprint', function () {
+    $blueprintA = BlueprintModel::query()->create([
+        'id' => (string) Str::ulid(),
+        'canonical_name' => 'blueprint-a',
+        'namespace' => 'skillvlt.edu.test',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'draft',
+    ]);
+
+    $revisionA = $blueprintA->revisions()->create([
+        'id' => (string) Str::ulid(),
+        'revision_number' => '1.0.0',
+        'parent_revision_id' => null,
+        'behavior_digest' => 'sha256:' . str_repeat('a', 64),
+        'contracts' => [],
+        'logic' => [],
+        'outputs' => [],
+        'policies' => [],
+        'frozen' => true,
+    ]);
+
+    $blueprintB = BlueprintModel::query()->create([
+        'id' => (string) Str::ulid(),
+        'canonical_name' => 'blueprint-b',
+        'namespace' => 'skillvlt.edu.test',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'draft',
+    ]);
+
+    expect(fn () => $blueprintB->update([
+        'current_revision_id' => $revisionA->id,
+    ]))->toThrow(
+        \Illuminate\Database\QueryException::class
+    );
+});
+
+it('rejects deleting the current revision', function () {
+    $blueprint = BlueprintModel::query()->create([
+        'id' => (string) Str::ulid(),
+        'canonical_name' => 'current-revision-protection',
+        'namespace' => 'skillvlt.edu.test',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'draft',
+    ]);
+
+    $revision = $blueprint->revisions()->create([
+        'id' => (string) Str::ulid(),
+        'revision_number' => '1.0.0',
+        'parent_revision_id' => null,
+        'behavior_digest' => 'sha256:' . str_repeat('a', 64),
+        'contracts' => [],
+        'logic' => [],
+        'outputs' => [],
+        'policies' => [],
+        'frozen' => true,
+    ]);
+
+    $blueprint->update([
+        'current_revision_id' => $revision->id,
+    ]);
+
+    expect(fn () => $revision->delete())
+        ->toThrow(\Illuminate\Database\QueryException::class);
+});
+
+it('cascades blueprint deletion to its revisions', function () {
+    $blueprint = BlueprintModel::query()->create([
+        'id' => (string) Str::ulid(),
+        'canonical_name' => 'cascade-test',
+        'namespace' => 'skillvlt.edu.test',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'draft',
+    ]);
+
+    $blueprint->revisions()->create([
+        'id' => (string) Str::ulid(),
+        'revision_number' => '1.0.0',
+        'parent_revision_id' => null,
+        'behavior_digest' => 'sha256:' . str_repeat('a', 64),
+        'contracts' => [],
+        'logic' => [],
+        'outputs' => [],
+        'policies' => [],
+        'frozen' => false,
+    ]);
+
+    expect(BlueprintRevision::query()
+        ->where('blueprint_id', $blueprint->id)
+        ->count())->toBe(1);
+
+    $blueprint->delete();
+
+    expect(BlueprintRevision::query()
+        ->where('blueprint_id', $blueprint->id)
+        ->count())->toBe(0);
+});
+
+it('prevents deleting a blueprint that has executions', function () {
+    $blueprint = BlueprintModel::query()->create([
+        'id' => (string) Str::ulid(),
+        'canonical_name' => 'execution-cascade-test',
+        'namespace' => 'skillvlt.edu.test',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'draft',
+    ]);
+
+    $revision = $blueprint->revisions()->create([
+        'id' => (string) Str::ulid(),
+        'revision_number' => '1.0.0',
+        'parent_revision_id' => null,
+        'behavior_digest' => 'sha256:' . str_repeat('a', 64),
+        'contracts' => [],
+        'logic' => [],
+        'outputs' => [],
+        'policies' => [],
+        'frozen' => true,
+    ]);
+
+    \App\Models\Execution::query()->create([
+        'id' => (string) Str::ulid(),
+        'blueprint_id' => $blueprint->id,
+        'revision_id' => $revision->id,
+        'input' => [],
+        'context' => [],
+    ]);
+
+    expect(\App\Models\Execution::query()
+        ->where('blueprint_id', $blueprint->id)
+        ->count())->toBe(1);
+
+    expect(fn () => $blueprint->delete())
+        ->toThrow(\Illuminate\Database\QueryException::class);
+
+    expect(BlueprintModel::query()
+        ->where('id', $blueprint->id)
+        ->exists())->toBeTrue();
+
+    expect(BlueprintRevision::query()
+        ->where('blueprint_id', $blueprint->id)
+        ->exists())->toBeTrue();
+
+    expect(\App\Models\Execution::query()
+        ->where('blueprint_id', $blueprint->id)
+        ->exists())->toBeTrue();
+});
+

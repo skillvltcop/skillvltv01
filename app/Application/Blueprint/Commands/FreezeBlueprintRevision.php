@@ -9,6 +9,8 @@ use App\Domain\Blueprint\Entities\BlueprintRevision;
 use App\Domain\Blueprint\Repositories\BlueprintRepository;
 use App\Domain\Blueprint\ValueObjects\BlueprintId;
 use App\Domain\Blueprint\ValueObjects\RevisionId;
+use App\Domain\Blueprint\Enums\LifecycleStatus;
+
 use RuntimeException;
 
 final class FreezeBlueprintRevision
@@ -39,6 +41,12 @@ final class FreezeBlueprintRevision
         if ($revision === null) {
             throw new RuntimeException(
                 'Blueprint revision not found.'
+            );
+        }
+
+        if ($blueprint->lifecycleStatus() === LifecycleStatus::SUNSET) {
+            throw new \DomainException(
+                'A sunset Blueprint cannot freeze a Revision.'
             );
         }
 

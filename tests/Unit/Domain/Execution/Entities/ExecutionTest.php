@@ -364,3 +364,207 @@ it('rejects an invalid failed execution state', function () {
         'A failed execution must have an error and no output.'
     );
 });
+
+it('cannot complete an already completed execution', function () {
+    $execution = Execution::create(
+        blueprintId: BlueprintId::generate(),
+        revisionId: RevisionId::generate(),
+        input: [],
+        context: [],
+    );
+
+    $execution->start();
+
+    $execution->complete([
+        'result' => 'first',
+    ]);
+
+    expect(fn () => $execution->complete([
+        'result' => 'second',
+    ]))->toThrow(
+        DomainException::class,
+        'Only a running execution can be completed.'
+    );
+
+    expect($execution->status())
+        ->toBe(ExecutionStatus::COMPLETED);
+
+    expect($execution->output())
+        ->toBe([
+            'result' => 'first',
+        ]);
+});
+
+it('cannot start a failed execution', function () {
+    $execution = Execution::create(
+        blueprintId: BlueprintId::generate(),
+        revisionId: RevisionId::generate(),
+        input: [],
+        context: [],
+    );
+
+    $execution->start();
+
+    $execution->fail('Behavior execution failed.');
+
+    expect(fn () => $execution->start())
+        ->toThrow(
+            DomainException::class,
+            'Only a pending execution can be started.'
+        );
+
+    expect($execution->status())
+        ->toBe(ExecutionStatus::FAILED);
+});
+
+it('copies output when completing an execution', function () {
+    $execution = Execution::create(
+        blueprintId: BlueprintId::generate(),
+        revisionId: RevisionId::generate(),
+        input: [],
+        context: [],
+    );
+
+    $execution->start();
+
+    $output = [
+        'result' => [
+            'score' => 18,
+        ],
+    ];
+
+    $execution->complete($output);
+
+    $output['result']['score'] = 5;
+
+    expect($execution->output())
+        ->toBe([
+            'result' => [
+                'score' => 18,
+            ],
+        ]);
+});
+
+it('copies output when reconstituting a completed execution', function () {
+    $output = [
+        'result' => [
+            'score' => 18,
+        ],
+    ];
+
+    $execution = Execution::reconstitute(
+        id: ExecutionId::generate(),
+        blueprintId: BlueprintId::generate(),
+        revisionId: RevisionId::generate(),
+        input: [],
+        context: [],
+        status: ExecutionStatus::COMPLETED,
+        output: $output,
+        error: null,
+    );
+
+    $output['result']['score'] = 5;
+
+    expect($execution->output())
+        ->toBe([
+            'result' => [
+                'score' => 18,
+            ],
+        ]);
+});
+
+it('copies input and context when creating an execution', function () {
+    $input = [
+        'student' => [
+            'name' => 'Ali',
+        ],
+    ];
+
+    $context = [
+        'school' => [
+            'name' => 'School A',
+        ],
+    ];
+
+    $execution = Execution::create(
+        blueprintId: BlueprintId::generate(),
+        revisionId: RevisionId::generate(),
+        input: $input,
+        context: $context,
+    );
+
+    $input['student']['name'] = 'Omar';
+    $context['school']['name'] = 'School B';
+
+    expect($execution->input())
+        ->toBe([
+            'student' => [
+                'name' => 'Ali',
+            ],
+        ])
+        ->and($execution->context())
+        ->toBe([
+            'school' => [
+                'name' => 'School A',
+            ],
+        ]);
+});
+
+it('copies input and context when reconstituting an execution', function () {
+    $input = [
+        'student' => [
+            'name' => 'Ali',
+        ],
+    ];
+
+    $context = [
+        'school' => [
+            'name' => 'School A',
+        ],
+    ];
+
+    $execution = Execution::reconstitute(
+        id: ExecutionId::generate(),
+        blueprintId: BlueprintId::generate(),
+        revisionId: RevisionId::generate(),
+        input: $input,
+        context: $context,
+        status: ExecutionStatus::COMPLETED,
+        output: [],
+        error: null,
+    );
+
+    $input['student']['name'] = 'Omar';
+    $context['school']['name'] = 'School B';
+
+    expect($execution->input())
+        ->toBe([
+            'student' => [
+                'name' => 'Ali',
+            ],
+        ])
+        ->and($execution->context())
+        ->toBe([
+            'school' => [
+                'name' => 'School A',
+            ],
+        ]);
+});
+
+it('rejects a pending or running execution state with output or error', function () {
+    expect(fn () => Execution::reconstitute(
+        id: ExecutionId::generate(),
+        blueprintId: BlueprintId::generate(),
+        revisionId: RevisionId::generate(),
+        input: [],
+        context: [],
+        status: ExecutionStatus::PENDING,
+        output: [
+            'result' => 'ok',
+        ],
+        error: null,
+    ))->toThrow(
+        DomainException::class,
+        'A pending or running execution cannot have output or error.'
+    );
+});

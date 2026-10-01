@@ -357,3 +357,71 @@ it('does not mutate the declared logic', function () {
 
     expect($logic)->toBe($original);
 });
+
+it('rejects behavior execution without a return step', function () {
+    $runner = createBehaviorRunner();
+
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'format_template',
+                'template' => 'Hello {input.student_name}',
+                'assign_to' => 'message',
+            ],
+        ],
+    ];
+
+    expect(fn () => $runner->run(
+        logic: $logic,
+        input: [
+            'student_name' => 'Ahmed',
+        ],
+        context: [],
+    ))->toThrow(
+        DomainException::class,
+        'Behavior execution did not produce a return output.'
+    );
+});
+
+it('rejects an unsupported behavior step type', function () {
+    $runner = createBehaviorRunner();
+
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'unsupported_step',
+            ],
+        ],
+    ];
+
+    expect(fn () => $runner->run(
+        logic: $logic,
+        input: [],
+        context: [],
+    ))->toThrow(
+        DomainException::class,
+        'Unsupported behavior step type "unsupported_step".'
+    );
+});
+
+it('uses strict type comparison for equality', function () {
+    $runner = createBehaviorRunner();
+
+    $logic = executableBehavior();
+
+    $logic['steps'][0]['condition']['operator'] = 'eq';
+    $logic['steps'][0]['condition']['value'] = '14';
+
+    expect($runner->run(
+        logic: $logic,
+        input: [
+            'student_name' => 'Ahmed',
+            'score' => 14,
+        ],
+        context: [],
+    )['status'])->toBe('fail');
+});

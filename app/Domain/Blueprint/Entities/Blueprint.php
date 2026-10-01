@@ -204,6 +204,13 @@ final class Blueprint
 
     public function promoteRevision(RevisionId $revisionId): void
     {
+
+         if ($this->lifecycleStatus === LifecycleStatus::SUNSET) {
+            throw new \DomainException(
+                'A sunset Blueprint cannot promote a Revision.'
+            );
+        }
+        
         $revision = $this->revision($revisionId);
 
         if ($revision === null) {
@@ -333,6 +340,17 @@ final class Blueprint
             }
         }
 
+        if (
+            $lifecycleStatus !== LifecycleStatus::DRAFT
+            && $currentRevisionId === null
+        ) {
+            throw new \DomainException(
+                'A non-draft Blueprint must have a current Revision.'
+            );
+        }
+
+        $parentChildren = [];
+
         foreach ($revisions as $revision) {
             $parentRevisionId = $revision->parentRevisionId();
 
@@ -346,7 +364,18 @@ final class Blueprint
                 );
             }
 
-            $parentRevision = $revisions[(string) $parentRevisionId];
+            $parentKey = (string) $parentRevisionId;
+
+            $parentChildren[$parentKey] =
+                ($parentChildren[$parentKey] ?? 0) + 1;
+
+            if ($parentChildren[$parentKey] > 1) {
+                throw new \DomainException(
+                    'Revision history must be linear.'
+                );
+            }
+
+            $parentRevision = $revisions[$parentKey];
 
             if (! $revision->number()->isGreaterThan($parentRevision->number())) {
                 throw new \DomainException(
