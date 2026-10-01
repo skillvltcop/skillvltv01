@@ -223,6 +223,61 @@ $response = $this
     ]);
 });
 
+
+it('returns structured validation errors for an invalid behavior contract', function () {
+    $user = User::factory()->create();
+
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'assessment-rubric-invalid-behavior',
+        namespace: 'skillvlt.edu.assessment',
+        ownership: [
+            'type' => 'user',
+            'id' => (string) $user->id,
+        ],
+        metadata: [],
+    );
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/revisions",
+            [
+                'number' => '1.0.0',
+                'behavior_digest' =>
+                    'sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+                'contracts' => [
+                    'input' => [
+                        'type' => 'object',
+                    ],
+                ],
+                'logic' => [
+                    'type' => 'invalid',
+                    'version' => 1,
+                    'steps' => [],
+                ],
+                'outputs' => [
+                    'type' => 'assessment-result',
+                ],
+                'policies' => [
+                    'visibility' => 'public',
+                ],
+            ],
+        );
+
+    $response
+        ->assertUnprocessable()
+        ->assertJsonPath(
+            'message',
+            'Behavior contract validation failed.',
+        )
+        ->assertJsonPath(
+            'errors.root.type',
+            'Behavior contract type must be "steps".',
+        );
+});
+
 it('forbids a user from adding a revision to another user blueprint', function () {
     $owner = User::factory()->create();
     $otherUser = User::factory()->create();
