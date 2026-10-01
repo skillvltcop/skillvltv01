@@ -24,4 +24,28 @@ return Application::configure(basePath: dirname(__DIR__))
 
             return null;
         });
+
+        $exceptions->render(function (\InvalidArgumentException $e, $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 422);
+        });
+
+        $exceptions->render(function (
+            \App\Domain\Behavior\Exceptions\InvalidBehaviorContractException $e,
+            $request,
+        ) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json([
+                'message' => $e->getMessage(),
+                'errors' => $e->getErrors(),
+            ], 422);
+        });
     })->create();
