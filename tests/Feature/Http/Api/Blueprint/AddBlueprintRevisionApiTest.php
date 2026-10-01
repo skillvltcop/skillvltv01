@@ -274,7 +274,7 @@ it('returns structured validation errors for an invalid behavior contract', func
         )
         ->assertJsonPath(
             'errors.root.type',
-            'Behavior contract type must be "steps".',
+            'The type attribute must equal "steps".',
         );
 });
 
