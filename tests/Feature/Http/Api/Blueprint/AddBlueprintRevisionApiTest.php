@@ -279,6 +279,96 @@ it('returns structured validation errors for an invalid behavior contract', func
         ]);
 });
 
+it('returns 422 for a domain lifecycle violation', function () {
+    $user = User::factory()->create();
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'assessment-rubric-sunset',
+        namespace: 'skillvlt.edu.assessment',
+        ownership: [
+            'type' => 'user',
+            'id' => (string) $user->id,
+        ],
+        metadata: [],
+    );
+
+    $revision = (new \App\Application\Blueprint\Commands\AddBlueprintRevision(
+        repository: $repository,
+        behaviorContractValidator: new \App\Application\Behavior\BehaviorContractValidator(),
+    ))->handle(
+        blueprintId: (string) $blueprint->id(),
+        number: '1.0.0',
+        behaviorDigest:
+            'sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+        contracts: ['input' => ['type' => 'object']],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => ['status' => 'ok'],
+                ],
+            ],
+        ],
+        outputs: ['type' => 'assessment-result'],
+        policies: ['visibility' => 'public'],
+    );
+
+    (new \App\Application\Blueprint\Commands\FreezeBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        revisionId: (string) $revision->id(),
+    );
+
+    (new \App\Application\Blueprint\Commands\PromoteBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        revisionId: (string) $revision->id(),
+    );
+
+    (new \App\Application\Blueprint\Commands\ActivateBlueprint($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+    );
+
+    (new \App\Application\Blueprint\Commands\DeprecateBlueprint($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+    );
+
+    (new \App\Application\Blueprint\Commands\SunsetBlueprint($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+    );
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/revisions",
+            [
+                'number' => '1.1.0',
+                'behavior_digest' =>
+                    'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+                'contracts' => ['input' => ['type' => 'object']],
+                'logic' => [
+                    'type' => 'steps',
+                    'version' => 1,
+                    'steps' => [
+                        [
+                            'type' => 'return',
+                            'data' => ['status' => 'ok'],
+                        ],
+                    ],
+                ],
+                'outputs' => ['type' => 'assessment-result'],
+                'policies' => ['visibility' => 'public'],
+            ],
+        );
+
+    $response
+        ->assertUnprocessable()
+        ->assertJson([
+            'message' => 'A sunset Blueprint cannot receive new Revisions.',
+        ]);
+});
+
 it('forbids a user from adding a revision to another user blueprint', function () {
     $owner = User::factory()->create();
     $otherUser = User::factory()->create();
