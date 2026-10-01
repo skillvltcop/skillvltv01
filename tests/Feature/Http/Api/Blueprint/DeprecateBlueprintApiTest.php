@@ -2,6 +2,7 @@
 
 use App\Application\Blueprint\Commands\AddBlueprintRevision;
 use App\Application\Blueprint\Commands\CreateBlueprint;
+use App\Application\Blueprint\Commands\ActivateBlueprint;
 use App\Application\Blueprint\Commands\FreezeBlueprintRevision;
 use App\Application\Blueprint\Commands\PromoteBlueprintRevision;
 use App\Domain\Blueprint\ValueObjects\BlueprintId;
@@ -19,7 +20,7 @@ uses(
     RefreshDatabase::class,
 );
 
-it('activates a blueprint with a frozen current revision through the HTTP API', function () {
+it('deprecates an active blueprint through the HTTP API', function () {
     $repository = new EloquentBlueprintRepository();
 
     $user = User::factory()->create();
@@ -27,7 +28,7 @@ it('activates a blueprint with a frozen current revision through the HTTP API', 
     $this->actingAs($user);
 
     $blueprint = (new CreateBlueprint($repository))->handle(
-        canonicalName: 'assessment-rubric-activate',
+        canonicalName: 'assessment-rubric-deprecate',
         namespace: 'skillvlt.edu.assessment',
         ownership: [
             'type' => 'user',
@@ -79,8 +80,12 @@ it('activates a blueprint with a frozen current revision through the HTTP API', 
         revisionId: (string) $revision->id(),
     );
 
+    (new ActivateBlueprint($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+    );
+
     $response = $this->postJson(
-        "/api/blueprints/{$blueprint->id()}/activate",
+        "/api/blueprints/{$blueprint->id()}/deprecate",
     );
 
     $response->assertSuccessful();
@@ -112,7 +117,7 @@ it('activates a blueprint with a frozen current revision through the HTTP API', 
 
     $response->assertJsonPath(
         'lifecycle_status',
-        'active',
+        'deprecated',
     );
 
     $response->assertJsonPath(
@@ -122,12 +127,12 @@ it('activates a blueprint with a frozen current revision through the HTTP API', 
 
     $this->assertDatabaseHas('blueprints', [
         'id' => (string) $blueprint->id(),
-        'lifecycle_status' => 'active',
+        'lifecycle_status' => 'deprecated',
         'current_revision_id' => (string) $revision->id(),
     ]);
 });
 
-it('returns 404 when activating a missing blueprint', function () {
+it('returns 404 when deprecating a missing blueprint', function () {
 
     $blueprintId = BlueprintId::generate();
 
@@ -136,7 +141,7 @@ it('returns 404 when activating a missing blueprint', function () {
     $this->actingAs($user);
 
     $response = $this->postJson(
-        "/api/blueprints/{$blueprintId}/activate",
+        "/api/blueprints/{$blueprintId}/deprecate",
     );
 
     $response->assertNotFound();
@@ -146,7 +151,7 @@ it('returns 404 when activating a missing blueprint', function () {
     ]);
 });
 
-it('returns 422 when activating a blueprint without a current revision', function () {
+it('returns 422 when deprecating a draft blueprint', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user);
@@ -164,17 +169,17 @@ it('returns 422 when activating a blueprint without a current revision', functio
     );
 
     $response = $this->postJson(
-        "/api/blueprints/{$blueprint->id()}/activate",
+        "/api/blueprints/{$blueprint->id()}/deprecate",
     );
 
     $response->assertUnprocessable();
 
     $response->assertJson([
-        'message' => 'A Blueprint cannot become active without a Revision.',
+        'message' => 'Invalid Blueprint lifecycle transition: draft → deprecated.',
     ]);
 });
 
-it('forbids activating a system-owned blueprint through the user API', function () {
+it('forbids deprecating a system-owned blueprint through the user API', function () {
     $repository = new EloquentBlueprintRepository();
 
     $user = User::factory()->create();
@@ -192,7 +197,7 @@ it('forbids activating a system-owned blueprint through the user API', function 
     );
 
     $response = $this->postJson(
-        "/api/blueprints/{$blueprint->id()}/activate",
+        "/api/blueprints/{$blueprint->id()}/deprecate",
     );
 
     $response
@@ -202,14 +207,14 @@ it('forbids activating a system-owned blueprint through the user API', function 
         ]);
 });
 
-it('forbids a user from activating another user-owned blueprint', function () {
+it('forbids a user from deprecating another user-owned blueprint', function () {
     $repository = new EloquentBlueprintRepository();
 
     $owner = User::factory()->create();
     $actor = User::factory()->create();
 
     $blueprint = (new CreateBlueprint($repository))->handle(
-        canonicalName: 'another-users-blueprint',
+        canonicalName: 'another-users-deprecate',
         namespace: 'skillvlt.edu.assessment',
         ownership: [
             'type' => 'user',
@@ -231,48 +236,12 @@ it('forbids a user from activating another user-owned blueprint', function () {
         ]);
 });
 
-it('forbids a user from adding a revision to a system-owned blueprint', function () {
-    $user = User::factory()->create();
+it('rejects unauthenticated blueprint deprecation', function () {
+    $blueprintId = BlueprintId::generate();
 
-    $repository = new EloquentBlueprintRepository();
-
-    $blueprint = (new CreateBlueprint($repository))->handle(
-        canonicalName: 'system-revision-protected',
-        namespace: 'skillvlt.edu.revisions',
-        ownership: [
-            'type' => 'system',
-            'id' => 'skillvlt',
-        ],
-        metadata: [],
+    $response = $this->postJson(
+        "/api/blueprints/{$blueprintId}/deprecate",
     );
 
-    $response = $this
-        ->actingAs($user)
-        ->postJson(
-            "/api/blueprints/{$blueprint->id()}/revisions",
-            [
-                'number' => '1.0.0',
-                'behavior_digest' =>
-                    'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
-                'contracts' => [
-                    'input' => [
-                        'type' => 'object',
-                    ],
-                ],
-                'logic' => [
-                    'steps' => [
-                        ['type' => 'validate'],
-                        ['type' => 'score'],
-                    ],
-                ],
-                'outputs' => [
-                    'type' => 'assessment-result',
-                ],
-                'policies' => [
-                    'visibility' => 'public',
-                ],
-            ],
-        );
-
-    $response->assertForbidden();
+    $response->assertUnauthorized();
 });
