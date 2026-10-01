@@ -272,10 +272,11 @@ it('returns structured validation errors for an invalid behavior contract', func
             'message',
             'Behavior contract validation failed.',
         )
-        ->assertJsonPath(
-            'errors.root.type',
-            'The type attribute must equal "steps".',
-        );
+        ->assertJson([
+            'errors' => [
+                'root.type' => 'The type attribute must equal "steps".',
+            ],
+        ]);
 });
 
 it('forbids a user from adding a revision to another user blueprint', function () {
