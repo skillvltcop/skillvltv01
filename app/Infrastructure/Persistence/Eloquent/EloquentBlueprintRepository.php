@@ -10,6 +10,7 @@ use App\Domain\Blueprint\ValueObjects\BlueprintId;
 use App\Domain\Blueprint\ValueObjects\BlueprintNamespace;
 use App\Domain\Blueprint\ValueObjects\CanonicalName;
 use App\Domain\Blueprint\Entities\BlueprintRevision as DomainBlueprintRevision;
+use App\Domain\Blueprint\Exceptions\ConcurrentBlueprintRevisionException;
 use App\Domain\Blueprint\ValueObjects\BehaviorDigest;
 use App\Domain\Blueprint\ValueObjects\RevisionId;
 use App\Domain\Blueprint\ValueObjects\RevisionNumber;
@@ -40,11 +41,14 @@ final class EloquentBlueprintRepository implements BlueprintRepository
         DB::transaction(function () use ($blueprint): void {
             $ownership = $blueprint->ownership();
 
-            $model = BlueprintModel::query()->updateOrCreate(
-                [
+            $model = BlueprintModel::query()
+                ->whereKey((string) $blueprint->id())
+                ->lockForUpdate()
+                ->first();
+
+            if ($model === null) {
+                $model = BlueprintModel::query()->create([
                     'id' => (string) $blueprint->id(),
-                ],
-                [
                     'canonical_name' => (string) $blueprint->canonicalName(),
                     'namespace' => (string) $blueprint->namespace(),
                     'owner_type' => $ownership['type'],
@@ -53,8 +57,24 @@ final class EloquentBlueprintRepository implements BlueprintRepository
 
                     // current_revision_id is set only after revisions are persisted.
                     'current_revision_id' => null,
-                ],
-            );
+                ]);
+            } else {
+                $this->assertRevisionHistoryIsCurrent(
+                    $blueprint,
+                    $model,
+                );
+
+                $model->update([
+                    'canonical_name' => (string) $blueprint->canonicalName(),
+                    'namespace' => (string) $blueprint->namespace(),
+                    'owner_type' => $ownership['type'],
+                    'owner_id' => $ownership['id'],
+                    'lifecycle_status' => $blueprint->lifecycleStatus()->value,
+
+                    // current_revision_id is set only after revisions are persisted.
+                    'current_revision_id' => null,
+                ]);
+            }
 
             $metadata = $blueprint->metadata();
 
@@ -97,6 +117,75 @@ final class EloquentBlueprintRepository implements BlueprintRepository
                 ]);
             }
         });
+    }
+
+    private function assertRevisionHistoryIsCurrent(
+        Blueprint $blueprint,
+        BlueprintModel $model,
+    ): void {
+        $persistedRevisions = $model->revisions()->get();
+
+        $persistedRevisionIds = $persistedRevisions
+            ->pluck('id')
+            ->map(fn ($id): string => (string) $id)
+            ->all();
+
+        $newRevisions = array_values(
+            array_filter(
+                $blueprint->revisions(),
+                fn ($revision): bool =>
+                    ! in_array(
+                        (string) $revision->id(),
+                        $persistedRevisionIds,
+                        true,
+                    ),
+            ),
+        );
+
+        if ($newRevisions === []) {
+            return;
+        }
+
+        $persistedLatestRevision = null;
+        $persistedLatestNumber = null;
+
+        foreach ($persistedRevisions as $revision) {
+            $number = new RevisionNumber(
+                (string) $revision->revision_number,
+            );
+
+            if (
+                $persistedLatestNumber === null
+                || $number->isGreaterThan($persistedLatestNumber)
+            ) {
+                $persistedLatestRevision = $revision;
+                $persistedLatestNumber = $number;
+            }
+        }
+
+        usort(
+            $newRevisions,
+            function ($left, $right): int {
+                if ($left->number()->equals($right->number())) {
+                    return 0;
+                }
+
+                return $left->number()->isGreaterThan($right->number())
+                    ? 1
+                    : -1;
+            },
+        );
+
+        $firstNewRevision = $newRevisions[0];
+        $expectedParentId = $persistedLatestRevision?->id;
+        $actualParentId = $firstNewRevision->parentRevisionId();
+
+        if (
+            (string) ($actualParentId ?? '')
+            !== (string) ($expectedParentId ?? '')
+        ) {
+            throw new ConcurrentBlueprintRevisionException();
+        }
     }
 
     private function toDomain(BlueprintModel $model): Blueprint
