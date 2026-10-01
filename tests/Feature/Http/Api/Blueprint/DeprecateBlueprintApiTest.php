@@ -107,7 +107,7 @@ it('deprecates an active blueprint through the HTTP API', function () {
 
     $response->assertJsonPath(
         'canonical_name',
-        'assessment-rubric-activate',
+        'assessment-rubric-deprecate',
     );
 
     $response->assertJsonPath(
