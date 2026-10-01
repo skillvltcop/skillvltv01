@@ -99,6 +99,24 @@ it('returns 422 when required blueprint fields are missing', function () {
     ]);
 });
 
+
+it('returns 422 when the canonical name violates the domain format', function () {
+    $user = User::factory()->create();
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson('/api/blueprints', [
+            'canonical_name' => 'Assessment-Rubric',
+            'namespace' => 'skillvlt.edu.assessment',
+        ]);
+
+    $response
+        ->assertUnprocessable()
+        ->assertJson([
+            'message' => 'Invalid canonical name. Expected lowercase kebab-case.',
+        ]);
+});
+
 it('assigns the authenticated user as blueprint owner', function () {
     $user = User::factory()->create();
 
