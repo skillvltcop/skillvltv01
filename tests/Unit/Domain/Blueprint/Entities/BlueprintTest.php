@@ -167,6 +167,82 @@ it('automatically links a new revision to the previous revision', function () {
         ->toBe((string) $first->id());
 });
 
+it('freezes a revision through the Blueprint aggregate', function () {
+    $blueprint = makeBlueprint();
+
+    $revision = $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: makeDigest(),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+    );
+
+    expect($revision->isFrozen())
+        ->toBeFalse();
+
+    $result = $blueprint->freezeRevision($revision->id());
+
+    expect($result)
+        ->toBe($revision);
+
+    expect($revision->isFrozen())
+        ->toBeTrue();
+});
+
+it('cannot freeze a revision on a sunset Blueprint through the aggregate', function () {
+    $blueprint = makeBlueprint();
+
+    $revision = $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: makeDigest(),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+    );
+
+    $revision->freeze();
+    $blueprint->promoteRevision($revision->id());
+    $blueprint->activate();
+    $blueprint->sunset();
+
+    $draftRevision = BlueprintRevision::reconstitute(
+        id: RevisionId::generate(),
+        number: new RevisionNumber('1.1.0'),
+        parentRevisionId: $revision->id(),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('b', 64),
+        ),
+        contracts: [],
+        logic: [],
+        outputs: [],
+        policies: [],
+        frozen: false,
+    );
+
+    $sunsetBlueprint = Blueprint::reconstitute(
+        id: $blueprint->id(),
+        canonicalName: $blueprint->canonicalName(),
+        namespace: $blueprint->namespace(),
+        ownership: $blueprint->ownership(),
+        metadata: $blueprint->metadata(),
+        lifecycleStatus: LifecycleStatus::SUNSET,
+        currentRevisionId: $revision->id(),
+        revisions: [
+            (string) $revision->id() => $revision,
+            (string) $draftRevision->id() => $draftRevision,
+        ],
+    );
+
+    expect(fn () => $sunsetBlueprint->freezeRevision($draftRevision->id()))
+        ->toThrow(
+            DomainException::class,
+            'A sunset Blueprint cannot freeze a Revision.'
+        );
+});
+
 it('preserves revision history', function () {
     $blueprint = makeBlueprint();
 
