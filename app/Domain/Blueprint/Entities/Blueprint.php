@@ -163,6 +163,27 @@ final class Blueprint
         return $this->revisions;
     }
 
+    public function freezeRevision(RevisionId $revisionId): BlueprintRevision
+    {
+        if ($this->lifecycleStatus === LifecycleStatus::SUNSET) {
+            throw new \DomainException(
+                'A sunset Blueprint cannot freeze a Revision.'
+            );
+        }
+
+        $revision = $this->revision($revisionId);
+
+        if ($revision === null) {
+            throw new \DomainException(
+                'Blueprint revision not found.'
+            );
+        }
+
+        $revision->freeze();
+
+        return $revision;
+    }
+
     public function revision(RevisionId $id): ?BlueprintRevision
     {
         return $this->revisions[(string) $id] ?? null;
