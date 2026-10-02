@@ -330,6 +330,40 @@ it('forbids a user from sunsetting a system-owned blueprint', function () {
     ]);
 });
 
+it('forbids a user from sunsetting another user-owned blueprint', function () {
+    $repository = new EloquentBlueprintRepository();
+
+    $owner = User::factory()->create();
+    $actor = User::factory()->create();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'another-users-blueprint-sunset',
+        namespace: 'skillvlt.edu.system',
+        ownership: [
+            'type' => 'user',
+            'id' => (string) $owner->id,
+        ],
+        metadata: [],
+    );
+
+    $response = $this
+        ->actingAs($actor)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/sunset",
+        );
+
+    $response
+        ->assertForbidden()
+        ->assertJson([
+            'message' => 'Forbidden.',
+        ]);
+
+    $this->assertDatabaseHas('blueprints', [
+        'id' => (string) $blueprint->id(),
+        'lifecycle_status' => LifecycleStatus::DRAFT->value,
+    ]);
+});
+
 it('requires authentication to sunset a blueprint', function () {
     $repository = new EloquentBlueprintRepository();
 
