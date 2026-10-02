@@ -16,7 +16,6 @@ use App\Domain\Blueprint\ValueObjects\RevisionId;
 use App\Domain\Blueprint\ValueObjects\RevisionNumber;
 use App\Models\Blueprint as BlueprintModel;
 use Illuminate\Support\Facades\DB;
-use RuntimeException;
 
 final class EloquentBlueprintRepository implements BlueprintRepository
 {
@@ -54,8 +53,6 @@ final class EloquentBlueprintRepository implements BlueprintRepository
                     'owner_type' => $ownership['type'],
                     'owner_id' => $ownership['id'],
                     'lifecycle_status' => $blueprint->lifecycleStatus()->value,
-
-                    // current_revision_id is set only after revisions are persisted.
                     'current_revision_id' => null,
                 ]);
             } else {
@@ -70,8 +67,6 @@ final class EloquentBlueprintRepository implements BlueprintRepository
                     'owner_type' => $ownership['type'],
                     'owner_id' => $ownership['id'],
                     'lifecycle_status' => $blueprint->lifecycleStatus()->value,
-
-                    // current_revision_id is set only after revisions are persisted.
                     'current_revision_id' => null,
                 ]);
             }
@@ -87,6 +82,7 @@ final class EloquentBlueprintRepository implements BlueprintRepository
                     'documentation' => $metadata['documentation'] ?? [],
                     'discovery' => $metadata['discovery'] ?? null,
                     'lifecycle_metadata' => $metadata['lifecycle_metadata'] ?? [],
+                    'payload' => $metadata,
                 ],
             );
 
@@ -190,6 +186,19 @@ final class EloquentBlueprintRepository implements BlueprintRepository
 
     private function toDomain(BlueprintModel $model): Blueprint
     {
+        $metadata = $model->metadata?->payload;
+
+        if ($metadata === null) {
+            $metadata = $model->metadata
+                ? [
+                    'taxonomy' => $model->metadata->taxonomy,
+                    'documentation' => $model->metadata->documentation,
+                    'discovery' => $model->metadata->discovery,
+                    'lifecycle_metadata' => $model->metadata->lifecycle_metadata,
+                ]
+                : [];
+        }
+
         return Blueprint::reconstitute(
             id: new BlueprintId((string) $model->id),
             canonicalName: new CanonicalName($model->canonical_name),
@@ -198,16 +207,8 @@ final class EloquentBlueprintRepository implements BlueprintRepository
                 'type' => $model->owner_type,
                 'id' => $model->owner_id,
             ],
-            metadata: $model->metadata
-                ? [
-                    'taxonomy' => $model->metadata->taxonomy,
-                    'documentation' => $model->metadata->documentation,
-                    'discovery' => $model->metadata->discovery,
-                    'lifecycle_metadata' => $model->metadata->lifecycle_metadata,
-                ]
-                : [],
+            metadata: $metadata,
             lifecycleStatus: $model->lifecycle_status,
-
             revisions: $model->revisions
                 ->mapWithKeys(
                     fn ($revision) => [
@@ -215,7 +216,6 @@ final class EloquentBlueprintRepository implements BlueprintRepository
                     ]
                 )
                 ->all(),
-
             currentRevisionId: $model->current_revision_id
                 ? new RevisionId((string) $model->current_revision_id)
                 : null,
