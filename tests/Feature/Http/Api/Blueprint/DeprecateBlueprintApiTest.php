@@ -226,7 +226,7 @@ it('forbids a user from deprecating another user-owned blueprint', function () {
     $this->actingAs($actor);
 
     $response = $this->postJson(
-        "/api/blueprints/{$blueprint->id()}/activate",
+        "/api/blueprints/{$blueprint->id()}/deprecate",
     );
 
     $response
