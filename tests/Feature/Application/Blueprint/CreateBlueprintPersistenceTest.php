@@ -40,4 +40,14 @@ it('creates and persists a blueprint through the application layer', function ()
         'owner_id' => 'skillvlt',
         'lifecycle_status' => 'draft',
     ]);
+
+    $persisted = $repository->find($blueprint->id());
+
+    expect($persisted)
+        ->not->toBeNull()
+        ->and($persisted?->metadata())
+        ->toBe([
+            'category' => 'education',
+            'visibility' => 'public',
+        ]);
 });
