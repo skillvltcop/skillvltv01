@@ -8,6 +8,7 @@ use App\Application\Blueprint\Commands\CreateBlueprint;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use InvalidArgumentException;
 
 final class CreateBlueprintController
 {
@@ -40,15 +41,21 @@ final class CreateBlueprintController
 
         $user = $request->user();
 
-        $blueprint = $this->command->handle(
-            canonicalName: $validated['canonical_name'],
-            namespace: $validated['namespace'],
-            ownership: [
-                'type' => 'user',
-                'id' => (string) $user->id,
-            ],
-            metadata: $validated['metadata'] ?? [],
-        );
+        try {
+            $blueprint = $this->command->handle(
+                canonicalName: $validated['canonical_name'],
+                namespace: $validated['namespace'],
+                ownership: [
+                    'type' => 'user',
+                    'id' => (string) $user->id,
+                ],
+                metadata: $validated['metadata'] ?? [],
+            );
+        } catch (InvalidArgumentException $exception) {
+            return response()->json([
+                'message' => $exception->getMessage(),
+            ], 422);
+        }
 
         return response()->json([
             'id' => (string) $blueprint->id(),
