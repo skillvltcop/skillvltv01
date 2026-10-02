@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AppDomainBlueprintEntitiesBlueprint;
-use AppDomainBlueprintValueObjectsBlueprintNamespace;
-use AppDomainBlueprintValueObjectsCanonicalName;
+use App\Domain\Blueprint\Entities\Blueprint;
+use App\Domain\Blueprint\ValueObjects\BlueprintNamespace;
+use App\Domain\Blueprint\ValueObjects\CanonicalName;
 
 it('rejects unsupported metadata fields', function () {
     expect(fn () => Blueprint::create(
