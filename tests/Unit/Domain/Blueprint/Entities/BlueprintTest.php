@@ -1243,6 +1243,134 @@ it('rejects revision history with multiple root revisions', function () {
     );
 });
 
+it('cannot promote a revision older than the current revision', function () {
+    $blueprint = Blueprint::create(
+        canonicalName: new CanonicalName('assessment-rubric-no-rollback'),
+        namespace: new BlueprintNamespace('skillvlt.edu.assessment'),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision1 = $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: makeDigest(),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+    );
+
+    $revision2 = $blueprint->addRevision(
+        number: new RevisionNumber('1.1.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('b', 64),
+        ),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+    );
+
+    $revision1->freeze();
+    $revision2->freeze();
+
+    $blueprint->promoteRevision($revision1->id());
+
+    expect(fn () => $blueprint->promoteRevision($revision1->id()))
+        ->toThrow(
+            DomainException::class,
+            'A Revision must be newer than the current Revision.'
+        );
+
+    $blueprint->promoteRevision($revision2->id());
+
+    expect($blueprint->currentRevision())
+        ->toBe($revision2);
+});
+
+it('allows a deprecated blueprint to freeze and promote a newer revision', function () {
+    $blueprint = Blueprint::create(
+        canonicalName: new CanonicalName('assessment-rubric-deprecated-promotion'),
+        namespace: new BlueprintNamespace('skillvlt.edu.assessment'),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision1 = $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: makeDigest(),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+    );
+
+    $revision1->freeze();
+    $blueprint->promoteRevision($revision1->id());
+    $blueprint->activate();
+    $blueprint->deprecate();
+
+    $revision2 = $blueprint->addRevision(
+        number: new RevisionNumber('1.1.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('b', 64),
+        ),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+    );
+
+    expect($blueprint->lifecycleStatus())
+        ->toBe(LifecycleStatus::DEPRECATED);
+
+    $blueprint->freezeRevision($revision2->id());
+    $blueprint->promoteRevision($revision2->id());
+
+    expect($blueprint->currentRevision())
+        ->toBe($revision2)
+        ->and($blueprint->lifecycleStatus())
+        ->toBe(LifecycleStatus::DEPRECATED);
+});
+
+it('does not allow a deprecated blueprint to become active again', function () {
+    $blueprint = Blueprint::create(
+        canonicalName: new CanonicalName('assessment-rubric-deprecated-reactivation'),
+        namespace: new BlueprintNamespace('skillvlt.edu.assessment'),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision = $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: makeDigest(),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+    );
+
+    $revision->freeze();
+    $blueprint->promoteRevision($revision->id());
+    $blueprint->activate();
+    $blueprint->deprecate();
+
+    expect(fn () => $blueprint->activate())
+        ->toThrow(
+            DomainException::class,
+            'Invalid Blueprint lifecycle transition: deprecated → active.'
+        );
+});
+
 it('cannot promote a revision on a sunset blueprint', function () {
     $blueprint = Blueprint::create(
         canonicalName: new CanonicalName('assessment-rubric-sunset-promotion'),
