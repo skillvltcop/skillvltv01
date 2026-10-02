@@ -245,6 +245,19 @@ final class Blueprint
             );
         }
 
+        $currentRevision = $this->currentRevision();
+
+        if (
+            $currentRevision !== null
+            && ! $revision->number()->isGreaterThan(
+                $currentRevision->number()
+            )
+        ) {
+            throw new \DomainException(
+                'A Revision must be newer than the current Revision.'
+            );
+        }
+
         $this->currentRevisionId = $revision->id();
     }
 
