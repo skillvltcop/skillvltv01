@@ -15,16 +15,6 @@ use App\Domain\Blueprint\Enums\LifecycleStatus;
 final class Blueprint
 {
     /**
-     * @var array<int, string>
-     */
-    private const SUPPORTED_METADATA_FIELDS = [
-        'taxonomy',
-        'documentation',
-        'discovery',
-        'lifecycle_metadata',
-    ];
-
-    /**
      * @var array<string, mixed>
      */
     private array $ownership;
@@ -50,8 +40,6 @@ final class Blueprint
         array $ownership,
         array $metadata,
     ) {
-        self::assertSupportedMetadata($metadata);
-
         $this->ownership = self::copy($ownership);
         $this->metadata = self::copy($metadata);
         $this->lifecycleStatus = LifecycleStatus::DRAFT;
