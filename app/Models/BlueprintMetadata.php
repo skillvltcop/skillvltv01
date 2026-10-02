@@ -23,6 +23,7 @@ class BlueprintMetadata extends Model
         'documentation',
         'discovery',
         'lifecycle_metadata',
+        'payload',
     ];
 
     public function blueprint(): BelongsTo
@@ -41,6 +42,7 @@ class BlueprintMetadata extends Model
             'documentation' => 'array',
             'discovery' => 'array',
             'lifecycle_metadata' => 'array',
+            'payload' => 'array',
         ];
     }
 }
