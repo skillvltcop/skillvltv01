@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Application\Blueprint\Commands\AddBlueprintRevision;
+use App\Domain\Behavior\Exceptions\InvalidBehaviorContractException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -89,6 +90,11 @@ public function __construct(
                 outputs: $validated['outputs'],
                 policies: $validated['policies'],
             );
+        } catch (InvalidBehaviorContractException $exception) {
+            return response()->json([
+                'message' => $exception->getMessage(),
+                'errors' => $exception->getErrors(),
+            ], 422);
         } catch (\RuntimeException $exception) {
             if ($exception->getMessage() === 'Blueprint not found.') {
                 return response()->json([
