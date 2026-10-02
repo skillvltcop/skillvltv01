@@ -15,6 +15,16 @@ use App\Domain\Blueprint\Enums\LifecycleStatus;
 final class Blueprint
 {
     /**
+     * @var array<int, string>
+     */
+    private const SUPPORTED_METADATA_FIELDS = [
+        'taxonomy',
+        'documentation',
+        'discovery',
+        'lifecycle_metadata',
+    ];
+
+    /**
      * @var array<string, mixed>
      */
     private array $ownership;
@@ -40,6 +50,8 @@ final class Blueprint
         array $ownership,
         array $metadata,
     ) {
+        self::assertSupportedMetadata($metadata);
+
         $this->ownership = self::copy($ownership);
         $this->metadata = self::copy($metadata);
         $this->lifecycleStatus = LifecycleStatus::DRAFT;
@@ -102,6 +114,8 @@ final class Blueprint
      */
     public function updateMetadata(array $metadata): void
     {
+        self::assertSupportedMetadata($metadata);
+
         $this->metadata = self::copy($metadata);
     }
 
@@ -225,13 +239,12 @@ final class Blueprint
 
     public function promoteRevision(RevisionId $revisionId): void
     {
-
-         if ($this->lifecycleStatus === LifecycleStatus::SUNSET) {
+        if ($this->lifecycleStatus === LifecycleStatus::SUNSET) {
             throw new \DomainException(
                 'A sunset Blueprint cannot promote a Revision.'
             );
         }
-        
+
         $revision = $this->revision($revisionId);
 
         if ($revision === null) {
@@ -434,5 +447,22 @@ final class Blueprint
         $blueprint->revisions = $revisions;
 
         return $blueprint;
+    }
+
+    /**
+     * @param array<string, mixed> $metadata
+     */
+    private static function assertSupportedMetadata(array $metadata): void
+    {
+        foreach (array_keys($metadata) as $field) {
+            if (! in_array($field, self::SUPPORTED_METADATA_FIELDS, true)) {
+                throw new \DomainException(
+                    sprintf(
+                        'Unsupported Blueprint metadata field: %s.',
+                        $field,
+                    )
+                );
+            }
+        }
     }
 }
