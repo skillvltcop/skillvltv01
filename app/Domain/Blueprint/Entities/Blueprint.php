@@ -102,8 +102,6 @@ final class Blueprint
      */
     public function updateMetadata(array $metadata): void
     {
-        self::assertSupportedMetadata($metadata);
-
         $this->metadata = self::copy($metadata);
     }
 
