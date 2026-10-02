@@ -18,53 +18,53 @@ function metadataContractBlueprint(): Blueprint
             'id' => 'skillvlt',
         ],
         metadata: [
-            'taxonomy' => [
-                'domain' => 'assessment',
-            ],
+            'category' => 'education',
+            'visibility' => 'public',
         ],
     );
 }
 
-it('rejects unsupported metadata fields on creation', function () {
-    expect(fn () => Blueprint::create(
-        canonicalName: new CanonicalName('metadata-contract-test'),
-        namespace: new BlueprintNamespace('skillvlt.test'),
-        ownership: [
-            'type' => 'system',
-            'id' => 'skillvlt',
-        ],
-        metadata: [
-            'taxonomy' => [
-                'domain' => 'assessment',
-            ],
-            'unsupported' => [
-                'value' => true,
-            ],
-        ],
-    ))->toThrow(
-        DomainException::class,
-        'Unsupported Blueprint metadata field: unsupported.'
-    );
-});
-
-it('rejects unsupported metadata fields on update', function () {
+it('accepts arbitrary metadata fields on creation', function () {
     $blueprint = metadataContractBlueprint();
 
-    expect(fn () => $blueprint->updateMetadata([
+    expect($blueprint->metadata())
+        ->toBe([
+            'category' => 'education',
+            'visibility' => 'public',
+        ]);
+});
+
+it('accepts arbitrary metadata fields on update', function () {
+    $blueprint = metadataContractBlueprint();
+
+    $blueprint->updateMetadata([
         'taxonomy' => [
             'domain' => 'assessment',
         ],
-        'unsupported' => [
-            'value' => true,
-        ],
-    ]))->toThrow(
-        DomainException::class,
-        'Unsupported Blueprint metadata field: unsupported.'
-    );
+        'category' => 'education',
+        'visibility' => 'public',
+    ]);
+
+    expect($blueprint->metadata())
+        ->toBe([
+            'taxonomy' => [
+                'domain' => 'assessment',
+            ],
+            'category' => 'education',
+            'visibility' => 'public',
+        ]);
 });
 
-it('rejects unsupported metadata fields on reconstitution', function () {
-    expect(fn () => Blueprint::reconstitute(
+it('preserves arbitrary metadata fields on reconstitution', function () {
+    $metadata = [
+        'taxonomy' => [
+            'domain' => 'assessment',
+        ],
+        'category' => 'education',
+        'visibility' => 'public',
+    ];
+
+    $blueprint = Blueprint::reconstitute(
         id: BlueprintId::generate(),
         canonicalName: new CanonicalName('metadata-contract-test'),
         namespace: new BlueprintNamespace('skillvlt.test'),
@@ -72,18 +72,11 @@ it('rejects unsupported metadata fields on reconstitution', function () {
             'type' => 'system',
             'id' => 'skillvlt',
         ],
-        metadata: [
-            'taxonomy' => [
-                'domain' => 'assessment',
-            ],
-            'unsupported' => [
-                'value' => true,
-            ],
-        ],
+        metadata: $metadata,
         lifecycleStatus: LifecycleStatus::DRAFT,
         currentRevisionId: null,
-    ))->toThrow(
-        DomainException::class,
-        'Unsupported Blueprint metadata field: unsupported.'
     );
+
+    expect($blueprint->metadata())
+        ->toBe($metadata);
 });
