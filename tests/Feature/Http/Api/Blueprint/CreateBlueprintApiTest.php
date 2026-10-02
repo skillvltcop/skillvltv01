@@ -117,6 +117,23 @@ it('returns 422 when the canonical name violates the domain format', function ()
         ]);
 });
 
+it('returns 422 when the Blueprint namespace violates the domain format', function () {
+    $user = User::factory()->create();
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson('/api/blueprints', [
+            'canonical_name' => 'assessment-rubric',
+            'namespace' => 'SkillVLT.edu',
+        ]);
+
+    $response
+        ->assertUnprocessable()
+        ->assertJson([
+            'message' => 'Invalid Blueprint namespace. Expected lowercase dot-separated segments.',
+        ]);
+});
+
 it('assigns the authenticated user as blueprint owner', function () {
     $user = User::factory()->create();
 
