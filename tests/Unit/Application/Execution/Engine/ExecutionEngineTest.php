@@ -7,6 +7,7 @@ use App\Domain\Blueprint\ValueObjects\BehaviorDigest;
 use App\Domain\Blueprint\ValueObjects\RevisionNumber;
 use App\Domain\Execution\Enums\ExecutionStatus;
 use App\Domain\Blueprint\Commands\PromoteBlueprintRevision;
+use App\Application\Behavior\BehaviorContractValidator;
 use App\Application\Execution\Runtime\BehaviorRunner;
 use App\Application\Execution\Runtime\Contracts\BehaviorRunner as BehaviorRunnerContract;
 use App\Application\Execution\Engine\ExecutionEngineContract;
@@ -72,6 +73,7 @@ it('executes a frozen blueprint revision and completes an execution', function (
 
     $runner = new BehaviorRunner(
         new ValueResolver(),
+        new BehaviorContractValidator(),
     );
 
     $engine = new \App\Application\Execution\Engine\ExecutionEngine(
@@ -356,6 +358,75 @@ it('fails an execution when the behavior runner throws an exception', function (
 
     expect($execution->error())
         ->toBe('Behavior execution failed.');
+});
+
+it('fails execution when the revision behavior contract is invalid', function () {
+    $blueprint = Blueprint::create(
+        canonicalName: new CanonicalName('assessment-rubric-core'),
+        namespace: new BlueprintNamespace('skillvlt.edu.assessment'),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision = $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('a', 64),
+        ),
+        contracts: [],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'evaluate_rule',
+                    'condition' => [
+                        'field' => 'input.score',
+                        'operator' => 'gt',
+                        'value' => '10',
+                    ],
+                    'assign_to' => 'result_status',
+                    'true_value' => 'pass',
+                    'false_value' => 'fail',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'status' => '{state.result_status}',
+                    ],
+                ],
+            ],
+        ],
+        outputs: [],
+        policies: [],
+    );
+
+    $revision->freeze();
+    $blueprint->promoteRevision($revision->id());
+    $blueprint->activate();
+
+    $engine = new \App\Application\Execution\Engine\ExecutionEngine(
+        runner: new BehaviorRunner(
+            new ValueResolver(),
+            new BehaviorContractValidator(),
+        ),
+    );
+
+    $execution = $engine->execute(
+        blueprint: $blueprint,
+        revisionId: $revision->id(),
+        input: ['score' => 14],
+        context: [],
+    );
+
+    expect($execution->status())
+        ->toBe(ExecutionStatus::FAILED);
+
+    expect($execution->error())
+        ->toContain('Behavior contract validation failed');
 });
 
 it('cannot execute a revision that does not belong to the blueprint', function () {
