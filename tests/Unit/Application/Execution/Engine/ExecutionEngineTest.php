@@ -164,6 +164,7 @@ it('uses the revision logic to produce the execution output', function () {
 
     $runner = new BehaviorRunner(
         new ValueResolver(),
+        new BehaviorContractValidator(),
     );
 
     $engine = new \App\Application\Execution\Engine\ExecutionEngine(
@@ -651,6 +652,7 @@ it('keeps the executed revision identity after the blueprint promotes a newer re
 
     $runner = new BehaviorRunner(
         new ValueResolver(),
+        new BehaviorContractValidator(),
     );
 
     $engine = new \App\Application\Execution\Engine\ExecutionEngine(
