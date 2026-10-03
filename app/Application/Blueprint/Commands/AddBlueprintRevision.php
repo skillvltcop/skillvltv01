@@ -27,6 +27,7 @@ final class AddBlueprintRevision
         array $logic,
         array $outputs,
         array $policies,
+        ?string $behaviorDigest = null,
     ): BlueprintRevision {
         $blueprint = $this->repository->find(
             new BlueprintId($blueprintId)
@@ -40,6 +41,9 @@ final class AddBlueprintRevision
 
         $this->behaviorContractValidator->validate($logic);
 
+        // Kept only for backward compatibility with existing application callers.
+        // The supplied value is intentionally ignored; the digest is always derived
+        // from the behavior logic to preserve content-derived integrity.
         $behaviorDigest = $this->behaviorDigestCalculator->calculate($logic);
 
         $revision = $blueprint->addRevision(
