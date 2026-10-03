@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Blueprint\Commands;
 
 use App\Application\Behavior\BehaviorContractValidator;
+use App\Application\Behavior\BehaviorDigestCalculator;
 use App\Domain\Blueprint\Entities\BlueprintRevision;
 use App\Domain\Blueprint\Repositories\BlueprintRepository;
 use App\Domain\Blueprint\ValueObjects\BlueprintId;
@@ -15,7 +16,7 @@ final class AddBlueprintRevision
     public function __construct(
         private BlueprintRepository $repository,
         private BehaviorContractValidator $behaviorContractValidator,
-        private \App\Application\Behavior\BehaviorDigestCalculator $behaviorDigestCalculator,
+        private BehaviorDigestCalculator $behaviorDigestCalculator = new BehaviorDigestCalculator(),
     ) {
     }
 
