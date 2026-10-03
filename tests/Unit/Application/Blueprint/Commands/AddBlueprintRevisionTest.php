@@ -136,6 +136,7 @@ it('links a new revision to the previous revision', function () {
     $command = new AddBlueprintRevision(
         repository: $repository,
         behaviorContractValidator: new BehaviorContractValidator(),
+        behaviorDigestCalculator: new \App\Application\Behavior\BehaviorDigestCalculator(),
     );
 
     $firstRevision = $command->handle(
@@ -200,6 +201,7 @@ it('keeps the current revision unchanged when adding a new revision', function (
     $command = new AddBlueprintRevision(
         repository: $repository,
         behaviorContractValidator: new BehaviorContractValidator(),
+        behaviorDigestCalculator: new \App\Application\Behavior\BehaviorDigestCalculator(),
     );
 
     $firstRevision = $command->handle(
@@ -294,6 +296,7 @@ it('allows adding a new revision to an active blueprint without changing the cur
     $command = new AddBlueprintRevision(
         repository: $repository,
         behaviorContractValidator: new BehaviorContractValidator(),
+        behaviorDigestCalculator: new \App\Application\Behavior\BehaviorDigestCalculator(),
     );
 
     $secondRevision = $command->handle(
@@ -362,6 +365,7 @@ it('rejects an invalid behavior contract before persistence', function () {
     $command = new AddBlueprintRevision(
         repository: $repository,
         behaviorContractValidator: new BehaviorContractValidator(),
+        behaviorDigestCalculator: new \App\Application\Behavior\BehaviorDigestCalculator(),
     );
 
     expect(fn () => $command->handle(
@@ -426,6 +430,7 @@ it('validates behavior before creating the revision', function () {
     $command = new AddBlueprintRevision(
         repository: $repository,
         behaviorContractValidator: new BehaviorContractValidator(),
+        behaviorDigestCalculator: new \App\Application\Behavior\BehaviorDigestCalculator(),
     );
 
     $revision = $command->handle(
