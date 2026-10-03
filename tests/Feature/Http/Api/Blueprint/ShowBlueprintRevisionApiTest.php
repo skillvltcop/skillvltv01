@@ -109,7 +109,7 @@ it('retrieves a blueprint revision through the HTTP API', function () {
 
     $response->assertJsonPath(
         'behavior_digest',
-        'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        'sha256:e325d6b4ec4405af44471bec2b19a11208780894e355f2457117519af0dbcd71',
     );
 
     $response->assertJsonPath(
