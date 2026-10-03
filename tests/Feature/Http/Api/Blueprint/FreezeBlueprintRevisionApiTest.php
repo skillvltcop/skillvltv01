@@ -287,3 +287,74 @@ it('forbids a user from freezing a system-owned blueprint revision', function ()
             'message' => 'Forbidden.',
         ]);
 });
+
+it('rejects freezing an already frozen revision', function () {
+    $user = User::factory()->create();
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'freeze-already-frozen',
+        namespace: 'skillvlt.edu.freeze',
+        ownership: [
+            'type' => 'user',
+            'id' => (string) $user->id,
+        ],
+        metadata: [],
+    );
+
+    $revision = (new AddBlueprintRevision(
+        repository: $repository,
+        behaviorContractValidator: new BehaviorContractValidator(),
+    ))->handle(
+        blueprintId: (string) $blueprint->id(),
+        number: '1.0.0',
+        behaviorDigest:
+            'sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'status' => 'ok',
+                    ],
+                ],
+            ],
+        ],
+        outputs: [
+            'type' => 'assessment-result',
+        ],
+        policies: [
+            'visibility' => 'public',
+        ],
+    );
+
+    $this->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/revisions/{$revision->id()}/freeze",
+        )
+        ->assertSuccessful();
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/revisions/{$revision->id()}/freeze",
+        );
+
+    $response
+        ->assertUnprocessable()
+        ->assertJson([
+            'message' => 'Revision is already frozen.',
+        ]);
+
+    $this->assertDatabaseHas('blueprint_revisions', [
+        'id' => (string) $revision->id(),
+        'frozen' => true,
+    ]);
+});
