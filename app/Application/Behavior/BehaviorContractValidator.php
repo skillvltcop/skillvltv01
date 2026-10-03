@@ -178,6 +178,16 @@ final class BehaviorContractValidator
         if (! array_key_exists('value', $condition)) {
             $errors["{$prefix}.condition.value"] =
                 'Condition must contain a static comparison value.';
+        } elseif (
+            in_array(
+                $operator,
+                ['gt', 'gte', 'lt', 'lte'],
+                true,
+            )
+            && (! is_int($condition['value']) && ! is_float($condition['value']))
+        ) {
+            $errors["{$prefix}.condition.value"] =
+                'Numeric comparison operators require a numeric comparison value.';
         }
 
         $assignTo = $step['assign_to'] ?? null;
