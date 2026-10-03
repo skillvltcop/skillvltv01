@@ -32,11 +32,6 @@ public function __construct(
                     'string',
                     'max:255',
                 ],
-                'behavior_digest' => [
-                    'required',
-                    'string',
-                    'max:255',
-                ],
                 'contracts' => [
                     'required',
                     'array',
@@ -84,7 +79,6 @@ public function __construct(
             $revision = $this->command->handle(
                 blueprintId: $blueprint,
                 number: $validated['number'],
-                behaviorDigest: $validated['behavior_digest'],
                 contracts: $validated['contracts'],
                 logic: $validated['logic'],
                 outputs: $validated['outputs'],
