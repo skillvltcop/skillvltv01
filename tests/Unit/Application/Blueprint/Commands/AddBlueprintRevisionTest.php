@@ -95,7 +95,7 @@ it('adds a revision to an existing blueprint and persists it', function () {
 
     expect((string) $revision->behaviorDigest())
         ->toBe(
-            'sha256:fa86626d8f2b1e31d24d0ebf1c3e9f7efb5cecad73b12624dbf379f04ce120b7'
+            'sha256:0a4f71e3089d5966be9079cbd5363ee324521cdd689840c06f7df6b489476232'
         );
 
     expect($blueprint->currentRevision())
