@@ -290,6 +290,126 @@ it('forbids a user from promoting another user blueprint revision', function () 
     $response->assertForbidden();
 });
 
+it('rejects promoting a revision older than the current revision', function () {
+    $repository = new EloquentBlueprintRepository();
+    $user = User::factory()->create();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'assessment-rubric-promote-order',
+        namespace: 'skillvlt.edu.assessment',
+        ownership: [
+            'type' => 'user',
+            'id' => (string) $user->id,
+        ],
+        metadata: [],
+    );
+
+    $revisionOne = (new AddBlueprintRevision(
+        repository: $repository,
+        behaviorContractValidator: new BehaviorContractValidator(),
+    ))->handle(
+        blueprintId: (string) $blueprint->id(),
+        number: '1.0.0',
+        behaviorDigest:
+            'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'ok',
+                    ],
+                ],
+            ],
+        ],
+        outputs: [
+            'type' => 'assessment-result',
+        ],
+        policies: [
+            'visibility' => 'public',
+        ],
+    );
+
+    (new FreezeBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        revisionId: (string) $revisionOne->id(),
+    );
+
+    $this->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/revisions/{$revisionOne->id()}/promote",
+        )
+        ->assertSuccessful();
+
+    $revisionTwo = (new AddBlueprintRevision(
+        repository: $repository,
+        behaviorContractValidator: new BehaviorContractValidator(),
+    ))->handle(
+        blueprintId: (string) $blueprint->id(),
+        number: '1.1.0',
+        behaviorDigest:
+            'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'updated',
+                    ],
+                ],
+            ],
+        ],
+        outputs: [
+            'type' => 'assessment-result',
+        ],
+        policies: [
+            'visibility' => 'public',
+        ],
+    );
+
+    (new FreezeBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        revisionId: (string) $revisionTwo->id(),
+    );
+
+    $this->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/revisions/{$revisionTwo->id()}/promote",
+        )
+        ->assertSuccessful();
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/revisions/{$revisionOne->id()}/promote",
+        );
+
+    $response
+        ->assertUnprocessable()
+        ->assertJson([
+            'message' => 'A Revision must be newer than the current Revision.',
+        ]);
+
+    $this->assertDatabaseHas('blueprints', [
+        'id' => (string) $blueprint->id(),
+        'current_revision_id' => (string) $revisionTwo->id(),
+    ]);
+}
+
 it('rejects unauthenticated revision promotion', function () {
     $blueprintId = BlueprintId::generate();
     $revisionId = RevisionId::generate();
