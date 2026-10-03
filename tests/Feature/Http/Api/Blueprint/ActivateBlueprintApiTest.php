@@ -276,3 +276,86 @@ it('forbids a user from adding a revision to a system-owned blueprint', function
 
     $response->assertForbidden();
 });
+
+it('rejects activating a deprecated blueprint', function () {
+    $repository = new EloquentBlueprintRepository();
+    $user = User::factory()->create();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'assessment-rubric-reactivate-deprecated',
+        namespace: 'skillvlt.edu.assessment',
+        ownership: [
+            'type' => 'user',
+            'id' => (string) $user->id,
+        ],
+        metadata: [],
+    );
+
+    $revision = (new AddBlueprintRevision(
+        repository: $repository,
+        behaviorContractValidator: new BehaviorContractValidator(),
+    ))->handle(
+        blueprintId: (string) $blueprint->id(),
+        number: '1.0.0',
+        behaviorDigest:
+            'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'status' => 'ok',
+                    ],
+                ],
+            ],
+        ],
+        outputs: [
+            'type' => 'assessment-result',
+        ],
+        policies: [
+            'visibility' => 'public',
+        ],
+    );
+
+    (new FreezeBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        revisionId: (string) $revision->id(),
+    );
+
+    (new PromoteBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        revisionId: (string) $revision->id(),
+    );
+
+    $blueprint = $repository->find(
+        new BlueprintId((string) $blueprint->id()),
+    );
+
+    $blueprint->activate();
+    $blueprint->deprecate();
+
+    $repository->save($blueprint);
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson("/api/blueprints/{$blueprint->id()}/activate");
+
+    $response
+        ->assertUnprocessable()
+        ->assertJson([
+            'message' =>
+                'Invalid Blueprint lifecycle transition: deprecated → active.',
+        ]);
+
+    $this->assertDatabaseHas('blueprints', [
+        'id' => (string) $blueprint->id(),
+        'lifecycle_status' => 'deprecated',
+    ]);
+});
