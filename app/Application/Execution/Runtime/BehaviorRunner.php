@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Execution\Runtime;
 
+use App\Application\Behavior\BehaviorContractValidator;
 use App\Application\Behavior\ValueResolver;
 use App\Application\Execution\Runtime\Contracts\BehaviorRunner as BehaviorRunnerContract;
 
@@ -11,6 +12,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
 {
     public function __construct(
         private ValueResolver $valueResolver,
+        private BehaviorContractValidator $contractValidator,
     ) {
     }
 
@@ -25,6 +27,8 @@ final class BehaviorRunner implements BehaviorRunnerContract
         array $input,
         array $context = [],
     ): array {
+        $this->contractValidator->validate($logic);
+
         $state = [];
 
         foreach ($logic['steps'] as $step) {
