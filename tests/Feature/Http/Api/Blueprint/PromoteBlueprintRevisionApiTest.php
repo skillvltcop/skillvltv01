@@ -408,7 +408,7 @@ it('rejects promoting a revision older than the current revision', function () {
         'id' => (string) $blueprint->id(),
         'current_revision_id' => (string) $revisionTwo->id(),
     ]);
-}
+});
 
 it('rejects unauthenticated revision promotion', function () {
     $blueprintId = BlueprintId::generate();
