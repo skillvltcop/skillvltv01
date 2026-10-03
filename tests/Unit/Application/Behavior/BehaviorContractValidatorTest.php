@@ -219,6 +219,21 @@ test('it rejects unsupported evaluate_rule operator', function () {
         ->toThrow(InvalidBehaviorContractException::class);
 });
 
+test('it rejects non-numeric comparison values for numeric operators', function ($operator) {
+    $contract = validBehaviorContract();
+
+    $contract['steps'][0]['condition']['operator'] = $operator;
+    $contract['steps'][0]['condition']['value'] = '10';
+
+    expect(fn () => $this->validator->validate($contract))
+        ->toThrow(InvalidBehaviorContractException::class);
+})->with([
+    'gt',
+    'gte',
+    'lt',
+    'lte',
+]);
+
 test('it accepts valid paths', function ($path) {
     $contract = validBehaviorContract();
 
