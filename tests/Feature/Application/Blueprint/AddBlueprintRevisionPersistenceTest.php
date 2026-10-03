@@ -97,7 +97,7 @@ it('persists the parent revision relationship for a subsequent revision', functi
     $firstRevision = $command->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
-        behaviorDigest: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        behaviorDigest: 'sha256:fa86626d8f2b1e31d24d0ebf1c3e9f7efb5cecad73b12624dbf379f04ce120b7',
         contracts: ['input' => ['type' => 'object']],
         logic: [
             'type' => 'steps',
