@@ -289,7 +289,7 @@ it('reconstitutes invalid behavior safely for runtime failure handling', functio
         'owner_type' => 'system',
         'owner_id' => 'skillvlt',
         'lifecycle_status' => 'active',
-        'current_revision_id' => $revisionId,
+        'current_revision_id' => null,
     ]);
 
     BlueprintRevision::query()->create([
@@ -326,6 +326,12 @@ it('reconstitutes invalid behavior safely for runtime failure handling', functio
         'policies' => [],
         'frozen' => true,
     ]);
+
+    BlueprintModel::query()
+        ->whereKey($blueprintId)
+        ->update([
+            'current_revision_id' => $revisionId,
+        ]);
 
     $repository = new EloquentBlueprintRepository();
 
