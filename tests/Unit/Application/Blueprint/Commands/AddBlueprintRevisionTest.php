@@ -67,12 +67,12 @@ it('adds a revision to an existing blueprint and persists it', function () {
     $command = new AddBlueprintRevision(
         repository: $repository,
         behaviorContractValidator: new BehaviorContractValidator(),
+        behaviorDigestCalculator: new \App\Application\Behavior\BehaviorDigestCalculator(),
     );
 
     $revision = $command->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
-        behaviorDigest: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         contracts: [
             'input' => ['type' => 'object'],
         ],
@@ -95,7 +95,7 @@ it('adds a revision to an existing blueprint and persists it', function () {
 
     expect((string) $revision->behaviorDigest())
         ->toBe(
-            'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+            'sha256:fa86626d8f2b1e31d24d0ebf1c3e9f7efb5cecad73b12624dbf379f04ce120b7'
         );
 
     expect($blueprint->currentRevision())
@@ -141,7 +141,6 @@ it('links a new revision to the previous revision', function () {
     $firstRevision = $command->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
-        behaviorDigest: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         contracts: ['input' => ['type' => 'object']],
         logic: validBehaviorLogic(),
         outputs: ['type' => 'assessment-result'],
@@ -151,7 +150,6 @@ it('links a new revision to the previous revision', function () {
     $secondRevision = $command->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.1.0',
-        behaviorDigest: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
         contracts: ['input' => ['type' => 'object']],
         logic: validBehaviorLogic(),
         outputs: ['type' => 'assessment-result'],
@@ -207,7 +205,6 @@ it('keeps the current revision unchanged when adding a new revision', function (
     $firstRevision = $command->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
-        behaviorDigest: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         contracts: ['input' => ['type' => 'object']],
         logic: validBehaviorLogic(),
         outputs: ['type' => 'assessment-result'],
@@ -225,7 +222,6 @@ it('keeps the current revision unchanged when adding a new revision', function (
     $secondRevision = $command->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.1.0',
-        behaviorDigest: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
         contracts: ['input' => ['type' => 'object']],
         logic: validBehaviorLogic(),
         outputs: ['type' => 'assessment-result'],
@@ -303,8 +299,6 @@ it('allows adding a new revision to an active blueprint without changing the cur
     $secondRevision = $command->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.1.0',
-        behaviorDigest:
-            'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
         contracts: [
             'input' => ['type' => 'object'],
         ],
@@ -373,8 +367,6 @@ it('rejects an invalid behavior contract before persistence', function () {
     expect(fn () => $command->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
-        behaviorDigest:
-            'sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
         contracts: [
             'input' => ['type' => 'object'],
         ],
@@ -439,8 +431,6 @@ it('validates behavior before creating the revision', function () {
     $revision = $command->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
-        behaviorDigest:
-            'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
         contracts: [
             'input' => ['type' => 'object'],
         ],
