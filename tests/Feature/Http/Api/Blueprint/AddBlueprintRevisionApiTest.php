@@ -32,7 +32,7 @@ $response = $this
         "/api/blueprints/{$blueprint->id()}/revisions",
         [
             'number' => '1.0.0',
-            'behavior_digest' => 'sha256:fa86626d8f2b1e31d24d0ebf1c3e9f7efb5cecad73b12624dbf379f04ce120b7',
+            'behavior_digest' => 'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
             'contracts' => [
                 'input' => [
                     'type' => 'object',
@@ -135,7 +135,7 @@ $response = $this
         'blueprint_id' => (string) $blueprint->id(),
         'revision_number' => '1.0.0',
         'behavior_digest' =>
-            'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+            'sha256:fa86626d8f2b1e31d24d0ebf1c3e9f7efb5cecad73b12624dbf379f04ce120b7',
         'frozen' => false,
     ]);
 });
@@ -210,7 +210,6 @@ $response = $this
 
     $response->assertJsonValidationErrors([
         'number',
-        'behavior_digest',
         'contracts',
         'logic',
         'outputs',
@@ -289,6 +288,7 @@ it('returns 422 for a domain lifecycle violation', function () {
     $revision = (new \App\Application\Blueprint\Commands\AddBlueprintRevision(
         repository: $repository,
         behaviorContractValidator: new \App\Application\Behavior\BehaviorContractValidator(),
+        behaviorDigestCalculator: new \App\Application\Behavior\BehaviorDigestCalculator(),
     ))->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
@@ -437,6 +437,7 @@ it('allows adding a revision to a deprecated blueprint', function () {
     $revisionOne = (new \App\Application\Blueprint\Commands\AddBlueprintRevision(
         repository: $repository,
         behaviorContractValidator: new \App\Application\Behavior\BehaviorContractValidator(),
+        behaviorDigestCalculator: new \App\Application\Behavior\BehaviorDigestCalculator(),
     ))->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
