@@ -1,6 +1,7 @@
 <?php
 
 use App\Application\Blueprint\Commands\AddBlueprintRevision;
+use App\Application\Blueprint\Commands\ActivateBlueprint;
 use App\Application\Blueprint\Commands\CreateBlueprint;
 use App\Application\Blueprint\Commands\FreezeBlueprintRevision;
 use App\Domain\Blueprint\ValueObjects\BlueprintId;
@@ -467,6 +468,10 @@ it('allows promoting a newer revision while the blueprint is deprecated', functi
             "/api/blueprints/{$blueprint->id()}/revisions/{$revisionOne->id()}/promote",
         )
         ->assertSuccessful();
+
+    (new ActivateBlueprint($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+    );
 
     $this->postJson(
         "/api/blueprints/{$blueprint->id()}/deprecate",
