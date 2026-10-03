@@ -32,8 +32,7 @@ $response = $this
         "/api/blueprints/{$blueprint->id()}/revisions",
         [
             'number' => '1.0.0',
-            'behavior_digest' =>
-                'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+            'behavior_digest' => 'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
             'contracts' => [
                 'input' => [
                     'type' => 'object',
@@ -66,7 +65,6 @@ $response = $this
         'id',
         'blueprint_id',
         'number',
-        'behavior_digest',
         'contracts',
         'logic',
         'outputs',
@@ -86,7 +84,7 @@ $response = $this
 
     $response->assertJsonPath(
         'behavior_digest',
-        'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+        'sha256:fa86626d8f2b1e31d24d0ebf1c3e9f7efb5cecad73b12624dbf379f04ce120b7'
     );
 
     $response->assertJsonPath(
@@ -154,8 +152,6 @@ $response = $this
         "/api/blueprints/{$blueprintId}/revisions",
         [
             'number' => '1.0.0',
-            'behavior_digest' =>
-                'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
             'contracts' => [
                 'input' => [
                     'type' => 'object',
@@ -245,9 +241,7 @@ it('returns structured validation errors for an invalid behavior contract', func
             "/api/blueprints/{$blueprint->id()}/revisions",
             [
                 'number' => '1.0.0',
-                'behavior_digest' =>
-                    'sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
-                'contracts' => [
+                    'contracts' => [
                     'input' => [
                         'type' => 'object',
                     ],
@@ -299,8 +293,6 @@ it('returns 422 for a domain lifecycle violation', function () {
     ))->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
-        behaviorDigest:
-            'sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
         contracts: ['input' => ['type' => 'object']],
         logic: [
             'type' => 'steps',
@@ -344,9 +336,7 @@ it('returns 422 for a domain lifecycle violation', function () {
             "/api/blueprints/{$blueprint->id()}/revisions",
             [
                 'number' => '1.1.0',
-                'behavior_digest' =>
-                    'sha256:1111111111111111111111111111111111111111111111111111111111111111',
-                'contracts' => ['input' => ['type' => 'object']],
+                    'contracts' => ['input' => ['type' => 'object']],
                 'logic' => [
                     'type' => 'steps',
                     'version' => 1,
@@ -391,9 +381,7 @@ it('forbids a user from adding a revision to another user blueprint', function (
             "/api/blueprints/{$blueprint->id()}/revisions",
             [
                 'number' => '1.0.0',
-                'behavior_digest' =>
-                    'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
-                'contracts' => [
+                    'contracts' => [
                     'input' => [
                         'type' => 'object',
                     ],
@@ -453,8 +441,6 @@ it('allows adding a revision to a deprecated blueprint', function () {
     ))->handle(
         blueprintId: (string) $blueprint->id(),
         number: '1.0.0',
-        behaviorDigest:
-            'sha256:1111111111111111111111111111111111111111111111111111111111111111',
         contracts: ['input' => ['type' => 'object']],
         logic: [
             'type' => 'steps',
@@ -494,9 +480,7 @@ it('allows adding a revision to a deprecated blueprint', function () {
             "/api/blueprints/{$blueprint->id()}/revisions",
             [
                 'number' => '1.1.0',
-                'behavior_digest' =>
-                    'sha256:2222222222222222222222222222222222222222222222222222222222222222',
-                'contracts' => [
+                    'contracts' => [
                     'input' => [
                         'type' => 'object',
                     ],
@@ -595,9 +579,7 @@ it('rejects a revision number lower than the latest revision through the HTTP AP
             [
                 ...$payload,
                 'number' => '1.0.0',
-                'behavior_digest' =>
-                    'sha256:2222222222222222222222222222222222222222222222222222222222222222',
-            ],
+                ],
         );
 
     $response
