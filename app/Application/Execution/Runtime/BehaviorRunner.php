@@ -12,7 +12,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
 {
     public function __construct(
         private ValueResolver $valueResolver,
-        private BehaviorContractValidator $contractValidator,
+        private ?BehaviorContractValidator $contractValidator = null,
     ) {
     }
 
@@ -27,7 +27,8 @@ final class BehaviorRunner implements BehaviorRunnerContract
         array $input,
         array $context = [],
     ): array {
-        $this->contractValidator->validate($logic);
+        ($this->contractValidator ??= new BehaviorContractValidator())
+            ->validate($logic);
 
         $state = [];
 
