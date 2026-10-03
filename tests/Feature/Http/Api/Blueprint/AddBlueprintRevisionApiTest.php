@@ -432,3 +432,110 @@ it('rejects unauthenticated revision creation', function () {
 
     $response->assertUnauthorized();
 });
+
+it('allows adding a revision to a deprecated blueprint', function () {
+    $user = User::factory()->create();
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'revision-deprecated-api',
+        namespace: 'skillvlt.edu.revisions',
+        ownership: [
+            'type' => 'user',
+            'id' => (string) $user->id,
+        ],
+        metadata: [],
+    );
+
+    $revisionOne = (new \App\Application\Blueprint\Commands\AddBlueprintRevision(
+        repository: $repository,
+        behaviorContractValidator: new \App\Application\Behavior\BehaviorContractValidator(),
+    ))->handle(
+        blueprintId: (string) $blueprint->id(),
+        number: '1.0.0',
+        behaviorDigest:
+            'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        contracts: ['input' => ['type' => 'object']],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => ['status' => 'ok'],
+                ],
+            ],
+        ],
+        outputs: ['type' => 'assessment-result'],
+        policies: ['visibility' => 'public'],
+    );
+
+    (new \App\Application\Blueprint\Commands\FreezeBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        revisionId: (string) $revisionOne->id(),
+    );
+
+    (new \App\Application\Blueprint\Commands\PromoteBlueprintRevision($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+        revisionId: (string) $revisionOne->id(),
+    );
+
+    (new \App\Application\Blueprint\Commands\ActivateBlueprint($repository))->handle(
+        blueprintId: (string) $blueprint->id(),
+    );
+
+    $this->actingAs($user)
+        ->postJson("/api/blueprints/{$blueprint->id()}/deprecate")
+        ->assertSuccessful();
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/revisions",
+            [
+                'number' => '1.1.0',
+                'behavior_digest' =>
+                    'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+                'contracts' => [
+                    'input' => [
+                        'type' => 'object',
+                    ],
+                ],
+                'logic' => [
+                    'type' => 'steps',
+                    'version' => 1,
+                    'steps' => [
+                        [
+                            'type' => 'return',
+                            'data' => [
+                                'status' => 'updated',
+                            ],
+                        ],
+                    ],
+                ],
+                'outputs' => [
+                    'type' => 'assessment-result',
+                ],
+                'policies' => [
+                    'visibility' => 'public',
+                ],
+            ],
+        );
+
+    $response
+        ->assertCreated()
+        ->assertJsonPath('number', '1.1.0')
+        ->assertJsonPath('frozen', false);
+
+    $this->assertDatabaseHas('blueprints', [
+        'id' => (string) $blueprint->id(),
+        'lifecycle_status' => 'deprecated',
+    ]);
+
+    $this->assertDatabaseHas('blueprint_revisions', [
+        'id' => $response->json('id'),
+        'blueprint_id' => (string) $blueprint->id(),
+        'revision_number' => '1.1.0',
+        'frozen' => false,
+    ]);
+});
