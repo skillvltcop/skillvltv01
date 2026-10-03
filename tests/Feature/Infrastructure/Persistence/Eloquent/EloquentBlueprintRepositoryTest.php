@@ -278,6 +278,85 @@ it('reconstitutes the current revision from persistence', function () {
         ->toBe($revisionId);
 });
 
+it('reconstitutes invalid behavior safely for runtime failure handling', function () {
+    $blueprintId = (string) Str::ulid();
+    $revisionId = (string) Str::ulid();
+
+    BlueprintModel::query()->create([
+        'id' => $blueprintId,
+        'canonical_name' => 'persisted-invalid-behavior',
+        'namespace' => 'skillvlt.edu.test',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'active',
+        'current_revision_id' => $revisionId,
+    ]);
+
+    BlueprintRevision::query()->create([
+        'id' => $revisionId,
+        'blueprint_id' => $blueprintId,
+        'revision_number' => '1.0.0',
+        'parent_revision_id' => null,
+        'behavior_digest' => 'sha256:' . str_repeat('a', 64),
+        'contracts' => [],
+        'logic' => [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'evaluate_rule',
+                    'condition' => [
+                        'field' => 'input.score',
+                        'operator' => 'gt',
+                        'value' => '10',
+                    ],
+                    'assign_to' => 'result_status',
+                    'true_value' => 'pass',
+                    'false_value' => 'fail',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'status' => '{state.result_status}',
+                    ],
+                ],
+            ],
+        ],
+        'outputs' => [],
+        'policies' => [],
+        'frozen' => true,
+    ]);
+
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprint = $repository->find(
+        new BlueprintId($blueprintId),
+    );
+
+    expect($blueprint)
+        ->not->toBeNull();
+
+    $engine = new \App\Application\Execution\Engine\ExecutionEngine(
+        runner: new \App\Application\Execution\Runtime\BehaviorRunner(
+            new \App\Application\Behavior\ValueResolver(),
+            new \App\Application\Behavior\BehaviorContractValidator(),
+        ),
+    );
+
+    $execution = $engine->execute(
+        blueprint: $blueprint,
+        revisionId: new \App\Domain\Blueprint\ValueObjects\RevisionId($revisionId),
+        input: ['score' => 14],
+        context: [],
+    );
+
+    expect($execution->status())
+        ->toBe(\App\Domain\Execution\Enums\ExecutionStatus::FAILED);
+
+    expect($execution->error())
+        ->toContain('Behavior contract validation failed');
+});
+
 it('round trips a complete blueprint aggregate through persistence', function () {
     $blueprint = \App\Domain\Blueprint\Entities\Blueprint::create(
         canonicalName: new \App\Domain\Blueprint\ValueObjects\CanonicalName(
