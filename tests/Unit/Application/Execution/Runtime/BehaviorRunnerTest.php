@@ -399,10 +399,7 @@ it('rejects behavior execution without a return step', function () {
             'student_name' => 'Ahmed',
         ],
         context: [],
-    ))->toThrow(
-        DomainException::class,
-        'Behavior execution did not produce a return output.'
-    );
+    ))->toThrow(InvalidBehaviorContractException::class);
 });
 
 it('rejects an unsupported behavior step type', function () {
@@ -422,10 +419,7 @@ it('rejects an unsupported behavior step type', function () {
         logic: $logic,
         input: [],
         context: [],
-    ))->toThrow(
-        DomainException::class,
-        'Unsupported behavior step type "unsupported_step".'
-    );
+    ))->toThrow(InvalidBehaviorContractException::class);
 });
 
 it('uses strict type comparison for equality', function () {
