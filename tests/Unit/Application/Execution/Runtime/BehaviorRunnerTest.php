@@ -1,13 +1,16 @@
 <?php
 
+use App\Application\Behavior\BehaviorContractValidator;
 use App\Application\Behavior\ValueResolver;
 use App\Application\Execution\Runtime\BehaviorRunner;
+use App\Domain\Behavior\Exceptions\InvalidBehaviorContractException;
 use App\Domain\Behavior\Exceptions\UnresolvablePathException;
 
 function createBehaviorRunner(): BehaviorRunner
 {
     return new BehaviorRunner(
         new ValueResolver(),
+        new BehaviorContractValidator(),
     );
 }
 
@@ -318,6 +321,23 @@ it('rejects non-scalar interpolation values', function () {
         DomainException::class,
         'Interpolation value for "input.tags" must be scalar.'
     );
+});
+
+it('rejects an invalid behavior contract before runtime execution', function () {
+    $runner = createBehaviorRunner();
+
+    $logic = executableBehavior();
+    $logic['steps'][0]['condition']['operator'] = 'gt';
+    $logic['steps'][0]['condition']['value'] = '10';
+
+    expect(fn () => $runner->run(
+        logic: $logic,
+        input: [
+            'student_name' => 'Ahmed',
+            'score' => 14,
+        ],
+        context: [],
+    ))->toThrow(InvalidBehaviorContractException::class);
 });
 
 it('rejects numeric comparison when values are not numeric', function () {
