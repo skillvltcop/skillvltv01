@@ -539,3 +539,78 @@ it('allows adding a revision to a deprecated blueprint', function () {
         'frozen' => false,
     ]);
 });
+
+
+it('rejects a revision number lower than the latest revision through the HTTP API', function () {
+    $user = User::factory()->create();
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'revision-order-api',
+        namespace: 'skillvlt.edu.revisions',
+        ownership: [
+            'type' => 'user',
+            'id' => (string) $user->id,
+        ],
+        metadata: [],
+    );
+
+    $payload = [
+        'number' => '1.1.0',
+        'behavior_digest' =>
+            'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        'contracts' => [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        'logic' => [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'status' => 'ok',
+                    ],
+                ],
+            ],
+        ],
+        'outputs' => [
+            'type' => 'assessment-result',
+        ],
+        'policies' => [
+            'visibility' => 'public',
+        ],
+    ];
+
+    $this->actingAs($user)
+        ->postJson("/api/blueprints/{$blueprint->id()}/revisions", $payload)
+        ->assertCreated();
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/revisions",
+            [
+                ...$payload,
+                'number' => '1.0.0',
+                'behavior_digest' =>
+                    'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+            ],
+        );
+
+    $response
+        ->assertUnprocessable()
+        ->assertJson([
+            'message' =>
+                'A new Revision number must be greater than the latest Revision number.',
+        ]);
+
+    $this->assertDatabaseCount('blueprint_revisions', 1);
+
+    $this->assertDatabaseHas('blueprint_revisions', [
+        'blueprint_id' => (string) $blueprint->id(),
+        'revision_number' => '1.1.0',
+    ]);
+});
