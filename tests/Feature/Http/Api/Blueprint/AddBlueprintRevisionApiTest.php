@@ -84,7 +84,7 @@ $response = $this
 
     $response->assertJsonPath(
         'behavior_digest',
-        'sha256:fa86626d8f2b1e31d24d0ebd1c3e9f7efb5cecad73b12624dbf379f04ce120b7',
+        'sha256:fa86626d8f2b1e31d24d0ebf1c3e9f7efb5cecad73b12624dbf379f04ce120b7',
     );
 
     $response->assertJsonPath(
