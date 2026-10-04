@@ -448,20 +448,4 @@ final class Blueprint
         return $blueprint;
     }
 
-    /**
-     * @param array<string, mixed> $metadata
-     */
-    private static function assertSupportedMetadata(array $metadata): void
-    {
-        foreach (array_keys($metadata) as $field) {
-            if (! in_array($field, self::SUPPORTED_METADATA_FIELDS, true)) {
-                throw new \DomainException(
-                    sprintf(
-                        'Unsupported Blueprint metadata field: %s.',
-                        $field,
-                    )
-                );
-            }
-        }
-    }
 }
