@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Database\Seeders\AssessmentPositioningBlueprintSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -38,4 +39,26 @@ it('rejects invalid browser credentials', function () {
     $response->assertRedirect('/login');
     $response->assertSessionHasErrors('email');
     $this->assertGuest();
+});
+
+it('uses the browser session to access the teacher discovery api', function () {
+    $user = User::factory()->create([
+        'email' => 'teacher@example.com',
+        'password' => 'password',
+    ]);
+
+    (new AssessmentPositioningBlueprintSeeder())->run();
+
+    $this->post('/login', [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $response = $this->getJson('/api/teacher/blueprints/discover');
+
+    $response->assertSuccessful();
+    $response->assertJsonPath(
+        'data.0.title',
+        'Assessment Positioning',
+    );
 });
