@@ -27,6 +27,37 @@ it('renders the assessment positioning teacher page', function () {
     $response->assertSee('Determine positioning');
 });
 
+
+it('renders the localized shell for supported locales', function () {
+    $user = User::factory()->create();
+
+    $expected = [
+        'ar' => [
+            'title' => 'أداة التموضع التقويمي',
+            'execute' => 'تحديد التموضع',
+        ],
+        'fr' => [
+            'title' => 'Outil de positionnement évaluatif',
+            'execute' => 'Déterminer le positionnement',
+        ],
+        'en' => [
+            'title' => 'Assessment Positioning Tool',
+            'execute' => 'Determine positioning',
+        ],
+    ];
+
+    foreach ($expected as $locale => $texts) {
+        $response = $this
+            ->actingAs($user)
+            ->withSession(['locale' => $locale])
+            ->get('/teacher/tools/assessment-positioning');
+
+        $response->assertSuccessful();
+        $response->assertSee($texts['title']);
+        $response->assertSee($texts['execute']);
+    }
+});
+
 it('requires browser authentication', function () {
     $response = $this->get('/teacher/tools/assessment-positioning');
 
