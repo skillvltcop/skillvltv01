@@ -111,7 +111,7 @@
     const translations = @json($t);
 
     try {
-        const response = await fetch('/api/teacher/blueprints/discover', {
+        const response = await fetch(`/api/teacher/blueprints/discover?locale=${encodeURIComponent(document.documentElement.lang)}`, {
             credentials: 'same-origin',
             headers: {
                 'Accept': 'application/json',
