@@ -2,98 +2,21 @@
 
 return [
 
-    /*
-    |--------------------------------------------------------------------------
-    | Application Name
-    |--------------------------------------------------------------------------
-    |
-    | This value is the name of your application, which will be used when the
-    | framework needs to place the application's name in a notification or
-    | other UI elements where an application name needs to be displayed.
-    |
-    */
-
     'name' => env('APP_NAME', 'Laravel'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Application Environment
-    |--------------------------------------------------------------------------
-    |
-    | This value determines the "environment" your application is currently
-    | running in. This may determine how you prefer to configure various
-    | services the application utilizes. Set this in your ".env" file.
-    |
-    */
 
     'env' => env('APP_ENV', 'production'),
 
-    /*
-    |--------------------------------------------------------------------------
-    | Application Debug Mode
-    |--------------------------------------------------------------------------
-    |
-    | When your application is in debug mode, detailed error messages with
-    | stack traces will be shown on every error that occurs within your
-    | application. If disabled, a simple generic error page is shown.
-    |
-    */
-
     'debug' => (bool) env('APP_DEBUG', false),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Application URL
-    |--------------------------------------------------------------------------
-    |
-    | This URL is used by the console to properly generate URLs when using
-    | the Artisan command line tool. You should set this to the root of
-    | the application so that it's available within Artisan commands.
-    |
-    */
 
     'url' => env('APP_URL', 'http://localhost'),
 
-    /*
-    |--------------------------------------------------------------------------
-    | Application Timezone
-    |--------------------------------------------------------------------------
-    |
-    | Here you may specify the default timezone for your application, which
-    | will be used by the PHP date and date-time functions. The timezone
-    | is set to "UTC" by default as it is suitable for most use cases.
-    |
-    */
-
     'timezone' => 'UTC',
 
-    /*
-    |--------------------------------------------------------------------------
-    | Application Locale Configuration
-    |--------------------------------------------------------------------------
-    |
-    | The application locale determines the default locale that will be used
-    | by Laravel's translation / localization methods. This option can be
-    | set to any locale for which you plan to have translation strings.
-    |
-    */
+    'locale' => env('APP_LOCALE', 'ar'),
 
-    'locale' => env('APP_LOCALE', 'en'),
-
-    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
+    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'ar'),
 
     'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Encryption Key
-    |--------------------------------------------------------------------------
-    |
-    | This key is utilized by Laravel's encryption services and should be set
-    | to a random, 32 character string to ensure that all encrypted values
-    | are secure. You should do this prior to deploying the application.
-    |
-    */
 
     'cipher' => 'AES-256-CBC',
 
@@ -101,26 +24,101 @@ return [
 
     'previous_keys' => [
         ...array_filter(
-            explode(',', (string) env('APP_PREVIOUS_KEYS', ''))
+            explode(',', (string) env('APP_PREVIOUS_KEYS', '')),
         ),
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Maintenance Mode Driver
-    |--------------------------------------------------------------------------
-    |
-    | These configuration options determine the driver used to determine and
-    | manage Laravel's "maintenance mode" status. The "cache" driver will
-    | allow maintenance mode to be controlled across multiple machines.
-    |
-    | Supported drivers: "file", "cache"
-    |
-    */
 
     'maintenance' => [
         'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'auth' => [
+        'defaults' => [
+            'guard' => env('AUTH_GUARD', 'web'),
+            'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),
+        ],
+        'guards' => [
+            'web' => [
+                'driver' => 'session',
+                'provider' => 'users',
+            ],
+        ],
+        'providers' => [
+            'users' => [
+                'driver' => 'eloquent',
+                'model' => App\Models\User::class,
+            ],
+        ],
+    ],
+
+    'logging' => [
+        'channels' => [
+            'stack' => [
+                'driver' => 'stack',
+                'channels' => explode(',', (string) env('LOG_STACK', 'single')),
+                'ignore_exceptions' => false,
+            ],
+        ],
+    ],
+
+    'session' => [
+        'driver' => env('SESSION_DRIVER', 'database'),
+        'lifetime' => (int) env('SESSION_LIFETIME', 120),
+        'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
+        'encrypt' => env('SESSION_ENCRYPT', false),
+        'files' => storage_path('framework/sessions'),
+        'connection' => env('SESSION_CONNECTION'),
+        'table' => env('SESSION_TABLE', 'sessions'),
+        'store' => env('SESSION_STORE'),
+        'lottery' => [2, 100],
+        'cookie' => env(
+            'SESSION_COOKIE',
+            'laravel-session',
+        ),
+        'path' => '/',
+        'domain' => env('SESSION_DOMAIN'),
+        'secure' => env('SESSION_SECURE_COOKIE'),
+        'http_only' => true,
+        'same_site' => 'lax',
+    ],
+
+    'broadcasting' => [
+        'default' => env('BROADCAST_CONNECTION', 'null'),
+    ],
+
+    'cache' => [
+        'stores' => [
+            'array' => ['driver' => 'array'],
+        ],
+        'prefix' => env('CACHE_PREFIX', 'laravel-cache'),
+    ],
+
+    'filesystems' => [
+        'default' => env('FILESYSTEM_DISK', 'local'),
+        'disks' => [
+            'local' => [
+                'driver' => 'local',
+                'root' => storage_path('app/private'),
+                'serve' => false,
+                'throw' => false,
+            ],
+        ],
+    ],
+
+    'queue' => [
+        'default' => env('QUEUE_CONNECTION', 'database'),
+    ],
+
+    'view' => [
+        'paths' => [
+            resource_path('views'),
+        ],
+        'compiled' => env(
+            'VIEW_COMPILED_PATH',
+            realpath(storage_path('framework/views')),
+        ),
+    ],
+
+    'services' => [],
 ];
