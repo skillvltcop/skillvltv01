@@ -136,6 +136,11 @@ Route::middleware('auth:sanctum')->group(function () {
         ExecuteTeacherBlueprintController::class,
     );
 
+    Route::post(
+        '/teacher/tools/{tool}/execute',
+        ExecuteTeacherBlueprintController::class,
+    );
+
     Route::get(
         '/executions/{execution}',
         ShowExecutionController::class,
