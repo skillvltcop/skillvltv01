@@ -1,0 +1,63 @@
+<?php
+
+use App\Models\User;
+use Database\Seeders\AssessmentPositioningBlueprintSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+uses(
+    TestCase::class,
+    RefreshDatabase::class,
+);
+
+it('executes a teacher blueprint without exposing revision details', function () {
+    $user = User::factory()->create();
+
+    (new AssessmentPositioningBlueprintSeeder())->run();
+
+    $blueprints = (new \App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository())->discover();
+
+    expect($blueprints)->toHaveCount(1);
+
+    $blueprintId = (string) $blueprints[0]->id();
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/teacher/blueprints/{$blueprintId}/execute",
+            [
+                'input' => [
+                    'score' => 59,
+                ],
+                'context' => [],
+            ],
+        );
+
+    $response->assertSuccessful();
+    $response->assertJsonStructure([
+        'execution_id',
+        'status',
+        'output',
+        'error',
+    ]);
+    $response->assertJsonPath('status', 'completed');
+    $response->assertJsonPath('output.score', '59');
+    $response->assertJsonPath('output.positioning', 'needs_support');
+
+    $response->assertJsonMissingPath('revision_id');
+    $response->assertJsonMissingPath('blueprint_id');
+});
+
+it('rejects unauthenticated teacher blueprint execution', function () {
+    $response = $this->postJson(
+        '/api/teacher/blueprints/not-a-blueprint/execute',
+        [
+            'input' => [
+                'score' => 59,
+            ],
+            'context' => [],
+        ],
+    );
+
+    $response->assertUnauthorized();
+});
