@@ -25,7 +25,7 @@ final class DiscoverTeacherBlueprintsController
                     $metadata = $blueprint->metadata();
                     $revision = $blueprint->currentRevision();
 
-                    $locale = (string) $request->header('Accept-Language', app()->getLocale());
+                    $locale = (string) $request->query('locale', $request->header('Accept-Language', app()->getLocale()));
                     $locale = in_array($locale, ['ar', 'fr', 'en'], true) ? $locale : app()->getLocale();
 
                     $localize = static function (mixed $value) use ($locale): mixed {
