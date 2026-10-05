@@ -22,6 +22,8 @@ it('renders the assessment positioning teacher page', function () {
     $response->assertSuccessful();
     $response->assertSee('Assessment Positioning');
     $response->assertSee('/api/teacher/blueprints/discover', false);
+    $response->assertSee('/api/teacher/tools/assessment-positioning/execute', false);
+    $response->assertSee('تحديد التموضع');
 });
 
 it('requires browser authentication', function () {
