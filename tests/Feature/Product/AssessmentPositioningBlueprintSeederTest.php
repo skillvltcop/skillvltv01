@@ -1,6 +1,6 @@
 <?php
 
-use App\Domain\Blueprint\Enums\BlueprintLifecycleStatus;
+use App\Domain\Blueprint\Enums\LifecycleStatus;
 use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
 use Database\Seeders\AssessmentPositioningBlueprintSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -26,7 +26,7 @@ it('seeds the assessment positioning blueprint as an active system blueprint', f
         ->toBe('assessment-positioning');
 
     expect($blueprint->lifecycleStatus())
-        ->toBe(BlueprintLifecycleStatus::ACTIVE);
+        ->toBe(LifecycleStatus::ACTIVE);
 
     expect($blueprint->revisions())
         ->toHaveCount(1);
