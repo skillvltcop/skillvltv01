@@ -30,7 +30,7 @@ it('executes the first real assessment positioning blueprint', function () {
         ],
         metadata: [
             'title' => 'Assessment Positioning',
-            'description' => 'Classifies a learner from an assessment score.',
+            'description' => 'Determines whether a learner needs support from an assessment score.',
         ],
     );
 
@@ -127,13 +127,13 @@ it('executes the first real assessment positioning blueprint', function () {
     );
 
     $cases = [
-        25 => 'priority_support',
-        55 => 'needs_support',
-        70 => 'satisfactory',
-        90 => 'excellent',
+        40 => 'needs_support',
+        59 => 'needs_support',
+        60 => 'ready',
+        90 => 'ready',
     ];
 
-    foreach ($cases as $score => $expectedLevel) {
+    foreach ($cases as $score => $expectedPositioning) {
         $response = $this
             ->actingAs($user)
             ->postJson(
@@ -160,8 +160,8 @@ it('executes the first real assessment positioning blueprint', function () {
         );
 
         $response->assertJsonPath(
-            'output.level',
-            $expectedLevel,
+            'output.positioning',
+            $expectedPositioning,
         );
     }
 });
