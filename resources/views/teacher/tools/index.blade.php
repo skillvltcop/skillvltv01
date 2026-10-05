@@ -25,7 +25,18 @@
 </head>
 <body>
 <main>
-    <h1>أدوات المعلم</h1>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:24px;">
+        <h1 style="margin:0;">أدوات المعلم</h1>
+        <form method="POST" action="{{ route('locale.update') }}">
+            @csrf
+            <label for="locale" style="margin-inline-end:8px;">اللغة</label>
+            <select id="locale" name="locale" onchange="this.form.submit()">
+                <option value="ar" @selected(app()->getLocale() === 'ar')>العربية</option>
+                <option value="fr" @selected(app()->getLocale() === 'fr')>Français</option>
+                <option value="en" @selected(app()->getLocale() === 'en')>English</option>
+            </select>
+        </form>
+    </div>
     <p class="intro">اختر الأداة التي تريد استخدامها.</p>
 
     <div id="loading">جارٍ تحميل الأدوات...</div>
