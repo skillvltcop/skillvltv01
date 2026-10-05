@@ -10,7 +10,7 @@ uses(
     RefreshDatabase::class,
 );
 
-it('executes a teacher blueprint without exposing revision details', function () {
+it('returns a teacher-facing result without exposing execution internals', function () {
     $user = User::factory()->create();
 
     (new AssessmentPositioningBlueprintSeeder())->run();
@@ -37,13 +37,14 @@ it('executes a teacher blueprint without exposing revision details', function ()
     $response->assertJsonStructure([
         'execution_id',
         'status',
-        'output',
+        'result',
         'error',
     ]);
     $response->assertJsonPath('status', 'completed');
-    $response->assertJsonPath('output.score', '59');
-    $response->assertJsonPath('output.positioning', 'needs_support');
+    $response->assertJsonPath('result.score', '59');
+    $response->assertJsonPath('result.positioning', 'needs_support');
 
+    $response->assertJsonMissingPath('output');
     $response->assertJsonMissingPath('revision_id');
     $response->assertJsonMissingPath('blueprint_id');
 });
