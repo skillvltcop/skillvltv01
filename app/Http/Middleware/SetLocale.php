@@ -14,10 +14,12 @@ final class SetLocale
 
     public function handle(Request $request, Closure $next): Response
     {
-        $locale = (string) $request->session()->get(
-            'locale',
-            config('app.locale', 'ar'),
-        );
+        $locale = $request->hasSession()
+            ? (string) $request->session()->get(
+                'locale',
+                config('app.locale', 'ar'),
+            )
+            : (string) config('app.locale', 'ar');
 
         if (! in_array($locale, self::SUPPORTED_LOCALES, true)) {
             $locale = 'ar';
