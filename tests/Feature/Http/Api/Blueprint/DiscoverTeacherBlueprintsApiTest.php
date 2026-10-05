@@ -54,6 +54,7 @@ it('localizes teacher blueprint discovery from the session locale', function () 
     $response = $this
         ->actingAs($user)
         ->withSession(['locale' => 'fr'])
+        ->withHeader('Origin', 'http://localhost')
         ->getJson('/api/teacher/blueprints/discover');
 
     $response->assertSuccessful();
