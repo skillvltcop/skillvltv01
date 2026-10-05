@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>أداة التموضع التقويمي</title>
     <style>
         :root { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #172033; background: #f6f8fb; }
@@ -56,6 +57,7 @@
     const score = document.getElementById('score');
     const execute = document.getElementById('execute');
     const status = document.getElementById('status');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
     try {
         const response = await fetch('/api/teacher/blueprints/discover', {
@@ -108,6 +110,7 @@
                         headers: {
                             'Accept': 'application/json',
                             'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
                         },
                         body: JSON.stringify({
                             input: { score: Number(value) },
