@@ -46,6 +46,25 @@ it('exposes only teacher-facing blueprint information', function () {
     $response->assertJsonMissingPath('data.0.id');
 });
 
+it('localizes teacher blueprint discovery from the session locale', function () {
+    $user = User::factory()->create();
+
+    (new AssessmentPositioningBlueprintSeeder())->run();
+
+    $response = $this
+        ->actingAs($user)
+        ->withSession(['locale' => 'fr'])
+        ->getJson('/api/teacher/blueprints/discover');
+
+    $response->assertSuccessful();
+    $response->assertJsonPath('data.0.title', 'Positionnement évaluatif');
+    $response->assertJsonPath(
+        'data.0.purpose',
+        'Déterminer si l’apprenant a besoin d’un soutien à partir de son score.',
+    );
+    $response->assertJsonPath('data.0.target_level', '5-6');
+});
+
 it('rejects unauthenticated teacher blueprint discovery', function () {
     $response = $this->getJson('/api/teacher/blueprints/discover');
 
