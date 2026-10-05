@@ -49,6 +49,46 @@ it('returns a teacher-facing result without exposing execution internals', funct
     $response->assertJsonMissingPath('blueprint_id');
 });
 
+it('executes the assessment positioning tool through its teacher-facing identifier', function () {
+    $user = User::factory()->create();
+
+    (new AssessmentPositioningBlueprintSeeder())->run();
+
+    $this->actingAs($user);
+
+    $response = $this->postJson(
+        '/api/teacher/tools/assessment-positioning/execute',
+        [
+            'input' => [
+                'score' => 59,
+            ],
+            'context' => [],
+        ],
+    );
+
+    $response->assertSuccessful();
+    $response->assertJsonPath('status', 'completed');
+    $response->assertJsonPath('result.score', '59');
+    $response->assertJsonPath('result.positioning', 'needs_support');
+
+    $response->assertJsonMissingPath('blueprint_id');
+    $response->assertJsonMissingPath('revision_id');
+});
+
+it('rejects unauthenticated teacher tool execution', function () {
+    $response = $this->postJson(
+        '/api/teacher/tools/assessment-positioning/execute',
+        [
+            'input' => [
+                'score' => 59,
+            ],
+            'context' => [],
+        ],
+    );
+
+    $response->assertUnauthorized();
+});
+
 it('rejects unauthenticated teacher blueprint execution', function () {
     $response = $this->postJson(
         '/api/teacher/blueprints/not-a-blueprint/execute',
