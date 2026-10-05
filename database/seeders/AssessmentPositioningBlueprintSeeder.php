@@ -40,6 +40,8 @@ final class AssessmentPositioningBlueprintSeeder extends Seeder
             metadata: [
                 'title' => 'Assessment Positioning',
                 'description' => 'Determines whether a learner needs support from an assessment score.',
+                'target_level' => '5-6',
+                'purpose' => 'Determines whether a learner needs support from an assessment score.',
             ],
         );
 
