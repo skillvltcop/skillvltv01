@@ -26,18 +26,7 @@ final class AssessmentPositioningBlueprintSeeder extends Seeder
                 (string) $blueprint->canonicalName() === 'assessment-positioning'
         );
 
-        if ($existing !== null) {
-            return;
-        }
-
-        $blueprint = (new CreateBlueprint($repository))->handle(
-            canonicalName: 'assessment-positioning',
-            namespace: 'skillvlt.edu.assessment',
-            ownership: [
-                'type' => 'system',
-                'id' => 'skillvlt',
-            ],
-            metadata: [
+        $metadata = [
                 'title' => [
                     'ar' => 'التموضع التقويمي',
                     'fr' => 'Positionnement évaluatif',
@@ -58,7 +47,22 @@ final class AssessmentPositioningBlueprintSeeder extends Seeder
                     'fr' => 'Déterminer si l’apprenant a besoin d’un soutien à partir de son score.',
                     'en' => 'Determines whether a learner needs support from an assessment score.',
                 ],
+            ];
+
+        if ($existing !== null) {
+            $existing->updateMetadata($metadata);
+            $repository->save($existing);
+            return;
+        }
+
+        $blueprint = (new CreateBlueprint($repository))->handle(
+            canonicalName: 'assessment-positioning',
+            namespace: 'skillvlt.edu.assessment',
+            ownership: [
+                'type' => 'system',
+                'id' => 'skillvlt',
             ],
+            metadata: $metadata,
         );
 
         $revision = (new AddBlueprintRevision(
