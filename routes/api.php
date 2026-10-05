@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\CreateBlueprintController;
 use App\Http\Controllers\Api\DiscoverBlueprintsController;
 use App\Http\Controllers\Api\DiscoverTeacherBlueprintsController;
 use App\Http\Controllers\Api\ExecuteBlueprintController;
+use App\Http\Controllers\Api\ExecuteTeacherBlueprintController;
 use App\Http\Controllers\Api\FreezeBlueprintRevisionController;
 use App\Http\Controllers\Api\ListBlueprintRevisionsController;
 use App\Http\Controllers\Api\ListBlueprintsController;
@@ -128,6 +129,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post(
         '/blueprints/{blueprint}/execute',
         ExecuteBlueprintController::class,
+    );
+
+    Route::post(
+        '/teacher/blueprints/{blueprint}/execute',
+        ExecuteTeacherBlueprintController::class,
     );
 
     Route::get(
