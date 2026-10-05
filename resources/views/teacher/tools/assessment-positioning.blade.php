@@ -39,7 +39,7 @@
 
             <label for="score">نقطة المتعلم</label>
             <input id="score" type="number" min="0" max="100" inputmode="numeric">
-            <button type="button" disabled>تحديد التموضع</button>
+            <button id="execute" type="button" disabled>تحديد التموضع</button>
 
             <div id="status" role="status" hidden></div>
         </div>
@@ -53,6 +53,9 @@
     const loading = document.getElementById('loading');
     const tool = document.getElementById('tool');
     const error = document.getElementById('error');
+    const score = document.getElementById('score');
+    const execute = document.getElementById('execute');
+    const status = document.getElementById('status');
 
     try {
         const response = await fetch('/api/teacher/blueprints/discover', {
@@ -80,6 +83,60 @@
 
         loading.hidden = true;
         tool.hidden = false;
+        execute.disabled = false;
+
+        execute.addEventListener('click', async () => {
+            status.hidden = true;
+            error.hidden = true;
+
+            const value = score.value.trim();
+
+            if (value === '') {
+                error.textContent = 'يرجى إدخال نقطة المتعلم.';
+                error.hidden = false;
+                return;
+            }
+
+            execute.disabled = true;
+
+            try {
+                const response = await fetch(
+                    '/api/teacher/tools/assessment-positioning/execute',
+                    {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            input: { score: Number(value) },
+                            context: {},
+                        }),
+                    }
+                );
+
+                const payload = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        payload.message ?? 'تعذر تنفيذ أداة التموضع التقويمي.'
+                    );
+                }
+
+                const result = payload.result;
+
+                status.textContent = result?.positioning === 'ready'
+                    ? 'جاهز'
+                    : 'يحتاج إلى دعم';
+                status.hidden = false;
+            } catch (exception) {
+                error.textContent = exception.message;
+                error.hidden = false;
+            } finally {
+                execute.disabled = false;
+            }
+        });
     } catch (exception) {
         loading.hidden = true;
         error.textContent = exception.message;
