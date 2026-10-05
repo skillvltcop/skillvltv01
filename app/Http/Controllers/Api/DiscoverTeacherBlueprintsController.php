@@ -37,6 +37,7 @@ final class DiscoverTeacherBlueprintsController
                     };
 
                     return [
+                        'slug' => (string) $blueprint->canonicalName(),
                         'title' => $localize($metadata['title'] ?? (string) $blueprint->canonicalName()),
                         'target_level' => $localize($metadata['target_level'] ?? null),
                         'purpose' => $localize($metadata['purpose'] ?? ($metadata['description'] ?? null)),
