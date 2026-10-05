@@ -1,10 +1,59 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+@php
+    $locale = app()->getLocale();
+    $isRtl = $locale === 'ar';
+    $translations = [
+        'ar' => [
+            'page_title' => 'أداة التموضع التقويمي',
+            'loading' => 'جارٍ تحميل الأداة...',
+            'educational_tool' => 'أداة تعليمية',
+            'level' => 'المستوى',
+            'learner_score' => 'نقطة المتعلم',
+            'execute' => 'تحديد التموضع',
+            'empty_score' => 'يرجى إدخال نقطة المتعلم.',
+            'load_error' => 'تعذر تحميل الأدوات التعليمية.',
+            'tool_unavailable' => 'أداة التموضع التقويمي غير متاحة.',
+            'execute_error' => 'تعذر تنفيذ أداة التموضع التقويمي.',
+            'ready' => 'جاهز',
+            'needs_support' => 'يحتاج إلى دعم',
+        ],
+        'fr' => [
+            'page_title' => 'Outil de positionnement évaluatif',
+            'loading' => 'Chargement de l’outil...',
+            'educational_tool' => 'Outil pédagogique',
+            'level' => 'Niveau',
+            'learner_score' => 'Score de l’apprenant',
+            'execute' => 'Déterminer le positionnement',
+            'empty_score' => 'Veuillez saisir le score de l’apprenant.',
+            'load_error' => 'Impossible de charger les outils pédagogiques.',
+            'tool_unavailable' => 'L’outil de positionnement évaluatif n’est pas disponible.',
+            'execute_error' => 'Impossible d’exécuter l’outil de positionnement évaluatif.',
+            'ready' => 'Prêt',
+            'needs_support' => 'Besoin de soutien',
+        ],
+        'en' => [
+            'page_title' => 'Assessment Positioning Tool',
+            'loading' => 'Loading tool...',
+            'educational_tool' => 'Educational tool',
+            'level' => 'Level',
+            'learner_score' => 'Learner score',
+            'execute' => 'Determine positioning',
+            'empty_score' => 'Please enter the learner score.',
+            'load_error' => 'Unable to load educational tools.',
+            'tool_unavailable' => 'The assessment positioning tool is not available.',
+            'execute_error' => 'Unable to execute the assessment positioning tool.',
+            'ready' => 'Ready',
+            'needs_support' => 'Needs support',
+        ],
+    ];
+    $t = $translations[$locale] ?? $translations['ar'];
+@endphp
+<html lang="{{ $locale }}" dir="{{ $isRtl ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>أداة التموضع التقويمي</title>
+    <title>{{ $t['page_title'] }}</title>
     <style>
         :root { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #172033; background: #f6f8fb; }
         * { box-sizing: border-box; }
@@ -26,10 +75,10 @@
 <body>
 <main>
     <section class="card" aria-labelledby="tool-title">
-        <div id="loading">جارٍ تحميل الأداة...</div>
+        <div id="loading">{{ $t['loading'] }}</div>
 
         <div id="tool" hidden>
-            <div class="eyebrow">أداة تعليمية</div>
+            <div class="eyebrow">{{ $t['educational_tool'] }}</div>
             <h1 id="tool-title"></h1>
             <p class="purpose" id="tool-purpose"></p>
 
@@ -38,9 +87,9 @@
                 <span class="badge" id="tool-version"></span>
             </div>
 
-            <label for="score">نقطة المتعلم</label>
+            <label for="score">{{ $t['learner_score'] }}</label>
             <input id="score" type="number" min="0" max="100" inputmode="numeric">
-            <button id="execute" type="button" disabled>تحديد التموضع</button>
+            <button id="execute" type="button" disabled>{{ $t['execute'] }}</button>
 
             <div id="status" role="status" hidden></div>
         </div>
@@ -59,6 +108,8 @@
     const status = document.getElementById('status');
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
+    const translations = @json($t);
+
     try {
         const response = await fetch('/api/teacher/blueprints/discover', {
             credentials: 'same-origin',
@@ -66,21 +117,20 @@
         });
 
         if (!response.ok) {
-            throw new Error('تعذر تحميل الأدوات التعليمية.');
+            throw new Error(translations.load_error);
         }
 
         const payload = await response.json();
-        const blueprint = payload.data?.find(
-            item => item.title === 'Assessment Positioning'
-        );
+        const blueprint = payload.data?.[0];
 
         if (!blueprint) {
-            throw new Error('أداة التموضع التقويمي غير متاحة.');
+            throw new Error(translations.tool_unavailable);
         }
 
         document.getElementById('tool-title').textContent = blueprint.title;
         document.getElementById('tool-purpose').textContent = blueprint.purpose ?? '';
-        document.getElementById('tool-level').textContent = 'المستوى: ' + (blueprint.target_level ?? '—');
+        document.getElementById('tool-level').textContent =
+            translations.level + ': ' + (blueprint.target_level ?? '—');
         document.getElementById('tool-version').textContent = blueprint.version ?? '';
 
         loading.hidden = true;
@@ -94,7 +144,7 @@
             const value = score.value.trim();
 
             if (value === '') {
-                error.textContent = 'يرجى إدخال نقطة المتعلم.';
+                error.textContent = translations.empty_score;
                 error.hidden = false;
                 return;
             }
@@ -122,16 +172,14 @@
                 const payload = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(
-                        payload.message ?? 'تعذر تنفيذ أداة التموضع التقويمي.'
-                    );
+                    throw new Error(payload.message ?? translations.execute_error);
                 }
 
                 const result = payload.result;
 
                 status.textContent = result?.positioning === 'ready'
-                    ? 'جاهز'
-                    : 'يحتاج إلى دعم';
+                    ? translations.ready
+                    : translations.needs_support;
                 status.hidden = false;
             } catch (exception) {
                 error.textContent = exception.message;
