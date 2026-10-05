@@ -25,10 +25,20 @@ final class DiscoverTeacherBlueprintsController
                     $metadata = $blueprint->metadata();
                     $revision = $blueprint->currentRevision();
 
+                    $locale = app()->getLocale();
+
+                    $localize = static function (mixed $value) use ($locale): mixed {
+                        if (! is_array($value)) {
+                            return $value;
+                        }
+
+                        return $value[$locale] ?? $value['ar'] ?? reset($value);
+                    };
+
                     return [
-                        'title' => $metadata['title'] ?? (string) $blueprint->canonicalName(),
-                        'target_level' => $metadata['target_level'] ?? null,
-                        'purpose' => $metadata['purpose'] ?? ($metadata['description'] ?? null),
+                        'title' => $localize($metadata['title'] ?? (string) $blueprint->canonicalName()),
+                        'target_level' => $localize($metadata['target_level'] ?? null),
+                        'purpose' => $localize($metadata['purpose'] ?? ($metadata['description'] ?? null)),
                         'version' => $revision !== null
                             ? 'v' . (string) $revision->number()
                             : null,
