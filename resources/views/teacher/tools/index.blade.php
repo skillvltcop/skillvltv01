@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="{{ app()->getLocale() }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>أدوات المعلم</title>
+    <title>{{ ['ar' => 'أدوات المعلم', 'fr' => 'Outils de l’enseignant', 'en' => 'Teacher Tools'][app()->getLocale()] ?? 'Teacher Tools' }}</title>
     <style>
         :root { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #172033; background: #f6f8fb; }
         * { box-sizing: border-box; }
@@ -26,10 +26,10 @@
 <body>
 <main>
     <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:24px;">
-        <h1 style="margin:0;">أدوات المعلم</h1>
+        <h1 style="margin:0;">{{ ['ar' => 'أدوات المعلم', 'fr' => 'Outils de l’enseignant', 'en' => 'Teacher Tools'][app()->getLocale()] ?? 'Teacher Tools' }}</h1>
         <form method="POST" action="{{ route('locale.update') }}">
             @csrf
-            <label for="locale" style="margin-inline-end:8px;">اللغة</label>
+            <label for="locale" style="margin-inline-end:8px;">{{ ['ar' => 'اللغة', 'fr' => 'Langue', 'en' => 'Language'][app()->getLocale()] ?? 'Language' }}</label>
             <select id="locale" name="locale" onchange="this.form.submit()">
                 <option value="ar" @selected(app()->getLocale() === 'ar')>العربية</option>
                 <option value="fr" @selected(app()->getLocale() === 'fr')>Français</option>
@@ -37,9 +37,9 @@
             </select>
         </form>
     </div>
-    <p class="intro">اختر الأداة التي تريد استخدامها.</p>
+    <p class="intro">{{ ['ar' => 'اختر الأداة التي تريد استخدامها.', 'fr' => 'Choisissez l’outil que vous souhaitez utiliser.', 'en' => 'Choose the tool you want to use.'][app()->getLocale()] ?? 'Choose the tool you want to use.' }}</p>
 
-    <div id="loading">جارٍ تحميل الأدوات...</div>
+    <div id="loading">{{ ['ar' => 'جارٍ تحميل الأدوات...', 'fr' => 'Chargement des outils...', 'en' => 'Loading tools...'][app()->getLocale()] ?? 'Loading tools...' }}</div>
     <div id="tools" class="tools" hidden></div>
     <div id="error" role="alert" hidden></div>
 </main>
@@ -57,13 +57,13 @@
         });
 
         if (!response.ok) {
-            throw new Error('تعذر تحميل الأدوات التعليمية.');
+            throw new Error(@json(['ar' => 'تعذر تحميل الأدوات التعليمية.', 'fr' => 'Impossible de charger les outils pédagogiques.', 'en' => 'Unable to load educational tools.'][app()->getLocale()] ?? 'Unable to load educational tools.'));
         }
 
         const payload = await response.json();
 
         for (const blueprint of payload.data ?? []) {
-            if (blueprint.title !== 'Assessment Positioning') {
+            if (blueprint.title !== 'Assessment Positioning' && blueprint.title !== 'Positionnement évaluatif' && blueprint.title !== 'التموضع التقويمي') {
                 continue;
             }
 
@@ -73,7 +73,7 @@
 
             const eyebrow = document.createElement('div');
             eyebrow.className = 'eyebrow';
-            eyebrow.textContent = 'أداة تعليمية';
+            eyebrow.textContent = @json(['ar' => 'أداة تعليمية', 'fr' => 'Outil pédagogique', 'en' => 'Educational tool'][app()->getLocale()] ?? 'Educational tool');
 
             const title = document.createElement('h2');
             title.textContent = blueprint.title;
@@ -88,7 +88,7 @@
             if (blueprint.target_level) {
                 const level = document.createElement('span');
                 level.className = 'badge';
-                level.textContent = 'المستوى: ' + blueprint.target_level;
+                level.textContent = @json(['ar' => 'المستوى: ', 'fr' => 'Niveau : ', 'en' => 'Level: '][app()->getLocale()] ?? 'Level: ') + blueprint.target_level;
                 meta.appendChild(level);
             }
 
