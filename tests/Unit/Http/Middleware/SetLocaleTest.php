@@ -13,6 +13,7 @@ uses(
 
 it('defaults to arabic', function () {
     $request = Request::create('/');
+    app()->setLocale('ar');
 
     $response = app(Pipeline::class)
         ->send($request)
