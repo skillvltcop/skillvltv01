@@ -66,13 +66,13 @@
         const payload = await response.json();
 
         for (const blueprint of payload.data ?? []) {
-            if (blueprint.title !== 'Assessment Positioning' && blueprint.title !== 'Positionnement évaluatif' && blueprint.title !== 'التموضع التقويمي') {
+            if (!blueprint.slug) {
                 continue;
             }
 
             const link = document.createElement('a');
             link.className = 'card';
-            link.href = '/teacher/tools/assessment-positioning';
+            link.href = '/teacher/tools/' + encodeURIComponent(blueprint.slug);
 
             const eyebrow = document.createElement('div');
             eyebrow.className = 'eyebrow';
