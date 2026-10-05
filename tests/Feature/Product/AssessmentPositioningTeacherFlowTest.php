@@ -1,6 +1,7 @@
 <?php
 
 use AppModelsUser;
+use App\Models\User;
 use Database\Seeders\AssessmentPositioningBlueprintSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
