@@ -38,10 +38,26 @@ final class AssessmentPositioningBlueprintSeeder extends Seeder
                 'id' => 'skillvlt',
             ],
             metadata: [
-                'title' => 'Assessment Positioning',
-                'description' => 'Determines whether a learner needs support from an assessment score.',
-                'target_level' => '5-6',
-                'purpose' => 'Determines whether a learner needs support from an assessment score.',
+                'title' => [
+                    'ar' => 'التموضع التقويمي',
+                    'fr' => 'Positionnement évaluatif',
+                    'en' => 'Assessment Positioning',
+                ],
+                'description' => [
+                    'ar' => 'تحديد ما إذا كان المتعلم يحتاج إلى دعم بناءً على نقطة التقويم.',
+                    'fr' => 'Déterminer si l’apprenant a besoin d’un soutien à partir de son score.',
+                    'en' => 'Determines whether a learner needs support from an assessment score.',
+                ],
+                'target_level' => [
+                    'ar' => '5-6',
+                    'fr' => '5-6',
+                    'en' => '5-6',
+                ],
+                'purpose' => [
+                    'ar' => 'تحديد ما إذا كان المتعلم يحتاج إلى دعم بناءً على نقطة التقويم.',
+                    'fr' => 'Déterminer si l’apprenant a besoin d’un soutien à partir de son score.',
+                    'en' => 'Determines whether a learner needs support from an assessment score.',
+                ],
             ],
         );
 
