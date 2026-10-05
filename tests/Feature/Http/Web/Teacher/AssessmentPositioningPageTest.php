@@ -17,6 +17,7 @@ it('renders the assessment positioning teacher page', function () {
 
     $response = $this
         ->actingAs($user)
+        ->withSession(['locale' => 'en'])
         ->get('/teacher/tools/assessment-positioning');
 
     $response->assertSuccessful();
