@@ -20,7 +20,7 @@ it('renders the assessment positioning teacher page', function () {
         ->get('/teacher/tools/assessment-positioning');
 
     $response->assertSuccessful();
-    $response->assertSee('Assessment Positioning');
+    $response->assertSee('Assessment Positioning Tool');
     $response->assertSee('/api/teacher/blueprints/discover', false);
     $response->assertSee('/api/teacher/tools/assessment-positioning/execute', false);
     $response->assertSee('تحديد التموضع');
