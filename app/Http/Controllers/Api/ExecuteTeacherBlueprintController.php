@@ -22,9 +22,11 @@ final class ExecuteTeacherBlueprintController
         TeacherExecuteBlueprintRequest $request,
         string $blueprint,
     ): JsonResponse {
-        $blueprintEntity = $this->repository->find(
-            new BlueprintId($blueprint),
-        );
+        $tool = $request->route('tool');
+
+        $blueprintEntity = $tool !== null
+            ? $this->repository->findByCanonicalName((string) $tool)
+            : $this->repository->find(new BlueprintId($blueprint));
 
         if ($blueprintEntity === null) {
             return response()->json([
@@ -57,7 +59,7 @@ final class ExecuteTeacherBlueprintController
 
         try {
             $execution = $this->executeBlueprint->handle(
-                blueprintId: $blueprint,
+                blueprintId: (string) $blueprintEntity->id(),
                 revisionId: (string) $currentRevisionId,
                 input: $request->input('input', []),
                 context: $request->input('context', []),
