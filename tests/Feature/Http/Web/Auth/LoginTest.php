@@ -62,3 +62,40 @@ it('uses the browser session to access the teacher discovery api', function () {
         'Assessment Positioning',
     );
 });
+
+it('uses the browser session to execute the teacher blueprint', function () {
+    $user = User::factory()->create([
+        'email' => 'teacher@example.com',
+        'password' => 'password',
+    ]);
+
+    (new AssessmentPositioningBlueprintSeeder())->run();
+
+    $blueprints = (new \App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository())
+        ->discover();
+
+    expect($blueprints)->toHaveCount(1);
+
+    $blueprintId = (string) $blueprints[0]->id();
+
+    $this->post('/login', [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $response = $this->postJson(
+        "/api/teacher/blueprints/{$blueprintId}/execute",
+        [
+            'input' => [
+                'score' => 59,
+            ],
+            'context' => [],
+        ],
+    );
+
+    $response->assertSuccessful();
+    $response->assertJsonPath('status', 'completed');
+    $response->assertJsonPath('result.positioning', 'needs_support');
+    $response->assertJsonMissingPath('blueprint_id');
+    $response->assertJsonMissingPath('revision_id');
+});
