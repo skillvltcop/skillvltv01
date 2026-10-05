@@ -53,7 +53,10 @@
     try {
         const response = await fetch('/api/teacher/blueprints/discover', {
             credentials: 'same-origin',
-            headers: { 'Accept': 'application/json' },
+            headers: {
+                'Accept': 'application/json',
+                'Accept-Language': document.documentElement.lang,
+            },
         });
 
         if (!response.ok) {
