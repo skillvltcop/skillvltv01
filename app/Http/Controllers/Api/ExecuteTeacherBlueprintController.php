@@ -71,7 +71,7 @@ final class ExecuteTeacherBlueprintController
         return response()->json([
             'execution_id' => (string) $execution->id(),
             'status' => $execution->status()->value,
-            'output' => $execution->output(),
+            'result' => $execution->output(),
             'error' => $execution->error(),
         ]);
     }
