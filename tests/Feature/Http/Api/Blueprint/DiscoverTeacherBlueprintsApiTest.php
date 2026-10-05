@@ -17,6 +17,7 @@ it('exposes only teacher-facing blueprint information', function () {
 
     $response = $this
         ->actingAs($user)
+        ->withHeader('Accept-Language', 'en')
         ->getJson('/api/teacher/blueprints/discover');
 
     $response->assertSuccessful();
