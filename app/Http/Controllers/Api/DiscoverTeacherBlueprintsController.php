@@ -21,7 +21,7 @@ final class DiscoverTeacherBlueprintsController
 
         return response()->json([
             'data' => array_map(
-                static function ($blueprint): array {
+                static function ($blueprint) use ($request): array {
                     $metadata = $blueprint->metadata();
                     $revision = $blueprint->currentRevision();
 
