@@ -20,7 +20,7 @@ it('renders the teacher tools page', function () {
         ->get('/teacher/tools');
 
     $response->assertSuccessful();
-    $response->assertSee('أدوات المعلم');
+    $response->assertSee('Teacher Tools');
     $response->assertSee('/api/teacher/blueprints/discover', false);
     $response->assertSee('/teacher/tools/assessment-positioning', false);
 });
