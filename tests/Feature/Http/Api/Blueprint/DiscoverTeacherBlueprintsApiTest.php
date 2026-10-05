@@ -23,6 +23,7 @@ it('exposes only teacher-facing blueprint information', function () {
     $response->assertJsonStructure([
         'data' => [
             '*' => [
+                'slug',
                 'title',
                 'target_level',
                 'purpose',
@@ -31,6 +32,7 @@ it('exposes only teacher-facing blueprint information', function () {
         ],
     ]);
 
+    $response->assertJsonPath('data.0.slug', 'assessment-positioning');
     $response->assertJsonPath('data.0.title', 'Assessment Positioning');
     $response->assertJsonPath('data.0.target_level', '5-6');
     $response->assertJsonPath(
