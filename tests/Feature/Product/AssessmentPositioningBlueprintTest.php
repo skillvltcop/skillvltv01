@@ -1,15 +1,15 @@
 <?php
 
-use AppApplicationBehaviorBehaviorContractValidator;
-use AppApplicationBlueprintCommandsActivateBlueprint;
-use AppApplicationBlueprintCommandsAddBlueprintRevision;
-use AppApplicationBlueprintCommandsCreateBlueprint;
-use AppApplicationBlueprintCommandsFreezeBlueprintRevision;
-use AppApplicationBlueprintCommandsPromoteBlueprintRevision;
-use AppInfrastructurePersistenceEloquentEloquentBlueprintRepository;
-use AppModelsUser;
-use IlluminateFoundationTestingRefreshDatabase;
-use TestsTestCase;
+use App\Application\Behavior\BehaviorContractValidator;
+use App\Application\Blueprint\Commands\ActivateBlueprint;
+use App\Application\Blueprint\Commands\AddBlueprintRevision;
+use App\Application\Blueprint\Commands\CreateBlueprint;
+use App\Application\Blueprint\Commands\FreezeBlueprintRevision;
+use App\Application\Blueprint\Commands\PromoteBlueprintRevision;
+use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 uses(
     TestCase::class,
@@ -54,51 +54,18 @@ it('executes the first real assessment positioning blueprint', function () {
                     'type' => 'evaluate_rule',
                     'condition' => [
                         'field' => 'input.score',
-                        'operator' => 'lt',
-                        'value' => 40,
-                    ],
-                    'assign_to' => 'level',
-                    'true_value' => 'priority_support',
-                    'false_value' => 'priority_support',
-                ],
-                [
-                    'type' => 'evaluate_rule',
-                    'condition' => [
-                        'field' => 'input.score',
-                        'operator' => 'gte',
-                        'value' => 40,
-                    ],
-                    'assign_to' => 'level',
-                    'true_value' => 'needs_support',
-                    'false_value' => 'needs_support',
-                ],
-                [
-                    'type' => 'evaluate_rule',
-                    'condition' => [
-                        'field' => 'input.score',
                         'operator' => 'gte',
                         'value' => 60,
                     ],
-                    'assign_to' => 'level',
-                    'true_value' => 'satisfactory',
-                    'false_value' => 'satisfactory',
-                ],
-                [
-                    'type' => 'evaluate_rule',
-                    'condition' => [
-                        'field' => 'input.score',
-                        'operator' => 'gte',
-                        'value' => 80,
-                    ],
-                    'assign_to' => 'level',
-                    'true_value' => 'excellent',
-                    'false_value' => 'excellent',
+                    'assign_to' => 'positioning',
+                    'true_value' => 'ready',
+                    'false_value' => 'needs_support',
                 ],
                 [
                     'type' => 'return',
                     'data' => [
                         'score' => '{input.score}',
-                        'level' => '{state.level}',
+                        'positioning' => '{state.positioning}',
                     ],
                 ],
             ],
