@@ -30,3 +30,16 @@ it('requires browser authentication', function () {
 
     $response->assertRedirect('/login');
 });
+
+
+it('changes the browser locale', function () {
+    $user = User::factory()->create();
+
+    $response = $this
+        ->actingAs($user)
+        ->post('/locale', [
+            'locale' => 'fr',
+        ]);
+
+    $response->assertSessionHas('locale', 'fr');
+});
