@@ -40,7 +40,7 @@ it('exposes only teacher-facing blueprint information', function () {
         'data.0.purpose',
         'Determines whether a learner needs support from an assessment score.',
     );
-    $response->assertJsonPath('data.0.version', 'v1.0.0');
+    $response->assertJsonPath('data.0.version', 'v1.1.0');
 
     $response->assertJsonMissingPath('data.0.current_revision_id');
     $response->assertJsonMissingPath('data.0.namespace');
