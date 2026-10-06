@@ -52,7 +52,7 @@ it('supports arithmetic calculate operations', function ($operation, $left, $rig
     ['add', 'input.left', 'input.right', 17],
     ['subtract', 'input.left', 'input.right', 3],
     ['multiply', 'input.left', 'input.right', 70],
-    ['divide', 'input.left', 'input.right', 2.5],
+    ['divide', 'input.left', 'input.right', 10 / 7],
 ]);
 
 it('supports numeric literals as calculate operands', function () {
