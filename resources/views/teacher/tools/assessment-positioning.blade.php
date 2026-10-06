@@ -9,6 +9,7 @@
             'educational_tool' => 'أداة تعليمية',
             'level' => 'المستوى',
             'learner_score' => 'نقطة المتعلم',
+            'max_score' => 'النقطة القصوى',
             'execute' => 'تحديد التموضع',
             'empty_score' => 'يرجى إدخال نقطة المتعلم.',
             'load_error' => 'تعذر تحميل الأدوات التعليمية.',
@@ -23,6 +24,7 @@
             'educational_tool' => 'Outil pédagogique',
             'level' => 'Niveau',
             'learner_score' => 'Score de l’apprenant',
+            'max_score' => 'Score maximal',
             'execute' => 'Déterminer le positionnement',
             'empty_score' => 'Veuillez saisir le score de l’apprenant.',
             'load_error' => 'Impossible de charger les outils pédagogiques.',
@@ -37,6 +39,7 @@
             'educational_tool' => 'Educational tool',
             'level' => 'Level',
             'learner_score' => 'Learner score',
+            'max_score' => 'Maximum score',
             'execute' => 'Determine positioning',
             'empty_score' => 'Please enter the learner score.',
             'load_error' => 'Unable to load educational tools.',
@@ -88,7 +91,10 @@
             </div>
 
             <label for="score">{{ $t['learner_score'] }}</label>
-            <input id="score" type="number" min="0" max="100" inputmode="numeric">
+            <input id="score" type="number" min="0" inputmode="numeric">
+
+            <label for="max_score">{{ $t['max_score'] }}</label>
+            <input id="max_score" type="number" min="1" inputmode="numeric">
             <button id="execute" type="button" disabled>{{ $t['execute'] }}</button>
 
             <div id="status" role="status" hidden></div>
@@ -104,6 +110,7 @@
     const tool = document.getElementById('tool');
     const error = document.getElementById('error');
     const score = document.getElementById('score');
+    const maxScore = document.getElementById('max_score');
     const execute = document.getElementById('execute');
     const status = document.getElementById('status');
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -147,8 +154,9 @@
             error.hidden = true;
 
             const value = score.value.trim();
+            const maxValue = maxScore.value.trim();
 
-            if (value === '') {
+            if (value === '' || maxValue === '') {
                 error.textContent = translations.empty_score;
                 error.hidden = false;
                 return;
@@ -168,7 +176,10 @@
                             'X-CSRF-TOKEN': csrfToken,
                         },
                         body: JSON.stringify({
-                            input: { score: Number(value) },
+                            input: {
+                                score: Number(value),
+                                max_score: Number(maxValue),
+                            },
                             context: {},
                         }),
                     }
@@ -182,9 +193,14 @@
 
                 const result = payload.result;
 
-                status.textContent = result?.positioning === 'ready'
+                const percentage = Number(result?.percentage);
+                const positioning = result?.positioning === 'ready'
                     ? translations.ready
                     : translations.needs_support;
+
+                status.textContent = Number.isFinite(percentage)
+                    ? `${percentage.toFixed(2)}% — ${positioning}`
+                    : positioning;
                 status.hidden = false;
             } catch (exception) {
                 error.textContent = exception.message;
