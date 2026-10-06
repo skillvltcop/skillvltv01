@@ -16,6 +16,6 @@ final class AssessmentPositioningController
 
         abort_if($view === null, 404);
 
-        return view($view);
+        return view($view, ['slug' => $slug]);
     }
 }
