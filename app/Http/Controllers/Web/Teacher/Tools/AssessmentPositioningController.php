@@ -8,8 +8,10 @@ use Illuminate\View\View;
 
 final class AssessmentPositioningController
 {
-    public function __invoke(): View
+    public function __invoke(string $slug): View
     {
+        abort_unless($slug === 'assessment-positioning', 404);
+
         return view('teacher.tools.assessment-positioning');
     }
 }
