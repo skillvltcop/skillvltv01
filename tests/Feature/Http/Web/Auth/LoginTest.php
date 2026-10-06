@@ -74,20 +74,13 @@ it('uses the browser session to execute the teacher blueprint', function () {
 
     (new AssessmentPositioningBlueprintSeeder())->run();
 
-    $blueprints = (new \App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository())
-        ->discover();
-
-    expect($blueprints)->toHaveCount(1);
-
-    $blueprintId = (string) $blueprints[0]->id();
-
     $this->post('/login', [
         'email' => $user->email,
         'password' => 'password',
     ]);
 
     $response = $this->postJson(
-        "/api/teacher/blueprints/{$blueprintId}/execute",
+        '/api/teacher/tools/assessment-positioning/execute',
         [
             'input' => [
                 'score' => 59,
