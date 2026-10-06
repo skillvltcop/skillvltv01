@@ -57,6 +57,17 @@ final class BehaviorRunner implements BehaviorRunnerContract
                 continue;
             }
 
+            if ($type === 'calculate') {
+                $this->executeCalculate(
+                    step: $step,
+                    input: $input,
+                    context: $context,
+                    state: $state,
+                );
+
+                continue;
+            }
+
             if ($type === 'return') {
                 return $this->resolveData(
                     data: $step['data'],
@@ -111,6 +122,72 @@ final class BehaviorRunner implements BehaviorRunnerContract
         $state[$step['assign_to']] = $result
             ? $step['true_value']
             : $step['false_value'];
+    }
+
+    /**
+     * @param array<string, mixed> $step
+     * @param array<string, mixed> $input
+     * @param array<string, mixed> $context
+     * @param array<string, mixed> $state
+     */
+    private function executeCalculate(
+        array $step,
+        array $input,
+        array $context,
+        array &$state,
+    ): void {
+        $left = $this->resolveCalculateOperand(
+            $step['left'],
+            $input,
+            $context,
+            $state,
+        );
+        $right = $this->resolveCalculateOperand(
+            $step['right'],
+            $input,
+            $context,
+            $state,
+        );
+
+        if (
+            (! is_int($left) && ! is_float($left))
+            || (! is_int($right) && ! is_float($right))
+        ) {
+            throw new \DomainException(
+                'Calculation requires numeric operands.'
+            );
+        }
+
+        if ($step['operation'] === 'divide' && $right == 0) {
+            throw new \DomainException(
+                'Division by zero is not allowed.'
+            );
+        }
+
+        $state[$step['assign_to']] = match ($step['operation']) {
+            'add' => $left + $right,
+            'subtract' => $left - $right,
+            'multiply' => $left * $right,
+            'divide' => $left / $right,
+        };
+    }
+
+    private function resolveCalculateOperand(
+        mixed $operand,
+        array $input,
+        array $context,
+        array $state,
+    ): mixed {
+        if (is_string($operand)) {
+            return $this->valueResolver->resolve(
+                path: $operand,
+                input: $input,
+                context: $context,
+                state: $state,
+            );
+        }
+
+        return $operand;
     }
 
     /**
