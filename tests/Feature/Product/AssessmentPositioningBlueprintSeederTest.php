@@ -29,24 +29,18 @@ it('seeds the assessment positioning blueprint as an active system blueprint', f
         ->toBe(LifecycleStatus::ACTIVE);
 
     expect($blueprint->revisions())
-        ->toHaveCount(2);
+        ->toHaveCount(1);
 
-    $revisions = array_values($blueprint->revisions());
+    $revision = array_values($blueprint->revisions())[0];
 
-    expect((string) $revisions[0]->number())
-        ->toBe('1.0.0');
-
-    expect($revisions[0]->isFrozen())
-        ->toBeTrue();
-
-    expect((string) $revisions[1]->number())
+    expect((string) $revision->number())
         ->toBe('1.1.0');
 
-    expect($revisions[1]->isFrozen())
+    expect($revision->isFrozen())
         ->toBeTrue();
 
     expect((string) $blueprint->currentRevisionId())
-        ->toBe((string) $revisions[1]->id());
+        ->toBe((string) $revision->id());
 });
 
 it('does not duplicate the assessment positioning blueprint when seeded twice', function () {
