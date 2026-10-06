@@ -19,12 +19,7 @@ final class AssessmentPositioningBlueprintSeeder extends Seeder
     {
         $repository = new EloquentBlueprintRepository();
 
-        $existing = collect(
-            $repository->discover()
-        )->first(
-            fn ($blueprint): bool =>
-                (string) $blueprint->canonicalName() === 'assessment-positioning'
-        );
+        $existing = $repository->findByCanonicalName('assessment-positioning');
 
         $metadata = [
                 'title' => [
@@ -51,6 +46,91 @@ final class AssessmentPositioningBlueprintSeeder extends Seeder
 
         if ($existing !== null) {
             $existing->updateMetadata($metadata);
+
+            $hasCurrentV11 = $existing->revisions() !== []
+                && collect($existing->revisions())->contains(
+                    fn ($revision): bool => (string) $revision->number() === '1.1.0'
+                );
+
+            if (! $hasCurrentV11) {
+                $revision = (new AddBlueprintRevision(
+                    repository: $repository,
+                    behaviorContractValidator: new BehaviorContractValidator(),
+                ))->handle(
+                    blueprintId: (string) $existing->id(),
+                    number: '1.1.0',
+                    contracts: [
+                        'input' => [
+                            'type' => 'object',
+                            'required' => ['score', 'max_score'],
+                        ],
+                    ],
+                    logic: [
+                        'type' => 'steps',
+                        'version' => 1,
+                        'steps' => [
+                            [
+                                'type' => 'calculate',
+                                'operation' => 'divide',
+                                'left' => 'input.score',
+                                'right' => 'input.max_score',
+                                'assign_to' => 'ratio',
+                            ],
+                            [
+                                'type' => 'calculate',
+                                'operation' => 'multiply',
+                                'left' => 'state.ratio',
+                                'right' => 100,
+                                'assign_to' => 'percentage',
+                            ],
+                            [
+                                'type' => 'evaluate_rule',
+                                'condition' => [
+                                    'field' => 'state.percentage',
+                                    'operator' => 'gte',
+                                    'value' => 60,
+                                ],
+                                'assign_to' => 'positioning',
+                                'true_value' => 'ready',
+                                'false_value' => 'needs_support',
+                            ],
+                            [
+                                'type' => 'return',
+                                'data' => [
+                                    'score' => '{input.score}',
+                                    'max_score' => '{input.max_score}',
+                                    'percentage' => '{state.percentage}',
+                                    'positioning' => '{state.positioning}',
+                                ],
+                            ],
+                        ],
+                    ],
+                    outputs: [
+                        'type' => 'assessment-positioning',
+                        'schema_version' => 1,
+                    ],
+                    policies: [
+                        'visibility' => 'public',
+                    ],
+                );
+
+                (new FreezeBlueprintRevision($repository))->handle(
+                    blueprintId: (string) $existing->id(),
+                    revisionId: (string) $revision->id(),
+                );
+
+                (new PromoteBlueprintRevision($repository))->handle(
+                    blueprintId: (string) $existing->id(),
+                    revisionId: (string) $revision->id(),
+                );
+            }
+
+            if ($existing->lifecycleStatus()->value === 'draft') {
+                (new ActivateBlueprint($repository))->handle(
+                    blueprintId: (string) $existing->id(),
+                );
+            }
+
             $repository->save($existing);
             return;
         }
