@@ -1,0 +1,21 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers\Web\Teacher\Tools;
+
+use Illuminate\View\View;
+
+final class TeacherToolController
+{
+    public function __invoke(
+        string $slug,
+        TeacherToolResolver $resolver,
+    ): View {
+        $view = $resolver->viewFor($slug);
+
+        abort_if($view === null, 404);
+
+        return view($view, ['slug' => $slug]);
+    }
+}
