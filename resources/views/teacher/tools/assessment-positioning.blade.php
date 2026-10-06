@@ -109,6 +109,8 @@
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
     const translations = @json($t);
+    const toolSlug = @json($slug);
+    const executionEndpoint = `/api/teacher/tools/${encodeURIComponent(toolSlug)}/execute`;
 
     try {
         const response = await fetch(`/api/teacher/blueprints/discover?locale=${encodeURIComponent(document.documentElement.lang)}`, {
@@ -156,7 +158,7 @@
 
             try {
                 const response = await fetch(
-                    '/api/teacher/tools/assessment-positioning/execute',
+                    executionEndpoint,
                     {
                         method: 'POST',
                         credentials: 'same-origin',
