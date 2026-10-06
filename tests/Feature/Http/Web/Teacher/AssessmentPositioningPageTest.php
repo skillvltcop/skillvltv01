@@ -23,7 +23,8 @@ it('renders the assessment positioning teacher page through the generic tool rou
     $response->assertSuccessful();
     $response->assertSee('Assessment Positioning Tool');
     $response->assertSee('/api/teacher/blueprints/discover', false);
-    $response->assertSee('/api/teacher/tools/assessment-positioning/execute', false);
+    $response->assertSee('const toolSlug =', false);
+    $response->assertSee('executionEndpoint', false);
     $response->assertSee('Determine positioning');
 });
 
