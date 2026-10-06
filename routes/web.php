@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\Web\Auth\LoginController;
 use App\Http\Controllers\Web\LocaleController;
-use App\Http\Controllers\Web\Teacher\Tools\AssessmentPositioningController;
+use App\Http\Controllers\Web\Teacher\Tools\TeacherToolController;
 use App\Http\Controllers\Web\Teacher\Tools\ToolsController;
 use Illuminate\Support\Facades\Route;
 
@@ -15,7 +15,7 @@ Route::get('/teacher/tools', ToolsController::class)
     ->middleware('auth')
     ->name('teacher.tools.index');
 
-Route::get('/teacher/tools/{slug}', AssessmentPositioningController::class)
+Route::get('/teacher/tools/{slug}', TeacherToolController::class)
     ->middleware('auth')
     ->name('teacher.tools.show');
 
