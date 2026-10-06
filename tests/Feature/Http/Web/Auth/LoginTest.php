@@ -54,6 +54,8 @@ it('uses the browser session to access the teacher discovery api', function () {
         'password' => 'password',
     ]);
 
+    $this->withSession(['locale' => 'en']);
+
     $response = $this->getJson('/api/teacher/blueprints/discover');
 
     $response->assertSuccessful();
