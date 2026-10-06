@@ -16,7 +16,7 @@ uses(
     RefreshDatabase::class,
 );
 
-it('executes the first real assessment positioning blueprint', function () {
+it('executes the assessment positioning blueprint v1.1 using score and max score', function () {
     $user = User::factory()->create();
 
     $repository = new EloquentBlueprintRepository();
@@ -39,11 +39,11 @@ it('executes the first real assessment positioning blueprint', function () {
         behaviorContractValidator: new BehaviorContractValidator(),
     ))->handle(
         blueprintId: (string) $blueprint->id(),
-        number: '1.0.0',
+        number: '1.1.0',
         contracts: [
             'input' => [
                 'type' => 'object',
-                'required' => ['score'],
+                'required' => ['score', 'max_score'],
             ],
         ],
         logic: [
@@ -51,9 +51,23 @@ it('executes the first real assessment positioning blueprint', function () {
             'version' => 1,
             'steps' => [
                 [
+                    'type' => 'calculate',
+                    'operation' => 'divide',
+                    'left' => 'input.score',
+                    'right' => 'input.max_score',
+                    'assign_to' => 'ratio',
+                ],
+                [
+                    'type' => 'calculate',
+                    'operation' => 'multiply',
+                    'left' => 'state.ratio',
+                    'right' => 100,
+                    'assign_to' => 'percentage',
+                ],
+                [
                     'type' => 'evaluate_rule',
                     'condition' => [
-                        'field' => 'input.score',
+                        'field' => 'state.percentage',
                         'operator' => 'gte',
                         'value' => 60,
                     ],
@@ -65,6 +79,8 @@ it('executes the first real assessment positioning blueprint', function () {
                     'type' => 'return',
                     'data' => [
                         'score' => '{input.score}',
+                        'max_score' => '{input.max_score}',
+                        'percentage' => '{state.percentage}',
                         'positioning' => '{state.positioning}',
                     ],
                 ],
@@ -94,13 +110,15 @@ it('executes the first real assessment positioning blueprint', function () {
     );
 
     $cases = [
-        40 => 'needs_support',
-        59 => 'needs_support',
-        60 => 'ready',
-        90 => 'ready',
+        [14, 20, 70, 'ready'],
+        [12, 20, 60, 'ready'],
+        [11, 20, 55, 'needs_support'],
+        [45, 60, 75, 'ready'],
+        [0, 20, 0, 'needs_support'],
+        [20, 20, 100, 'ready'],
     ];
 
-    foreach ($cases as $score => $expectedPositioning) {
+    foreach ($cases as [$score, $maxScore, $expectedPercentage, $expectedPositioning]) {
         $response = $this
             ->actingAs($user)
             ->postJson(
@@ -109,6 +127,7 @@ it('executes the first real assessment positioning blueprint', function () {
                     'revision_id' => (string) $revision->id(),
                     'input' => [
                         'score' => $score,
+                        'max_score' => $maxScore,
                     ],
                     'context' => [],
                 ],
@@ -116,19 +135,12 @@ it('executes the first real assessment positioning blueprint', function () {
 
         $response->assertSuccessful();
 
-        $response->assertJsonPath(
-            'status',
-            'completed',
-        );
-
-        $response->assertJsonPath(
-            'output.score',
-            (string) $score,
-        );
-
-        $response->assertJsonPath(
-            'output.positioning',
-            $expectedPositioning,
-        );
+        $response->assertJsonPath('status', 'completed');
+        $response->assertJsonPath('output.score', (string) $score);
+        $response->assertJsonPath('output.max_score', (string) $maxScore);
+        expect((float) $response->json('output.percentage'))
+            ->toBeGreaterThanOrEqual($expectedPercentage - 0.000001)
+            ->toBeLessThanOrEqual($expectedPercentage + 0.000001);
+        $response->assertJsonPath('output.positioning', $expectedPositioning);
     }
 });
