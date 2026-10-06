@@ -20,13 +20,15 @@ final class ExecuteTeacherBlueprintController
 
     public function __invoke(
         TeacherExecuteBlueprintRequest $request,
-        string $blueprint,
+        ?string $blueprint = null,
     ): JsonResponse {
         $tool = $request->route('tool');
 
         $blueprintEntity = $tool !== null
             ? $this->repository->findByCanonicalName((string) $tool)
-            : $this->repository->find(new BlueprintId($blueprint));
+            : ($blueprint !== null
+                ? $this->repository->find(new BlueprintId($blueprint))
+                : null);
 
         if ($blueprintEntity === null) {
             return response()->json([
