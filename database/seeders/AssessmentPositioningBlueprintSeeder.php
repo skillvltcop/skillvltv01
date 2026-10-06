@@ -70,11 +70,11 @@ final class AssessmentPositioningBlueprintSeeder extends Seeder
             behaviorContractValidator: new BehaviorContractValidator(),
         ))->handle(
             blueprintId: (string) $blueprint->id(),
-            number: '1.0.0',
+            number: '1.1.0',
             contracts: [
                 'input' => [
                     'type' => 'object',
-                    'required' => ['score'],
+                    'required' => ['score', 'max_score'],
                 ],
             ],
             logic: [
@@ -82,9 +82,23 @@ final class AssessmentPositioningBlueprintSeeder extends Seeder
                 'version' => 1,
                 'steps' => [
                     [
+                        'type' => 'calculate',
+                        'operation' => 'divide',
+                        'left' => 'input.score',
+                        'right' => 'input.max_score',
+                        'assign_to' => 'ratio',
+                    ],
+                    [
+                        'type' => 'calculate',
+                        'operation' => 'multiply',
+                        'left' => 'state.ratio',
+                        'right' => 100,
+                        'assign_to' => 'percentage',
+                    ],
+                    [
                         'type' => 'evaluate_rule',
                         'condition' => [
-                            'field' => 'input.score',
+                            'field' => 'state.percentage',
                             'operator' => 'gte',
                             'value' => 60,
                         ],
@@ -96,6 +110,8 @@ final class AssessmentPositioningBlueprintSeeder extends Seeder
                         'type' => 'return',
                         'data' => [
                             'score' => '{input.score}',
+                            'max_score' => '{input.max_score}',
+                            'percentage' => '{state.percentage}',
                             'positioning' => '{state.positioning}',
                         ],
                     ],
