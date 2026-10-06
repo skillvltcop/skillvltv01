@@ -15,16 +15,10 @@ it('returns a teacher-facing result without exposing execution internals', funct
 
     (new AssessmentPositioningBlueprintSeeder())->run();
 
-    $blueprints = (new \App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository())->discover();
-
-    expect($blueprints)->toHaveCount(1);
-
-    $blueprintId = (string) $blueprints[0]->id();
-
     $response = $this
         ->actingAs($user)
         ->postJson(
-            "/api/teacher/blueprints/{$blueprintId}/execute",
+            '/api/teacher/tools/assessment-positioning/execute',
             [
                 'input' => [
                     'score' => 59,
@@ -91,7 +85,7 @@ it('rejects unauthenticated teacher tool execution', function () {
 
 it('rejects unauthenticated teacher blueprint execution', function () {
     $response = $this->postJson(
-        '/api/teacher/blueprints/not-a-blueprint/execute',
+        '/api/teacher/tools/not-a-tool/execute',
         [
             'input' => [
                 'score' => 59,
