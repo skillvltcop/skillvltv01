@@ -15,7 +15,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call(AssessmentPositioningBlueprintSeeder::class);
+        $this->call([
+            AssessmentPositioningBlueprintSeeder::class,
+            AssessmentScoreCalculatorBlueprintSeeder::class,
+        ]);
 
         // User::factory(10)->create();
 
