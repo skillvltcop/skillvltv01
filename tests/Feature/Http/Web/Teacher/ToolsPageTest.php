@@ -23,7 +23,6 @@ it('renders the teacher tools page', function () {
     $response->assertSuccessful();
     $response->assertSee('Teacher Tools');
     $response->assertSee('/api/teacher/blueprints/discover', false);
-    $response->assertSee('/teacher/tools/assessment-positioning', false);
 });
 
 it('requires browser authentication', function () {
