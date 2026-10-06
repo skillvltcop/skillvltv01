@@ -15,9 +15,9 @@ Route::get('/teacher/tools', ToolsController::class)
     ->middleware('auth')
     ->name('teacher.tools.index');
 
-Route::get('/teacher/tools/assessment-positioning', AssessmentPositioningController::class)
+Route::get('/teacher/tools/{slug}', AssessmentPositioningController::class)
     ->middleware('auth')
-    ->name('teacher.tools.assessment-positioning');
+    ->name('teacher.tools.show');
 
 Route::get('/', function () {
     return redirect()->route('teacher.tools.index');
