@@ -10,6 +10,7 @@ final class TeacherToolResolver
     {
         return match ($slug) {
             'assessment-positioning' => 'teacher.tools.assessment-positioning',
+            'assessment-score-calculator' => 'teacher.tools.assessment-score-calculator',
             default => null,
         };
     }
