@@ -8,10 +8,14 @@ use Illuminate\View\View;
 
 final class AssessmentPositioningController
 {
-    public function __invoke(string $slug): View
-    {
-        abort_unless($slug === 'assessment-positioning', 404);
+    public function __invoke(
+        string $slug,
+        TeacherToolResolver $resolver,
+    ): View {
+        $view = $resolver->viewFor($slug);
 
-        return view('teacher.tools.assessment-positioning');
+        abort_if($view === null, 404);
+
+        return view($view);
     }
 }
