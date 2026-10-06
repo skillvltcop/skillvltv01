@@ -17,6 +17,7 @@ it('renders the teacher tools page', function () {
 
     $response = $this
         ->actingAs($user)
+        ->withHeader('Accept-Language', 'en')
         ->get('/teacher/tools');
 
     $response->assertSuccessful();
