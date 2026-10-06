@@ -6,7 +6,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Application\Execution\Commands\ExecuteBlueprint;
 use App\Domain\Blueprint\Repositories\BlueprintRepository;
-use App\Domain\Blueprint\ValueObjects\BlueprintId;
 use App\Http\Requests\Api\TeacherExecuteBlueprintRequest;
 use Illuminate\Http\JsonResponse;
 
@@ -20,15 +19,9 @@ final class ExecuteTeacherBlueprintController
 
     public function __invoke(
         TeacherExecuteBlueprintRequest $request,
-        ?string $blueprint = null,
+        string $slug,
     ): JsonResponse {
-        $tool = $request->route('tool');
-
-        $blueprintEntity = $tool !== null
-            ? $this->repository->findByCanonicalName((string) $tool)
-            : ($blueprint !== null
-                ? $this->repository->find(new BlueprintId($blueprint))
-                : null);
+        $blueprintEntity = $this->repository->findByCanonicalName($slug);
 
         if ($blueprintEntity === null) {
             return response()->json([
