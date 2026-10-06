@@ -26,6 +26,9 @@ it('renders the assessment positioning teacher page through the generic tool rou
     $response->assertSee('const toolSlug =', false);
     $response->assertSee('executionEndpoint', false);
     $response->assertSee('Determine positioning');
+    $response->assertSee('max_score', false);
+    $response->assertSee('Learner score');
+    $response->assertSee('Maximum score');
 });
 
 
