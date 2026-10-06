@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Domain\Blueprint\Entities\Blueprint;
 use App\Domain\Blueprint\Repositories\BlueprintRepository;
 use App\Domain\Blueprint\ValueObjects\BlueprintId;
+use App\Domain\Blueprint\ValueObjects\CanonicalName;
 
 final class InMemoryBlueprintRepository implements BlueprintRepository
 {
@@ -16,6 +17,17 @@ final class InMemoryBlueprintRepository implements BlueprintRepository
     public function find(BlueprintId $id): ?Blueprint
     {
         return $this->items[(string) $id] ?? null;
+    }
+
+    public function findByCanonicalName(CanonicalName $canonicalName): ?Blueprint
+    {
+        foreach ($this->items as $blueprint) {
+            if ((string) $blueprint->canonicalName() === (string) $canonicalName) {
+                return $blueprint;
+            }
+        }
+
+        return null;
     }
 
     public function findOwnedBy(
