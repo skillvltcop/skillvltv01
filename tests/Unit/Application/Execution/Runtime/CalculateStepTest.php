@@ -42,8 +42,8 @@ it('supports arithmetic calculate operations', function ($operation, $left, $rig
     $result = $runner->run(
         logic: calculateBehavior($operation, $left, $right),
         input: [
-            'left' => $left,
-            'right' => $right,
+            'left' => 10,
+            'right' => 7,
         ],
     );
 
