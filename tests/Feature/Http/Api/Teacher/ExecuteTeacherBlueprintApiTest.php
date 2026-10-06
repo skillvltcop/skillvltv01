@@ -20,6 +20,7 @@ it('executes a teacher tool by slug without requiring a revision id', function (
         ->postJson('/api/teacher/tools/assessment-positioning/execute', [
             'input' => [
                 'score' => 59,
+                'max_score' => 100,
             ],
             'context' => [],
         ]);
@@ -33,6 +34,8 @@ it('executes a teacher tool by slug without requiring a revision id', function (
     ]);
     $response->assertJsonPath('status', 'completed');
     $response->assertJsonPath('result.score', '59');
+    $response->assertJsonPath('result.max_score', '100');
+    $response->assertJsonPath('result.percentage', '59');
     $response->assertJsonPath('result.positioning', 'needs_support');
     $response->assertJsonMissingPath('output');
     $response->assertJsonMissingPath('revision_id');
@@ -46,6 +49,7 @@ it('returns 404 for an unknown teacher tool slug', function () {
         ->postJson('/api/teacher/tools/unknown-tool/execute', [
             'input' => [
                 'score' => 59,
+                'max_score' => 100,
             ],
         ]);
 
@@ -63,12 +67,15 @@ it('keeps the teacher result contract for a ready result', function () {
         ->postJson('/api/teacher/tools/assessment-positioning/execute', [
             'input' => [
                 'score' => 60,
+                'max_score' => 100,
             ],
         ]);
 
     $response->assertSuccessful();
     $response->assertJsonPath('status', 'completed');
     $response->assertJsonPath('result.score', '60');
+    $response->assertJsonPath('result.max_score', '100');
+    $response->assertJsonPath('result.percentage', '60');
     $response->assertJsonPath('result.positioning', 'ready');
     $response->assertJsonPath('error', null);
 });
