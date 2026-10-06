@@ -120,6 +120,12 @@ final class BehaviorContractValidator
                     $errors,
                 ),
 
+                'calculate' => $this->validateCalculate(
+                    $step,
+                    $prefix,
+                    $errors,
+                ),
+
                 default => $errors["{$prefix}.type"] =
                     sprintf('Unknown step type "%s".', $type),
             };
@@ -232,6 +238,59 @@ final class BehaviorContractValidator
                 "{$prefix}.template",
                 $errors,
             );
+        }
+
+        $assignTo = $step['assign_to'] ?? null;
+
+        if (
+            ! is_string($assignTo)
+            || preg_match(self::IDENTIFIER_REGEX, $assignTo) !== 1
+        ) {
+            $errors["{$prefix}.assign_to"] =
+                'assign_to must be a simple identifier matching '
+                . '[a-zA-Z_][a-zA-Z0-9_]*.';
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $step
+     * @param array<string, string> $errors
+     */
+    private function validateCalculate(
+        array $step,
+        string $prefix,
+        array &$errors,
+    ): void {
+        $operation = $step['operation'] ?? null;
+
+        if (
+            ! is_string($operation)
+            || ! in_array($operation, ['add', 'subtract', 'multiply', 'divide'], true)
+        ) {
+            $errors["{$prefix}.operation"] =
+                'operation must be one of: add, subtract, multiply, divide.';
+        }
+
+        foreach (['left', 'right'] as $operand) {
+            if (! array_key_exists($operand, $step)) {
+                $errors["{$prefix}.{$operand}"] =
+                    "calculate step must contain a {$operand} operand.";
+
+                continue;
+            }
+
+            $value = $step[$operand];
+
+            if (is_string($value) && ! $this->isValidPath($value)) {
+                $errors["{$prefix}.{$operand}"] =
+                    "{$operand} must be a numeric value or a valid input., context., or state. path.";
+                continue;
+            }
+
+            if (! is_int($value) && ! is_float($value) && ! is_string($value)) {
+                $errors["{$prefix}.{$operand}"] =
+                    "{$operand} must be a numeric value or a valid input., context., or state. path.";
+            }
         }
 
         $assignTo = $step['assign_to'] ?? null;
