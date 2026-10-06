@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use Database\Seeders\AssessmentPositioningBlueprintSeeder;
+use Database\Seeders\AssessmentScoreCalculatorBlueprintSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -14,6 +15,7 @@ it('exposes only teacher-facing blueprint information', function () {
     $user = User::factory()->create();
 
     (new AssessmentPositioningBlueprintSeeder())->run();
+    (new AssessmentScoreCalculatorBlueprintSeeder())->run();
 
     $response = $this
         ->actingAs($user)
@@ -47,6 +49,32 @@ it('exposes only teacher-facing blueprint information', function () {
     $response->assertJsonMissingPath('data.0.lifecycle_status');
     $response->assertJsonMissingPath('data.0.ownership');
     $response->assertJsonMissingPath('data.0.id');
+});
+
+it('discovers the assessment score calculator for teachers', function () {
+    $user = User::factory()->create();
+
+    (new AssessmentPositioningBlueprintSeeder())->run();
+    (new AssessmentScoreCalculatorBlueprintSeeder())->run();
+
+    $response = $this
+        ->actingAs($user)
+        ->withHeader('Accept-Language', 'en')
+        ->getJson('/api/teacher/blueprints/discover');
+
+    $response->assertSuccessful();
+
+    $data = $response->json('data');
+
+    $calculator = collect($data)->firstWhere('slug', 'assessment-score-calculator');
+
+    expect($calculator)->not->toBeNull()
+        ->and($calculator['title'])->toBe('Assessment Score Calculator')
+        ->and($calculator['target_level'])->toBe('5-6')
+        ->and($calculator['purpose'])->toBe(
+            'Calculates the score and percentage from correct answers and the total.',
+        )
+        ->and($calculator['version'])->toBe('v1.0.0');
 });
 
 it('localizes teacher blueprint discovery from the session locale', function () {
