@@ -10,7 +10,7 @@ uses(
     RefreshDatabase::class,
 );
 
-it('renders the assessment positioning teacher page', function () {
+it('renders the assessment positioning teacher page through the generic tool route', function () {
     $user = User::factory()->create();
 
     (new AssessmentPositioningBlueprintSeeder())->run();
@@ -56,6 +56,16 @@ it('renders the localized shell for supported locales', function () {
         $response->assertSee($texts['title']);
         $response->assertSee($texts['execute']);
     }
+});
+
+it('rejects unknown teacher tool slugs', function () {
+    $user = User::factory()->create();
+
+    $response = $this
+        ->actingAs($user)
+        ->get('/teacher/tools/unknown-tool');
+
+    $response->assertNotFound();
 });
 
 it('requires browser authentication', function () {
