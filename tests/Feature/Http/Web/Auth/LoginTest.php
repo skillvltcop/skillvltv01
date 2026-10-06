@@ -84,6 +84,7 @@ it('uses the browser session to execute the teacher blueprint', function () {
         [
             'input' => [
                 'score' => 59,
+                'max_score' => 100,
             ],
             'context' => [],
         ],
