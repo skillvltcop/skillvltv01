@@ -46,6 +46,7 @@ final class AssessmentPositioningBlueprintSeeder extends Seeder
 
         if ($existing !== null) {
             $existing->updateMetadata($metadata);
+            $repository->save($existing);
 
             $hasCurrentV11 = $existing->revisions() !== []
                 && collect($existing->revisions())->contains(
@@ -131,7 +132,6 @@ final class AssessmentPositioningBlueprintSeeder extends Seeder
                 );
             }
 
-            $repository->save($existing);
             return;
         }
 
