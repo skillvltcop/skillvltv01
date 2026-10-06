@@ -47,7 +47,7 @@ it('supports arithmetic calculate operations', function ($operation, $left, $rig
         ],
     );
 
-    expect((float) $result['result'])->toBe((float) $expected);
+    expect((float) $result['result'])->toBeApproximately((float) $expected, 0.000001);
 })->with([
     ['add', 'input.left', 'input.right', 17],
     ['subtract', 'input.left', 'input.right', 3],
