@@ -22,6 +22,7 @@ it('returns a teacher-facing result without exposing execution internals', funct
             [
                 'input' => [
                     'score' => 59,
+                    'max_score' => 100,
                 ],
                 'context' => [],
             ],
@@ -36,6 +37,8 @@ it('returns a teacher-facing result without exposing execution internals', funct
     ]);
     $response->assertJsonPath('status', 'completed');
     $response->assertJsonPath('result.score', '59');
+    $response->assertJsonPath('result.max_score', '100');
+    $response->assertJsonPath('result.percentage', '59');
     $response->assertJsonPath('result.positioning', 'needs_support');
 
     $response->assertJsonMissingPath('output');
@@ -55,6 +58,7 @@ it('executes the assessment positioning tool through its teacher-facing identifi
         [
             'input' => [
                 'score' => 59,
+                'max_score' => 100,
             ],
             'context' => [],
         ],
@@ -63,6 +67,8 @@ it('executes the assessment positioning tool through its teacher-facing identifi
     $response->assertSuccessful();
     $response->assertJsonPath('status', 'completed');
     $response->assertJsonPath('result.score', '59');
+    $response->assertJsonPath('result.max_score', '100');
+    $response->assertJsonPath('result.percentage', '59');
     $response->assertJsonPath('result.positioning', 'needs_support');
 
     $response->assertJsonMissingPath('blueprint_id');
@@ -75,6 +81,7 @@ it('rejects unauthenticated teacher tool execution', function () {
         [
             'input' => [
                 'score' => 59,
+                'max_score' => 100,
             ],
             'context' => [],
         ],
@@ -89,6 +96,7 @@ it('rejects unauthenticated teacher blueprint execution', function () {
         [
             'input' => [
                 'score' => 59,
+                'max_score' => 100,
             ],
             'context' => [],
         ],
