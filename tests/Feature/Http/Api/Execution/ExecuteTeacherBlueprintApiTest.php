@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use Database\Seeders\AssessmentPositioningBlueprintSeeder;
+use Database\Seeders\AssessmentScoreCalculatorBlueprintSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -73,6 +74,40 @@ it('executes the assessment positioning tool through its teacher-facing identifi
 
     $response->assertJsonMissingPath('blueprint_id');
     $response->assertJsonMissingPath('revision_id');
+});
+
+it('executes the assessment score calculator through its teacher-facing identifier', function () {
+    $user = User::factory()->create();
+
+    (new AssessmentScoreCalculatorBlueprintSeeder())->run();
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            '/api/teacher/tools/assessment-score-calculator/execute',
+            [
+                'input' => [
+                    'correct' => 17,
+                    'total' => 20,
+                ],
+                'context' => [],
+            ],
+        );
+
+    $response->assertSuccessful();
+    $response->assertJsonStructure([
+        'execution_id',
+        'status',
+        'result',
+        'error',
+    ]);
+    $response->assertJsonPath('status', 'completed');
+    $response->assertJsonPath('result.score', '17');
+    $response->assertJsonPath('result.percentage', '85');
+
+    $response->assertJsonMissingPath('output');
+    $response->assertJsonMissingPath('revision_id');
+    $response->assertJsonMissingPath('blueprint_id');
 });
 
 it('rejects unauthenticated teacher tool execution', function () {
