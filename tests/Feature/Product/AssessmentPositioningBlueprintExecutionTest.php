@@ -25,12 +25,12 @@ it('executes the seeded assessment positioning system blueprint through the HTTP
     $revisionId = (string) $blueprint->currentRevisionId();
 
     $cases = [
-        40 => 'needs_support',
-        60 => 'ready',
-        90 => 'ready',
+        [40, 100, 'needs_support'],
+        [60, 100, 'ready'],
+        [90, 100, 'ready'],
     ];
 
-    foreach ($cases as $score => $expectedPositioning) {
+    foreach ($cases as [$score, $maxScore, $expectedPositioning]) {
         $response = $this
             ->actingAs($user)
             ->postJson(
@@ -39,6 +39,7 @@ it('executes the seeded assessment positioning system blueprint through the HTTP
                     'revision_id' => $revisionId,
                     'input' => [
                         'score' => $score,
+                        'max_score' => $maxScore,
                     ],
                     'context' => [],
                 ],
