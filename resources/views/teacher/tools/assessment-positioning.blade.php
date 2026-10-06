@@ -126,7 +126,7 @@
         }
 
         const payload = await response.json();
-        const blueprint = payload.data?.[0];
+        const blueprint = (payload.data ?? []).find(item => item.slug === toolSlug);
 
         if (!blueprint) {
             throw new Error(translations.tool_unavailable);
