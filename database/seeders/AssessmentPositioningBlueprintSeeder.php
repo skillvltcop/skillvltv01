@@ -126,6 +126,18 @@ final class AssessmentPositioningBlueprintSeeder extends Seeder
                 );
             }
 
+            if ($hasCurrentV11 && $existing->currentRevision()?->number() !== null
+                && (string) $existing->currentRevision()->number() !== '1.1.0') {
+                $revision = collect($existing->revisions())->first(
+                    fn ($revision): bool => (string) $revision->number() === '1.1.0'
+                );
+
+                (new PromoteBlueprintRevision($repository))->handle(
+                    blueprintId: (string) $existing->id(),
+                    revisionId: (string) $revision->id(),
+                );
+            }
+
             if ($existing->lifecycleStatus()->value === 'draft') {
                 (new ActivateBlueprint($repository))->handle(
                     blueprintId: (string) $existing->id(),
