@@ -299,6 +299,94 @@ it('rejects a stale terminal execution overwrite', function () {
         ]);
 });
 
+it('rejects changing an execution identity after persistence', function () {
+    $blueprintAId = BlueprintId::generate();
+    $revisionAId = RevisionId::generate();
+    $blueprintBId = BlueprintId::generate();
+    $revisionBId = RevisionId::generate();
+
+    Blueprint::query()->create([
+        'id' => (string) $blueprintAId,
+        'canonical_name' => 'execution-identity-a',
+        'namespace' => 'skillvlt.edu.test',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'draft',
+    ]);
+
+    BlueprintRevision::query()->create([
+        'id' => (string) $revisionAId,
+        'blueprint_id' => (string) $blueprintAId,
+        'revision_number' => '1.0.0',
+        'parent_revision_id' => null,
+        'behavior_digest' =>
+            'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        'contracts' => [],
+        'logic' => [],
+        'outputs' => [],
+        'policies' => [],
+        'frozen' => true,
+    ]);
+
+    Blueprint::query()->create([
+        'id' => (string) $blueprintBId,
+        'canonical_name' => 'execution-identity-b',
+        'namespace' => 'skillvlt.edu.test',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'draft',
+    ]);
+
+    BlueprintRevision::query()->create([
+        'id' => (string) $revisionBId,
+        'blueprint_id' => (string) $blueprintBId,
+        'revision_number' => '1.0.0',
+        'parent_revision_id' => null,
+        'behavior_digest' =>
+            'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        'contracts' => [],
+        'logic' => [],
+        'outputs' => [],
+        'policies' => [],
+        'frozen' => true,
+    ]);
+
+    $execution = Execution::create(
+        blueprintId: $blueprintAId,
+        revisionId: $revisionAId,
+        input: [],
+        context: [],
+    );
+
+    $repository = new EloquentExecutionRepository();
+    $repository->save($execution);
+
+    $tampered = Execution::reconstitute(
+        id: $execution->id(),
+        blueprintId: $blueprintBId,
+        revisionId: $revisionBId,
+        input: [],
+        context: [],
+        status: \\App\\Domain\\Execution\\Enums\\ExecutionStatus::PENDING,
+        output: null,
+        error: null,
+    );
+
+    expect(fn () => $repository->save($tampered))
+        ->toThrow(
+            \\App\\Domain\\Execution\\Exceptions\\ConcurrentExecutionException::class,
+            'The Execution was modified concurrently; reload it before saving.',
+        );
+
+    $persisted = $repository->find($execution->id());
+
+    expect((string) $persisted->blueprintId())
+        ->toBe((string) $blueprintAId);
+
+    expect((string) $persisted->revisionId())
+        ->toBe((string) $revisionAId);
+});
+
 it('persists and retrieves a completed execution with its output', function () {
     $blueprintId = BlueprintId::generate();
     $revisionId = RevisionId::generate();
