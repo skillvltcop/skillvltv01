@@ -52,6 +52,7 @@ it('persists an execution with its lifecycle state', function () {
     $execution = Execution::create(
         blueprintId: $blueprintId,
         revisionId: $revisionId,
+        ownerId: 'user-1',
         input: [
             'student' => [
                 'name' => 'Ahmed',
