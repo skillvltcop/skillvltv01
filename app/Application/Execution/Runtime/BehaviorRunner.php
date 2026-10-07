@@ -32,39 +32,81 @@ final class BehaviorRunner implements BehaviorRunnerContract
 
         $state = [];
 
-        foreach ($logic['steps'] as $step) {
+        return $this->executeSteps(
+            steps: $logic['steps'],
+            input: $input,
+            context: $context,
+            state: $state,
+        );
+
+        throw new \DomainException(
+            'Behavior execution did not produce a return output.'
+        );
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $steps
+     * @param array<string, mixed> $input
+     * @param array<string, mixed> $context
+     * @param array<string, mixed> $state
+     * @param array<string, mixed>|null $item
+     * @return array<string, mixed>
+     */
+    private function executeSteps(
+        array $steps,
+        array $input,
+        array $context,
+        array &$state,
+        ?array $item = null,
+    ): array {
+        foreach ($steps as $step) {
             $type = $step['type'];
 
-            if ($type === 'evaluate_rule') {
-                $this->executeEvaluateRule(
-                    step: $step,
+            if ($type === 'map') {
+                $source = $this->valueResolver->resolve(
+                    path: $step['source'],
                     input: $input,
                     context: $context,
                     state: $state,
                 );
 
+                if (! is_array($source)) {
+                    throw new \DomainException('Map source must be an array.');
+                }
+
+                $mapped = [];
+
+                foreach ($source as $sourceItem) {
+                    if (! is_array($sourceItem)) {
+                        throw new \DomainException('Map items must be arrays.');
+                    }
+
+                    $nestedState = [];
+                    $mapped[] = $this->executeSteps(
+                        steps: $step['steps'],
+                        input: $input,
+                        context: $context,
+                        state: $nestedState,
+                        item: $sourceItem,
+                    );
+                }
+
+                $state[$step['assign_to']] = $mapped;
+                continue;
+            }
+
+            if ($type === 'evaluate_rule') {
+                $this->executeEvaluateRule($step, $input, $context, $state, $item);
                 continue;
             }
 
             if ($type === 'format_template') {
-                $this->executeFormatTemplate(
-                    step: $step,
-                    input: $input,
-                    context: $context,
-                    state: $state,
-                );
-
+                $this->executeFormatTemplate($step, $input, $context, $state, $item);
                 continue;
             }
 
             if ($type === 'calculate') {
-                $this->executeCalculate(
-                    step: $step,
-                    input: $input,
-                    context: $context,
-                    state: $state,
-                );
-
+                $this->executeCalculate($step, $input, $context, $state, $item);
                 continue;
             }
 
@@ -74,6 +116,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
                     input: $input,
                     context: $context,
                     state: $state,
+                    item: $item,
                 );
             }
 
@@ -82,9 +125,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
             );
         }
 
-        throw new \DomainException(
-            'Behavior execution did not produce a return output.'
-        );
+        throw new \DomainException('Behavior execution did not produce a return output.');
     }
 
     /**
