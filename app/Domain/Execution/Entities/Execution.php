@@ -141,12 +141,12 @@ final class Execution
         ExecutionId $id,
         BlueprintId $blueprintId,
         RevisionId $revisionId,
-        ?string $ownerId,
         array $input,
         array $context,
         ExecutionStatus $status,
         ?array $output,
         ?string $error,
+        ?string $ownerId = null,
     ): self {
         if (
             $status === ExecutionStatus::COMPLETED
