@@ -59,7 +59,9 @@ final class EloquentExecutionRepository implements ExecutionRepository
                 'error' => $execution->error(),
             ],
         );
-        private function assertStatusIsCurrent(
+    }
+
+    private function assertStatusIsCurrent(
         DomainExecution $execution,
         ExecutionModel $model,
     ): void {
