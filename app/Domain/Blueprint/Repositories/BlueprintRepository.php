@@ -11,7 +11,10 @@ interface BlueprintRepository
 {
     public function find(BlueprintId $id): ?Blueprint;
 
-    public function findByCanonicalName(string $canonicalName): ?Blueprint;
+    public function findByCanonicalName(
+        string $namespace,
+        string $canonicalName,
+    ): ?Blueprint;
 
     public function findOwnedBy(
         string $ownerType,
