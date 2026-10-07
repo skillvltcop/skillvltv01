@@ -15,6 +15,7 @@ final class Execution
         private ExecutionId $id,
         private BlueprintId $blueprintId,
         private RevisionId $revisionId,
+        private ?string $ownerId,
         private array $input,
         private array $context,
         private ExecutionStatus $status,
@@ -26,6 +27,7 @@ final class Execution
     public static function create(
         BlueprintId $blueprintId,
         RevisionId $revisionId,
+        string $ownerId,
         array $input,
         array $context,
     ): self {
@@ -33,6 +35,7 @@ final class Execution
             id: ExecutionId::generate(),
             blueprintId: $blueprintId,
             revisionId: $revisionId,
+            ownerId: $ownerId,
             input: self::copy($input),
             context: self::copy($context),
             status: ExecutionStatus::PENDING,
@@ -54,6 +57,11 @@ final class Execution
     public function revisionId(): RevisionId
     {
         return $this->revisionId;
+    }
+
+    public function ownerId(): ?string
+    {
+        return $this->ownerId;
     }
 
     public function input(): array
@@ -133,6 +141,7 @@ final class Execution
         ExecutionId $id,
         BlueprintId $blueprintId,
         RevisionId $revisionId,
+        ?string $ownerId,
         array $input,
         array $context,
         ExecutionStatus $status,
@@ -176,6 +185,7 @@ final class Execution
             id: $id,
             blueprintId: $blueprintId,
             revisionId: $revisionId,
+            ownerId: $ownerId,
             input: self::copy($input),
             context: self::copy($context),
             status: $status,
