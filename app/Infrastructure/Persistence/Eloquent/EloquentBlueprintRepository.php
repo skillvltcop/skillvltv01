@@ -142,6 +142,11 @@ final class EloquentBlueprintRepository implements BlueprintRepository
 
         $persistedRevisions = $model->revisions()->get();
 
+        $this->assertPersistedRevisionsAreCurrent(
+            $blueprint,
+            $persistedRevisions,
+        );
+
         $persistedRevisionIds = $persistedRevisions
             ->pluck('id')
             ->map(fn ($id): string => (string) $id)
@@ -202,6 +207,43 @@ final class EloquentBlueprintRepository implements BlueprintRepository
             !== (string) ($expectedParentId ?? '')
         ) {
             throw new ConcurrentBlueprintRevisionException();
+        }
+    }
+
+    private function assertPersistedRevisionsAreCurrent(
+        Blueprint $blueprint,
+        $persistedRevisions,
+    ): void {
+        foreach ($persistedRevisions as $persistedRevision) {
+            $candidate = $blueprint->revision(
+                new RevisionId((string) $persistedRevision->id),
+            );
+
+            if ($candidate === null) {
+                throw new ConcurrentBlueprintRevisionException();
+            }
+
+            if (
+                (string) $candidate->number()
+                !== (string) $persistedRevision->revision_number
+                || (string) ($candidate->parentRevisionId() ?? '')
+                !== (string) ($persistedRevision->parent_revision_id ?? '')
+                || (string) $candidate->behaviorDigest()
+                !== (string) $persistedRevision->behavior_digest
+                || $candidate->contracts() !== ($persistedRevision->contracts ?? [])
+                || $candidate->logic() !== ($persistedRevision->logic ?? [])
+                || $candidate->outputs() !== ($persistedRevision->outputs ?? [])
+                || $candidate->policies() !== ($persistedRevision->policies ?? [])
+            ) {
+                throw new ConcurrentBlueprintRevisionException();
+            }
+
+            if (
+                (bool) $persistedRevision->frozen
+                && ! $candidate->isFrozen()
+            ) {
+                throw new ConcurrentBlueprintRevisionException();
+            }
         }
     }
 
