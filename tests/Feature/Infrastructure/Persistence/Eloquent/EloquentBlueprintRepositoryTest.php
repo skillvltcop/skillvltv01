@@ -73,7 +73,7 @@ it('scopes canonical name lookup by namespace', function () {
         ->and((string) $found->namespace())->toBe('skillvlt.edu.second')
         ->and((string) $found->canonicalName())->toBe('shared-name');
 
-    expect((string) $first->id())->not->toBe((string) $second->id);
+    expect((string) $first->id)->not->toBe((string) $second->id);
 });
 
 it('reconstitutes blueprint metadata from persistence', function () {
