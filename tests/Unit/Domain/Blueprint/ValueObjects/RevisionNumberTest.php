@@ -74,6 +74,18 @@ it('compares semantic version components numerically', function () {
     expect($next->isGreaterThan($current))->toBeTrue();
 });
 
+it('compares revision components larger than the PHP integer range correctly', function () {
+    $current = new RevisionNumber(
+        '999999999999999999999999999999999999.0.0'
+    );
+    $next = new RevisionNumber(
+        '1000000000000000000000000000000000000.0.0'
+    );
+
+    expect($next->isGreaterThan($current))->toBeTrue();
+    expect($current->isGreaterThan($next))->toBeFalse();
+});
+
 it('detects a greater major revision', function () {
     $current = new RevisionNumber('1.9.9');
     $next = new RevisionNumber('2.0.0');
