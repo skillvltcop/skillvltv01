@@ -106,6 +106,7 @@ it('executes an activated blueprint revision from creation to completion', funct
     $execution = $engine->execute(
         blueprint: $blueprint,
         revisionId: $revision->id(),
+        ownerId: 'user-1',
         input: [
             'student' => [
                 'name' => 'Ahmed',
