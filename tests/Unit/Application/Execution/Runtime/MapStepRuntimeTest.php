@@ -63,8 +63,8 @@ it('maps nested steps over each collection item', function () {
 
     expect($result)->toBe([
         'results' => [
-            ['name' => 'أحمد', 'percentage' => '70'],
-            ['name' => 'سارة', 'percentage' => '90'],
+            ['name' => 'أحمد', 'percentage' => 70.0],
+            ['name' => 'سارة', 'percentage' => 90.0],
         ],
     ]);
 });
