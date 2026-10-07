@@ -378,9 +378,9 @@ final class BehaviorContractValidator
 
             $value = $step[$operand];
 
-            if (is_string($value) && ! $this->isValidPath($value)) {
+            if (is_string($value) && ! $this->isValidPath($value, $allowItemPaths)) {
                 $errors["{$prefix}.{$operand}"] =
-                    "{$operand} must be a numeric value or a valid input., context., or state. path.";
+                    "{$operand} must be a numeric value or a valid input., context., state., or item. path.";
                 continue;
             }
 
