@@ -88,6 +88,16 @@ final class EloquentExecutionRepository implements ExecutionRepository
         ) {
             throw new ConcurrentExecutionException();
         }
+
+        if (
+            $rank($persisted) === 2
+            && (
+                $execution->output() !== $model->output
+                || $execution->error() !== $model->error
+            )
+        ) {
+            throw new ConcurrentExecutionException();
+        }
     }
 
 }
