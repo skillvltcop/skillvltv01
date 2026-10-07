@@ -58,6 +58,19 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $exceptions->render(function (
+            \App\Domain\Execution\Exceptions\ConcurrentExecutionException $e,
+            $request,
+        ) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 409);
+        });
+
+        $exceptions->render(function (
             \App\Domain\Behavior\Exceptions\InvalidBehaviorContractException $e,
             $request,
         ) {
