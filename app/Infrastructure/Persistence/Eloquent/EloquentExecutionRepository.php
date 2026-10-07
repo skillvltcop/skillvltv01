@@ -12,6 +12,7 @@ use App\Domain\Execution\ValueObjects\ExecutionId;
 use App\Domain\Blueprint\ValueObjects\BlueprintId;
 use App\Domain\Blueprint\ValueObjects\RevisionId;
 use App\Models\Execution as ExecutionModel;
+use Illuminate\Support\Facades\DB;
 
 final class EloquentExecutionRepository implements ExecutionRepository
 {
@@ -37,21 +38,33 @@ final class EloquentExecutionRepository implements ExecutionRepository
 
     public function save(DomainExecution $execution): void
     {
-        $model = ExecutionModel::query()->find(
-            (string) $execution->id(),
-        );
+        DB::transaction(function () use ($execution): void {
+            $model = ExecutionModel::query()
+                ->lockForUpdate()
+                ->find((string) $execution->id());
 
-        if ($model !== null) {
-            $this->assertIdentityIsCurrent($execution, $model);
-            $this->assertInputAndContextAreCurrent($execution, $model);
-            $this->assertStatusIsCurrent($execution, $model);
-        }
+            if ($model !== null) {
+                $this->assertIdentityIsCurrent($execution, $model);
+                $this->assertInputAndContextAreCurrent($execution, $model);
+                $this->assertStatusIsCurrent($execution, $model);
 
-        ExecutionModel::query()->updateOrCreate(
-            [
+                $model->fill([
+                    'blueprint_id' => (string) $execution->blueprintId(),
+                    'revision_id' => (string) $execution->revisionId(),
+                    'input' => $execution->input(),
+                    'context' => $execution->context(),
+                    'status' => $execution->status(),
+                    'output' => $execution->output(),
+                    'error' => $execution->error(),
+                ]);
+
+                $model->save();
+
+                return;
+            }
+
+            ExecutionModel::query()->create([
                 'id' => (string) $execution->id(),
-            ],
-            [
                 'blueprint_id' => (string) $execution->blueprintId(),
                 'revision_id' => (string) $execution->revisionId(),
                 'input' => $execution->input(),
@@ -59,8 +72,8 @@ final class EloquentExecutionRepository implements ExecutionRepository
                 'status' => $execution->status(),
                 'output' => $execution->output(),
                 'error' => $execution->error(),
-            ],
-        );
+            ]);
+        });
     }
 
     private function assertIdentityIsCurrent(
@@ -125,5 +138,4 @@ final class EloquentExecutionRepository implements ExecutionRepository
             throw new ConcurrentExecutionException();
         }
     }
-
 }
