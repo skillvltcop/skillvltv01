@@ -126,6 +126,12 @@ final class BehaviorContractValidator
                     $errors,
                 ),
 
+                'map' => $this->validateMap(
+                    $step,
+                    $prefix,
+                    $errors,
+                ),
+
                 default => $errors["{$prefix}.type"] =
                     sprintf('Unknown step type "%s".', $type),
             };
@@ -256,10 +262,101 @@ final class BehaviorContractValidator
      * @param array<string, mixed> $step
      * @param array<string, string> $errors
      */
+    private function validateMap(
+        array $step,
+        string $prefix,
+        array &$errors,
+    ): void {
+        $source = $step['source'] ?? null;
+
+        if (! is_string($source) || ! $this->isValidPath($source)) {
+            $errors["{$prefix}.source"] =
+                'source must be a valid input., context., or state. path.';
+        }
+
+        $assignTo = $step['assign_to'] ?? null;
+
+        if (
+            ! is_string($assignTo)
+            || preg_match(self::IDENTIFIER_REGEX, $assignTo) !== 1
+        ) {
+            $errors["{$prefix}.assign_to"] =
+                'assign_to must be a simple identifier matching '
+                . '[a-zA-Z_][a-zA-Z0-9_]*.';
+        }
+
+        $nestedSteps = $step['steps'] ?? null;
+
+        if (! is_array($nestedSteps) || $nestedSteps === []) {
+            $errors["{$prefix}.steps"] =
+                'map must contain a non-empty steps array.';
+
+            return;
+        }
+
+        $returnCount = 0;
+        $totalSteps = count($nestedSteps);
+
+        foreach ($nestedSteps as $index => $nestedStep) {
+            $nestedPrefix = "{$prefix}.steps.{$index}";
+
+            if (! is_array($nestedStep)) {
+                $errors["{$nestedPrefix}.structure"] = 'Each map step must be an array.';
+                continue;
+            }
+
+            $type = $nestedStep['type'] ?? null;
+
+            if (! is_string($type)) {
+                $errors["{$nestedPrefix}.type"] = 'Map step type must be a string.';
+                continue;
+            }
+
+            if ($type === 'return') {
+                $returnCount++;
+
+                if ($index !== $totalSteps - 1) {
+                    $errors["{$nestedPrefix}.position"] =
+                        'The map "return" step must be the last step.';
+                }
+
+                $this->validateReturn(
+                    $nestedStep,
+                    $nestedPrefix,
+                    $errors,
+                    true,
+                );
+
+                continue;
+            }
+
+            match ($type) {
+                'calculate' => $this->validateCalculate(
+                    $nestedStep,
+                    $nestedPrefix,
+                    $errors,
+                    true,
+                ),
+                default => $errors["{$nestedPrefix}.type"] =
+                    sprintf('Unknown map step type "%s".', $type),
+            };
+        }
+
+        if ($returnCount === 0) {
+            $errors["{$prefix}.sequence"] =
+                'The map steps must end with a "return" step.';
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $step
+     * @param array<string, string> $errors
+     */
     private function validateCalculate(
         array $step,
         string $prefix,
         array &$errors,
+        bool $allowItemPaths = false,
     ): void {
         $operation = $step['operation'] ?? null;
 
@@ -313,6 +410,7 @@ final class BehaviorContractValidator
         array $step,
         string $prefix,
         array &$errors,
+        bool $allowItemPaths = false,
     ): void {
     if (! array_key_exists('data', $step)) {
         $errors["{$prefix}.data"] =
@@ -342,6 +440,7 @@ final class BehaviorContractValidator
         mixed $data,
         string $prefix,
         array &$errors,
+        bool $allowItemPaths = false,
     ): void {
         if (is_string($data)) {
             $this->validatePlaceholders(
@@ -359,6 +458,7 @@ final class BehaviorContractValidator
                     $value,
                     "{$prefix}.{$key}",
                     $errors,
+                    $allowItemPaths,
                 );
             }
         }
@@ -371,6 +471,7 @@ final class BehaviorContractValidator
         string $text,
         string $errorKey,
         array &$errors,
+        bool $allowItemPaths = false,
     ): void {
         if (substr_count($text, '{') !== substr_count($text, '}')) {
             $errors["{$errorKey}.placeholder"] =
@@ -386,7 +487,7 @@ final class BehaviorContractValidator
         );
 
         foreach ($matches[1] as $path) {
-            if (! $this->isValidPath($path)) {
+            if (! $this->isValidPath($path, $allowItemPaths)) {
                 $errors["{$errorKey}.placeholder"] =
                     sprintf(
                         'Invalid placeholder path "{%s}". '
@@ -397,14 +498,15 @@ final class BehaviorContractValidator
         }
     }
 
-    private function isValidPath(string $path): bool
-    {
-        if (
-            preg_match(
-                '/^(input|context|state)\.[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*$/',
-                $path
-            ) !== 1
-        ) {
+    private function isValidPath(
+        string $path,
+        bool $allowItemPaths = false,
+    ): bool {
+        $pattern = $allowItemPaths
+            ? '/^(input|context|state|item)\.[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*$/'
+            : '/^(input|context|state)\.[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*$/';
+
+        if (preg_match($pattern, $path) !== 1) {
             return false;
         }
 
@@ -412,7 +514,9 @@ final class BehaviorContractValidator
 
         return in_array(
             $root,
-            self::ALLOWED_PATH_ROOTS,
+            $allowItemPaths
+                ? ['input', 'context', 'state', 'item']
+                : self::ALLOWED_PATH_ROOTS,
             true,
         );
     }
