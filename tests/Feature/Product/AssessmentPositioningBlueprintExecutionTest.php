@@ -48,7 +48,7 @@ it('executes the seeded assessment positioning system blueprint through the HTTP
         $response->assertSuccessful();
 
         $response->assertJsonPath('status', 'completed');
-        $response->assertJsonPath('output.score', (string) $score);
+        $response->assertJsonPath('output.score', $score);
         $response->assertJsonPath('output.positioning', $expectedPositioning);
     }
 });
