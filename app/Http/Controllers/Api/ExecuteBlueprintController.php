@@ -60,6 +60,7 @@ final class ExecuteBlueprintController
             $execution = $this->executeBlueprint->handle(
                 blueprintId: $blueprint,
                 revisionId: $request->string('revision_id')->toString(),
+                ownerId: (string) $request->user()->id,
                 input: $request->input('input', []),
                 context: $request->input('context', []),
             );
