@@ -760,6 +760,62 @@ it('rejects a stale current revision rollback', function () {
         ->toBe((string) $revision2->id());
 });
 
+it('rejects a stale lifecycle rollback after sunset', function () {
+    $blueprint = \App\Domain\Blueprint\Entities\Blueprint::create(
+        canonicalName: new \App\Domain\Blueprint\ValueObjects\CanonicalName(
+            'concurrent-lifecycle-test'
+        ),
+        namespace: new \App\Domain\Blueprint\ValueObjects\BlueprintNamespace(
+            'skillvlt.edu.test'
+        ),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision = $blueprint->addRevision(
+        number: new \App\Domain\Blueprint\ValueObjects\RevisionNumber('1.0.0'),
+        behaviorDigest: new \App\Domain\Blueprint\ValueObjects\BehaviorDigest(
+            'sha256:' . str_repeat('a', 64),
+        ),
+        contracts: [],
+        logic: [],
+        outputs: [],
+        policies: [],
+    );
+
+    $revision->freeze();
+    $blueprint->promoteRevision($revision->id());
+
+    $repository = new EloquentBlueprintRepository();
+    $repository->save($blueprint);
+
+    $staleWriter = $repository->find($blueprint->id());
+    $currentWriter = $repository->find($blueprint->id());
+
+    expect($staleWriter)->not->toBeNull();
+    expect($currentWriter)->not->toBeNull();
+
+    $currentWriter->activate();
+    $currentWriter->sunset();
+    $repository->save($currentWriter);
+
+    $staleWriter->activate();
+
+    expect(fn () => $repository->save($staleWriter))
+        ->toThrow(
+            \App\Domain\Blueprint\Exceptions\ConcurrentBlueprintRevisionException::class,
+            'The Blueprint was modified concurrently; reload it before saving.',
+        );
+
+    $persisted = $repository->find($blueprint->id());
+
+    expect($persisted->lifecycleStatus())
+        ->toBe(\App\Domain\Blueprint\Enums\LifecycleStatus::SUNSET);
+});
+
 it('rejects a parent revision belonging to another blueprint', function () {
     $firstBlueprint = \App\Domain\Blueprint\Entities\Blueprint::create(
         canonicalName: new \App\Domain\Blueprint\ValueObjects\CanonicalName(
