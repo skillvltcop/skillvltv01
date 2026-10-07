@@ -136,6 +136,8 @@ final class EloquentBlueprintRepository implements BlueprintRepository
         Blueprint $blueprint,
         BlueprintModel $model,
     ): void {
+        $this->assertCurrentRevisionIsCurrent($blueprint, $model);
+
         $persistedRevisions = $model->revisions()->get();
 
         $persistedRevisionIds = $persistedRevisions
@@ -197,6 +199,42 @@ final class EloquentBlueprintRepository implements BlueprintRepository
             (string) ($actualParentId ?? '')
             !== (string) ($expectedParentId ?? '')
         ) {
+            throw new ConcurrentBlueprintRevisionException();
+        }
+    }
+
+    private function assertCurrentRevisionIsCurrent(
+        Blueprint $blueprint,
+        BlueprintModel $model,
+    ): void {
+        $persistedCurrentRevisionId = $model->current_revision_id;
+        $currentRevision = $blueprint->currentRevision();
+
+        if ($persistedCurrentRevisionId === null) {
+            return;
+        }
+
+        if ($currentRevision === null) {
+            throw new ConcurrentBlueprintRevisionException();
+        }
+
+        if ((string) $currentRevision->id() === (string) $persistedCurrentRevisionId) {
+            return;
+        }
+
+        $persistedCurrentRevision = $model->revisions()
+            ->whereKey($persistedCurrentRevisionId)
+            ->first();
+
+        if ($persistedCurrentRevision === null) {
+            throw new ConcurrentBlueprintRevisionException();
+        }
+
+        $persistedNumber = new RevisionNumber(
+            (string) $persistedCurrentRevision->revision_number,
+        );
+
+        if (! $currentRevision->number()->isGreaterThan($persistedNumber)) {
             throw new ConcurrentBlueprintRevisionException();
         }
     }
