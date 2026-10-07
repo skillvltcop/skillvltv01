@@ -450,3 +450,78 @@ test('it rejects empty placeholders', function () {
     expect(fn () => $this->validator->validate($contract))
         ->toThrow(InvalidBehaviorContractException::class);
 });
+
+test('it rejects duplicate return steps inside a map', function () {
+    $contract = validBehaviorContract();
+
+    $contract['steps'] = [
+        [
+            'type' => 'map',
+            'source' => 'input.learners',
+            'assign_to' => 'results',
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => ['name' => '{item.name}'],
+                ],
+                [
+                    'type' => 'return',
+                    'data' => ['name' => '{item.name}'],
+                ],
+            ],
+        ],
+        [
+            'type' => 'return',
+            'data' => ['results' => '{state.results}'],
+        ],
+    ];
+
+    expect(fn () => $this->validator->validate($contract))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        $this->validator->validate($contract);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())
+            ->toHaveKey('steps.0.steps.1.duplicate');
+    }
+});
+
+test('it rejects steps after a return inside a map', function () {
+    $contract = validBehaviorContract();
+
+    $contract['steps'] = [
+        [
+            'type' => 'map',
+            'source' => 'input.learners',
+            'assign_to' => 'results',
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => ['name' => '{item.name}'],
+                ],
+                [
+                    'type' => 'calculate',
+                    'operation' => 'add',
+                    'left' => 'item.score',
+                    'right' => 1,
+                    'assign_to' => 'score',
+                ],
+            ],
+        ],
+        [
+            'type' => 'return',
+            'data' => ['results' => '{state.results}'],
+        ],
+    ];
+
+    expect(fn () => $this->validator->validate($contract))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        $this->validator->validate($contract);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())
+            ->toHaveKey('steps.0.steps.0.position');
+    }
+});
