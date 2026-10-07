@@ -11,6 +11,7 @@ it('completes a running execution and persists the output', function () {
     $execution = Execution::create(
         blueprintId: BlueprintId::generate(),
         revisionId: RevisionId::generate(),
+        ownerId: 'user-1',
         input: [
             'student' => [
                 'name' => 'Ahmed',
