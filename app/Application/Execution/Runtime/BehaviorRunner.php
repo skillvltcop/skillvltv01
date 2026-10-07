@@ -327,6 +327,16 @@ final class BehaviorRunner implements BehaviorRunnerContract
         ?array $item = null,
     ): mixed {
         if (is_string($value)) {
+            if (preg_match('/^\\{([^{}\\s]+)\\}$/', $value, $matches) === 1) {
+                return $this->valueResolver->resolve(
+                    path: $matches[1],
+                    input: $input,
+                    context: $context,
+                    state: $state,
+                    item: $item,
+                );
+            }
+
             return preg_replace_callback(
                 '/{([^{}\s]+)}/',
                 function (array $matches) use (
