@@ -333,12 +333,14 @@ final class BehaviorRunner implements BehaviorRunnerContract
                     $input,
                     $context,
                     $state,
+                    $item,
                 ): string {
                     $resolved = $this->valueResolver->resolve(
                         path: $matches[1],
                         input: $input,
                         context: $context,
                         state: $state,
+                        item: $item,
                     );
 
                     if (is_array($resolved) || is_object($resolved)) {
