@@ -45,17 +45,12 @@ final class ShowExecutionController
             ], 404);
         }
 
-        $ownership = $blueprint->ownership();
-
         $user = $request->user();
 
-        $isSystemOwned = $ownership['type'] === 'system';
-
-        $isOwner =
-            $ownership['type'] === 'user'
-            && (string) $ownership['id'] === (string) $user->id;
-
-        if (! $isSystemOwned && ! $isOwner) {
+        if (
+            $executionEntity->ownerId() === null
+            || $executionEntity->ownerId() !== (string) $user->id
+        ) {
             return response()->json([
                 'message' => 'Forbidden.',
             ], 403);
