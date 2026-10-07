@@ -13,7 +13,7 @@ return new class extends Migration
 
             $table->foreignUlid('blueprint_id')
                 ->constrained('blueprints')
-                ->cascadeOnDelete();
+                ->restrictOnDelete();
 
             $table->foreignUlid('revision_id')
                 ->constrained('blueprint_revisions')
