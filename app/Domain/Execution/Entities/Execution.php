@@ -27,9 +27,9 @@ final class Execution
     public static function create(
         BlueprintId $blueprintId,
         RevisionId $revisionId,
-        ?string $ownerId = null,
         array $input,
         array $context,
+        ?string $ownerId = null,
     ): self {
         return new self(
             id: ExecutionId::generate(),
