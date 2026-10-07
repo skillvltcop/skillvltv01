@@ -6,6 +6,7 @@ use App\Domain\Execution\Entities\Execution;
 use App\Infrastructure\Persistence\Eloquent\EloquentExecutionRepository;
 use App\Models\Blueprint;
 use App\Models\BlueprintRevision;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -13,6 +14,10 @@ uses(
     TestCase::class,
     RefreshDatabase::class,
 );
+
+beforeEach(function () {
+    $this->ownerId = (string) User::factory()->create()->id;
+});
 
 it('persists an execution with its lifecycle state', function () {
     $blueprintId = BlueprintId::generate();
@@ -52,7 +57,7 @@ it('persists an execution with its lifecycle state', function () {
     $execution = Execution::create(
         blueprintId: $blueprintId,
         revisionId: $revisionId,
-        ownerId: 'user-1',
+        ownerId: $this->ownerId,
         input: [
             'student' => [
                 'name' => 'Ahmed',
