@@ -95,7 +95,7 @@ it('retrieves a completed execution through the HTTP API', function () {
     $execution = $engine->execute(
         blueprint: $blueprint,
         revisionId: $revision->id(),
-        ownerId: 'user-1',
+        ownerId: (string) $user->id,
         input: [
             'student' => [
                 'name' => 'Ahmed',
@@ -268,7 +268,7 @@ it('forbids a user from reading another user execution', function () {
     $execution = $engine->execute(
         blueprint: $blueprint,
         revisionId: $revision->id(),
-        ownerId: 'user-1',
+        ownerId: (string) $owner->id,
         input: [
             'student' => [
                 'name' => 'Ahmed',
