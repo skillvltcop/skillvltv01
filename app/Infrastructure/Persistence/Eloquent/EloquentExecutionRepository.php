@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Infrastructure\Persistence\Eloquent;
 
 use App\Domain\Execution\Entities\Execution as DomainExecution;
+use App\Domain\Execution\Enums\ExecutionStatus;
+use App\Domain\Execution\Exceptions\ConcurrentExecutionException;
 use App\Domain\Execution\Repositories\ExecutionRepository;
 use App\Domain\Execution\ValueObjects\ExecutionId;
 use App\Domain\Blueprint\ValueObjects\BlueprintId;
@@ -35,6 +37,14 @@ final class EloquentExecutionRepository implements ExecutionRepository
 
     public function save(DomainExecution $execution): void
     {
+        $model = ExecutionModel::query()->find(
+            (string) $execution->id(),
+        );
+
+        if ($model !== null) {
+            $this->assertStatusIsCurrent($execution, $model);
+        }
+
         ExecutionModel::query()->updateOrCreate(
             [
                 'id' => (string) $execution->id(),
@@ -49,5 +59,34 @@ final class EloquentExecutionRepository implements ExecutionRepository
                 'error' => $execution->error(),
             ],
         );
+        private function assertStatusIsCurrent(
+        DomainExecution $execution,
+        ExecutionModel $model,
+    ): void {
+        $persisted = $model->status instanceof ExecutionStatus
+            ? $model->status
+            : ExecutionStatus::from((string) $model->status);
+
+        $candidate = $execution->status();
+
+        $rank = static fn (ExecutionStatus $status): int => match ($status) {
+            ExecutionStatus::PENDING => 0,
+            ExecutionStatus::RUNNING => 1,
+            ExecutionStatus::COMPLETED,
+            ExecutionStatus::FAILED => 2,
+        };
+
+        if ($rank($candidate) < $rank($persisted)) {
+            throw new ConcurrentExecutionException();
+        }
+
+        if (
+            $rank($candidate) === $rank($persisted)
+            && $candidate !== $persisted
+        ) {
+            throw new ConcurrentExecutionException();
+        }
     }
+
+}
 }
