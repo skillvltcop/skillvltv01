@@ -43,8 +43,8 @@ it('completes the teacher use flow from discovery to execution result', function
 
     $executionResponse->assertSuccessful();
     $executionResponse->assertJsonPath('status', 'completed');
-    $executionResponse->assertJsonPath('result.score', '17');
-    $executionResponse->assertJsonPath('result.percentage', '85');
+    $executionResponse->assertJsonPath('result.score', 17);
+    $executionResponse->assertJsonPath('result.percentage', 85);
 
     $executionId = $executionResponse->json('execution_id');
 
@@ -56,6 +56,6 @@ it('completes the teacher use flow from discovery to execution result', function
 
     $resultResponse->assertSuccessful();
     $resultResponse->assertJsonPath('status', 'completed');
-    $resultResponse->assertJsonPath('output.score', '17');
-    $resultResponse->assertJsonPath('output.percentage', '85');
+    $resultResponse->assertJsonPath('output.score', 17);
+    $resultResponse->assertJsonPath('output.percentage', 85);
 });
