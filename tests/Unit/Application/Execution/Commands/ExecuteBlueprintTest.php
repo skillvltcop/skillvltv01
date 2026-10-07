@@ -108,6 +108,7 @@ it('executes an activated blueprint and persists the execution', function () {
             [
                 'locale' => 'ar',
             ],
+            null,
         )
         ->andReturn($expectedExecution);
 
@@ -225,6 +226,7 @@ it('delegates an invalid revision to the execution engine', function () {
             [
                 'locale' => 'ar',
             ],
+            null,
         )
         ->andThrow(
             new DomainException(
