@@ -301,3 +301,55 @@ it('rejects unauthenticated execution access', function () {
 
     $response->assertUnauthorized();
 });
+
+it('only lets the execution owner read a system blueprint execution', function () {
+    $owner = User::factory()->create();
+    $otherUser = User::factory()->create();
+
+    $blueprint = \App\Models\Blueprint::query()->create([
+        'id' => (string) \Illuminate\Support\Str::ulid(),
+        'canonical_name' => 'system-execution-owner-protected',
+        'namespace' => 'skillvlt.edu.execution',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'draft',
+    ]);
+
+    $revision = \App\Models\BlueprintRevision::query()->create([
+        'id' => (string) \Illuminate\Support\Str::ulid(),
+        'blueprint_id' => (string) $blueprint->id,
+        'revision_number' => '1.0.0',
+        'parent_revision_id' => null,
+        'behavior_digest' => 'sha256:' . str_repeat('a', 64),
+        'contracts' => [],
+        'logic' => [],
+        'outputs' => [],
+        'policies' => [],
+        'frozen' => false,
+    ]);
+
+    $execution = \App\Domain\Execution\Entities\Execution::create(
+        blueprintId: new \App\Domain\Blueprint\ValueObjects\BlueprintId(
+            (string) $blueprint->id,
+        ),
+        revisionId: new \App\Domain\Blueprint\ValueObjects\RevisionId(
+            (string) $revision->id,
+        ),
+        input: ['secret' => 'owner-only'],
+        context: [],
+        ownerId: (string) $owner->id,
+    );
+
+    (new \App\Infrastructure\Persistence\Eloquent\EloquentExecutionRepository())
+        ->save($execution);
+
+    $this
+        ->actingAs($owner)
+        ->getJson("/api/executions/{$execution->id()}")
+        ->assertSuccessful();
+
+    $this
+        ->actingAs($otherUser)
+        ->getJson("/api/executions/{$execution->id()}")
+        ->assertForbidden();
+});
