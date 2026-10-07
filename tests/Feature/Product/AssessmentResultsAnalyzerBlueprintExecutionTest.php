@@ -119,5 +119,5 @@ it('probes the current DSL for assessment results analysis', function () {
     $response->assertJsonPath('status', 'completed');
 
     expect($response->json('output.average_percentage'))
-        ->toBe(70);
+        ->toBe('70');
 });
