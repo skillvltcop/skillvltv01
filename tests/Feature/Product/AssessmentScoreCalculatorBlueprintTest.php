@@ -121,7 +121,7 @@ it('calculates assessment score and percentage through a blueprint', function ()
 
         $response->assertSuccessful();
         $response->assertJsonPath('status', 'completed');
-        $response->assertJsonPath('output.score', (string) $correct);
+        $response->assertJsonPath('output.score', $correct);
 
         expect((float) $response->json('output.percentage'))
             ->toBeGreaterThanOrEqual($expectedPercentage - 0.000001)
