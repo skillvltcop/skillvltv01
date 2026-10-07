@@ -43,6 +43,7 @@ final class EloquentExecutionRepository implements ExecutionRepository
 
         if ($model !== null) {
             $this->assertIdentityIsCurrent($execution, $model);
+            $this->assertInputAndContextAreCurrent($execution, $model);
             $this->assertStatusIsCurrent($execution, $model);
         }
 
@@ -69,6 +70,18 @@ final class EloquentExecutionRepository implements ExecutionRepository
         if (
             (string) $execution->blueprintId() !== (string) $model->blueprint_id
             || (string) $execution->revisionId() !== (string) $model->revision_id
+        ) {
+            throw new ConcurrentExecutionException();
+        }
+    }
+
+    private function assertInputAndContextAreCurrent(
+        DomainExecution $execution,
+        ExecutionModel $model,
+    ): void {
+        if (
+            $execution->input() !== ($model->input ?? [])
+            || $execution->context() !== ($model->context ?? [])
         ) {
             throw new ConcurrentExecutionException();
         }
