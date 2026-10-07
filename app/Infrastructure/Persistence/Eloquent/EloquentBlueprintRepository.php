@@ -35,13 +35,17 @@ final class EloquentBlueprintRepository implements BlueprintRepository
         return $this->toDomain($model);
     }
 
-    public function findByCanonicalName(string $canonicalName): ?Blueprint
+    public function findByCanonicalName(
+        string $namespace,
+        string $canonicalName,
+    ): ?Blueprint
     {
         $model = BlueprintModel::query()
             ->with([
                 'revisions.parentRevision',
                 'currentRevision',
             ])
+            ->where('namespace', $namespace)
             ->where('canonical_name', $canonicalName)
             ->first();
 
