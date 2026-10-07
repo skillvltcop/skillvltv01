@@ -27,7 +27,7 @@ final class Execution
     public static function create(
         BlueprintId $blueprintId,
         RevisionId $revisionId,
-        string $ownerId,
+        ?string $ownerId = null,
         array $input,
         array $context,
     ): self {
