@@ -694,6 +694,72 @@ it('rejects a stale concurrent revision write', function () {
     )->toBe(2);
 });
 
+it('rejects a stale current revision rollback', function () {
+    $blueprint = \App\Domain\Blueprint\Entities\Blueprint::create(
+        canonicalName: new \App\Domain\Blueprint\ValueObjects\CanonicalName(
+            'concurrent-current-revision-test'
+        ),
+        namespace: new \App\Domain\Blueprint\ValueObjects\BlueprintNamespace(
+            'skillvlt.edu.test'
+        ),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision1 = $blueprint->addRevision(
+        number: new \App\Domain\Blueprint\ValueObjects\RevisionNumber('1.0.0'),
+        behaviorDigest: new \App\Domain\Blueprint\ValueObjects\BehaviorDigest(
+            'sha256:' . str_repeat('a', 64),
+        ),
+        contracts: [],
+        logic: [],
+        outputs: [],
+        policies: [],
+    );
+
+    $revision1->freeze();
+    $blueprint->promoteRevision($revision1->id());
+
+    $repository = new EloquentBlueprintRepository();
+    $repository->save($blueprint);
+
+    $staleWriter = $repository->find($blueprint->id());
+    $currentWriter = $repository->find($blueprint->id());
+
+    expect($staleWriter)->not->toBeNull();
+    expect($currentWriter)->not->toBeNull();
+
+    $revision2 = $currentWriter->addRevision(
+        number: new \App\Domain\Blueprint\ValueObjects\RevisionNumber('1.1.0'),
+        behaviorDigest: new \App\Domain\Blueprint\ValueObjects\BehaviorDigest(
+            'sha256:' . str_repeat('b', 64),
+        ),
+        contracts: [],
+        logic: [],
+        outputs: [],
+        policies: [],
+    );
+
+    $revision2->freeze();
+    $currentWriter->promoteRevision($revision2->id());
+    $repository->save($currentWriter);
+
+    expect(fn () => $repository->save($staleWriter))
+        ->toThrow(
+            \App\Domain\Blueprint\Exceptions\ConcurrentBlueprintRevisionException::class
+        );
+
+    $persisted = $repository->find($blueprint->id());
+
+    expect($persisted->currentRevision())
+        ->not->toBeNull()
+        ->and((string) $persisted->currentRevision()->id())
+        ->toBe((string) $revision2->id());
+});
+
 it('rejects a parent revision belonging to another blueprint', function () {
     $firstBlueprint = \App\Domain\Blueprint\Entities\Blueprint::create(
         canonicalName: new \App\Domain\Blueprint\ValueObjects\CanonicalName(
