@@ -17,6 +17,7 @@ interface ExecutionEngineContract
     public function execute(
         Blueprint $blueprint,
         RevisionId $revisionId,
+        string $ownerId,
         array $input,
         array $context = [],
     ): Execution;
