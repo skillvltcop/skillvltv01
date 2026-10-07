@@ -186,12 +186,14 @@ final class BehaviorRunner implements BehaviorRunnerContract
             $input,
             $context,
             $state,
+            $item,
         );
         $right = $this->resolveCalculateOperand(
             $step['right'],
             $input,
             $context,
             $state,
+            $item,
         );
 
         if (
@@ -258,6 +260,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
                 $input,
                 $context,
                 $state,
+                $item,
             ): string {
                 $value = $this->valueResolver->resolve(
                     path: $matches[1],
