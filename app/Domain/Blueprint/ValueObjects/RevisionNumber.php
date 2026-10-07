@@ -37,15 +37,25 @@ final readonly class RevisionNumber
 
     public function isGreaterThan(self $other): bool
     {
-        return [
-            $this->major(),
-            $this->minor(),
-            $this->patch(),
-        ] > [
-            $other->major(),
-            $other->minor(),
-            $other->patch(),
-        ];
+        $components = explode('.', $this->value);
+        $otherComponents = explode('.', $other->value);
+
+        foreach ($components as $index => $component) {
+            $otherComponent = $otherComponents[$index];
+
+            $componentLength = strlen($component);
+            $otherComponentLength = strlen($otherComponent);
+
+            if ($componentLength !== $otherComponentLength) {
+                return $componentLength > $otherComponentLength;
+            }
+
+            if ($component !== $otherComponent) {
+                return $component > $otherComponent;
+            }
+        }
+
+        return false;
     }
 
     public function equals(self $other): bool
