@@ -34,6 +34,7 @@ it('creates an execution and persists it', function () {
     $result = $command->handle(
         blueprintId: (string) $blueprintId,
         revisionId: (string) $revisionId,
+        ownerId: 'user-1',
         input: [
             'student' => [
                 'name' => 'Ahmed',
