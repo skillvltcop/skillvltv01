@@ -28,6 +28,9 @@ final class EloquentExecutionRepository implements ExecutionRepository
             id: new ExecutionId((string) $model->id),
             blueprintId: new BlueprintId((string) $model->blueprint_id),
             revisionId: new RevisionId((string) $model->revision_id),
+            ownerId: $model->owner_id !== null
+                ? (string) $model->owner_id
+                : null,
             input: $model->input ?? [],
             context: $model->context ?? [],
             status: $model->status,
@@ -45,12 +48,14 @@ final class EloquentExecutionRepository implements ExecutionRepository
 
             if ($model !== null) {
                 $this->assertIdentityIsCurrent($execution, $model);
+                $this->assertOwnerIsCurrent($execution, $model);
                 $this->assertInputAndContextAreCurrent($execution, $model);
                 $this->assertStatusIsCurrent($execution, $model);
 
                 $model->fill([
                     'blueprint_id' => (string) $execution->blueprintId(),
                     'revision_id' => (string) $execution->revisionId(),
+                    'owner_id' => $execution->ownerId(),
                     'input' => $execution->input(),
                     'context' => $execution->context(),
                     'status' => $execution->status(),
@@ -67,6 +72,7 @@ final class EloquentExecutionRepository implements ExecutionRepository
                 'id' => (string) $execution->id(),
                 'blueprint_id' => (string) $execution->blueprintId(),
                 'revision_id' => (string) $execution->revisionId(),
+                'owner_id' => $execution->ownerId(),
                 'input' => $execution->input(),
                 'context' => $execution->context(),
                 'status' => $execution->status(),
@@ -84,6 +90,19 @@ final class EloquentExecutionRepository implements ExecutionRepository
             (string) $execution->blueprintId() !== (string) $model->blueprint_id
             || (string) $execution->revisionId() !== (string) $model->revision_id
         ) {
+            throw new ConcurrentExecutionException();
+        }
+    }
+
+    private function assertOwnerIsCurrent(
+        DomainExecution $execution,
+        ExecutionModel $model,
+    ): void {
+        if ($execution->ownerId() !== (
+            $model->owner_id === null
+                ? null
+                : (string) $model->owner_id
+        )) {
             throw new ConcurrentExecutionException();
         }
     }
