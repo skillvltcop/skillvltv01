@@ -136,8 +136,8 @@ it('executes the assessment positioning blueprint v1.1 using score and max score
         $response->assertSuccessful();
 
         $response->assertJsonPath('status', 'completed');
-        $response->assertJsonPath('output.score', (string) $score);
-        $response->assertJsonPath('output.max_score', (string) $maxScore);
+        $response->assertJsonPath('output.score', $score);
+        $response->assertJsonPath('output.max_score', $maxScore);
         expect((float) $response->json('output.percentage'))
             ->toBeGreaterThanOrEqual($expectedPercentage - 0.000001)
             ->toBeLessThanOrEqual($expectedPercentage + 0.000001);
