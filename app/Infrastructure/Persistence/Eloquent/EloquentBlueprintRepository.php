@@ -73,6 +73,8 @@ final class EloquentBlueprintRepository implements BlueprintRepository
                     'current_revision_id' => null,
                 ]);
             } else {
+                $this->assertLifecycleStatusIsCurrent($blueprint, $model);
+
                 $this->assertRevisionHistoryIsCurrent(
                     $blueprint,
                     $model,
@@ -200,6 +202,28 @@ final class EloquentBlueprintRepository implements BlueprintRepository
             !== (string) ($expectedParentId ?? '')
         ) {
             throw new ConcurrentBlueprintRevisionException();
+        }
+    }
+
+    private function assertLifecycleStatusIsCurrent(
+        Blueprint $blueprint,
+        BlueprintModel $model,
+    ): void {
+        $persistedStatus = $model->lifecycle_status instanceof \App\Domain\Blueprint\Enums\LifecycleStatus
+            ? $model->lifecycle_status
+            : \App\Domain\Blueprint\Enums\LifecycleStatus::from((string) $model->lifecycle_status);
+
+        $rank = static fn (\App\Domain\Blueprint\Enums\LifecycleStatus $status): int => match ($status) {
+            \App\Domain\Blueprint\Enums\LifecycleStatus::DRAFT => 0,
+            \App\Domain\Blueprint\Enums\LifecycleStatus::ACTIVE => 1,
+            \App\Domain\Blueprint\Enums\LifecycleStatus::DEPRECATED => 2,
+            \App\Domain\Blueprint\Enums\LifecycleStatus::SUNSET => 3,
+        };
+
+        if ($rank($blueprint->lifecycleStatus()) < $rank($persistedStatus)) {
+            throw new ConcurrentBlueprintRevisionException(
+                'The Blueprint was modified concurrently; reload it before saving.',
+            );
         }
     }
 
