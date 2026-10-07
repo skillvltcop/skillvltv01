@@ -27,9 +27,9 @@ final class ExecuteBlueprint
     public function handle(
         string $blueprintId,
         string $revisionId,
-        string $ownerId,
         array $input,
         array $context = [],
+        ?string $ownerId = null,
     ): Execution {
         $blueprint = $this->blueprintRepository->find(
             new BlueprintId($blueprintId),
