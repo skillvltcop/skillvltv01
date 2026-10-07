@@ -6,9 +6,14 @@ use App\Domain\Execution\Entities\Execution;
 use App\Infrastructure\Persistence\Eloquent\EloquentExecutionRepository;
 use App\Models\Blueprint;
 use App\Models\BlueprintRevision;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function () {
+    $this->ownerId = (string) User::factory()->create()->id;
+});
 
 it('persists and retrieves an execution through the repository', function () {
     $blueprintId = BlueprintId::generate();
@@ -48,7 +53,7 @@ it('persists and retrieves an execution through the repository', function () {
     $execution = Execution::create(
         blueprintId: $blueprintId,
         revisionId: $revisionId,
-        ownerId: 'user-1',
+        ownerId: $this->ownerId,
         input: [
             'student' => [
                 'name' => 'Ahmed',
@@ -139,7 +144,7 @@ it('updates an existing execution without changing its identity', function () {
     $execution = Execution::create(
         blueprintId: $blueprintId,
         revisionId: $revisionId,
-        ownerId: 'user-1',
+        ownerId: $this->ownerId,
         input: [
             'student' => [
                 'name' => 'Ahmed',
@@ -203,7 +208,7 @@ it('rejects a stale execution status rollback', function () {
     $execution = Execution::create(
         blueprintId: $blueprintId,
         revisionId: $revisionId,
-        ownerId: 'user-1',
+        ownerId: $this->ownerId,
         input: [],
         context: [],
     );
@@ -265,7 +270,7 @@ it('rejects a stale terminal execution overwrite', function () {
     $execution = Execution::create(
         blueprintId: $blueprintId,
         revisionId: $revisionId,
-        ownerId: 'user-1',
+        ownerId: $this->ownerId,
         input: [],
         context: [],
     );
@@ -333,7 +338,7 @@ it('rejects changing execution input and context after persistence', function ()
     $execution = Execution::create(
         blueprintId: $blueprintId,
         revisionId: $revisionId,
-        ownerId: 'user-1',
+        ownerId: $this->ownerId,
         input: [
             'score' => 10,
         ],
@@ -349,7 +354,7 @@ it('rejects changing execution input and context after persistence', function ()
         id: $execution->id(),
         blueprintId: $blueprintId,
         revisionId: $revisionId,
-        ownerId: 'user-1',
+        ownerId: $this->ownerId,
         input: [
             'score' => 99,
         ],
@@ -435,7 +440,7 @@ it('rejects changing an execution identity after persistence', function () {
     $execution = Execution::create(
         blueprintId: $blueprintAId,
         revisionId: $revisionAId,
-        ownerId: 'user-1',
+        ownerId: $this->ownerId,
         input: [],
         context: [],
     );
@@ -447,7 +452,7 @@ it('rejects changing an execution identity after persistence', function () {
         id: $execution->id(),
         blueprintId: $blueprintBId,
         revisionId: $revisionBId,
-        ownerId: 'user-1',
+        ownerId: $this->ownerId,
         input: [],
         context: [],
         status: \App\Domain\Execution\Enums\ExecutionStatus::PENDING,
@@ -508,7 +513,7 @@ it('persists and retrieves a completed execution with its output', function () {
     $execution = Execution::create(
         blueprintId: $blueprintId,
         revisionId: $revisionId,
-        ownerId: 'user-1',
+        ownerId: $this->ownerId,
         input: [
             'student' => [
                 'name' => 'Ahmed',
@@ -586,7 +591,7 @@ it('persists and retrieves a failed execution with its error', function () {
     $execution = Execution::create(
         blueprintId: $blueprintId,
         revisionId: $revisionId,
-        ownerId: 'user-1',
+        ownerId: $this->ownerId,
         input: [
             'student' => [
                 'name' => 'Ahmed',
@@ -720,7 +725,7 @@ it('rejects an execution referencing a revision from another blueprint', functio
     $execution = Execution::create(
         blueprintId: $blueprintBId,
         revisionId: $revisionAId,
-        ownerId: 'user-1',
+        ownerId: $this->ownerId,
         input: [],
         context: [],
     );
