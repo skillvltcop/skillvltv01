@@ -13,9 +13,10 @@ final class ValueResolver
         array $input,
         array $context,
         array $state,
+        ?array $item = null,
     ): mixed {
         if (! preg_match(
-            '/^(input|context|state)\.[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*$/',
+            '/^(input|context|state|item)\.[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*$/',
             $path
         )) {
             throw new UnresolvablePathException(
@@ -29,6 +30,7 @@ final class ValueResolver
             'input' => $input,
             'context' => $context,
             'state' => $state,
+            'item' => $item ?? [],
         };
 
         $missing = new \stdClass();
