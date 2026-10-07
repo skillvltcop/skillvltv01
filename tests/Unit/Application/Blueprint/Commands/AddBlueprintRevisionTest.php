@@ -105,6 +105,55 @@ it('adds a revision to an existing blueprint and persists it', function () {
         ->toBe($revision);
 });
 
+it('derives the behavior digest instead of trusting a supplied digest', function () {
+    $blueprint = Blueprint::create(
+        canonicalName: new \App\Domain\Blueprint\ValueObjects\CanonicalName(
+            'assessment-rubric-digest-integrity'
+        ),
+        namespace: new \App\Domain\Blueprint\ValueObjects\BlueprintNamespace(
+            'skillvlt.edu.assessment'
+        ),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $repository = Mockery::mock(BlueprintRepository::class);
+
+    $repository
+        ->shouldReceive('find')
+        ->once()
+        ->andReturn($blueprint);
+
+    $repository
+        ->shouldReceive('save')
+        ->once()
+        ->with($blueprint);
+
+    $command = new AddBlueprintRevision(
+        repository: $repository,
+        behaviorContractValidator: new BehaviorContractValidator(),
+        behaviorDigestCalculator: new \App\Application\Behavior\BehaviorDigestCalculator(),
+    );
+
+    $revision = $command->handle(
+        blueprintId: (string) $blueprint->id(),
+        number: '1.0.0',
+        behaviorDigest: 'sha256:' . str_repeat('f', 64),
+        contracts: ['input' => ['type' => 'object']],
+        logic: validBehaviorLogic(),
+        outputs: ['type' => 'assessment-result'],
+        policies: ['visibility' => 'public'],
+    );
+
+    expect((string) $revision->behaviorDigest())
+        ->toBe(
+            'sha256:0a4f71e3089d5966be9079cbd5363ee324521cdd689840c06f7df6b489476232'
+        );
+});
+
 it('links a new revision to the previous revision', function () {
     $blueprint = Blueprint::create(
         canonicalName: new \App\Domain\Blueprint\ValueObjects\CanonicalName(
