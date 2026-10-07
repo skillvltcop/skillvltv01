@@ -24,6 +24,7 @@ final class ExecutionEngine implements ExecutionEngineContract
     public function execute(
         Blueprint $blueprint,
         RevisionId $revisionId,
+        string $ownerId,
         array $input,
         array $context = [],
     ): Execution {
@@ -59,6 +60,7 @@ final class ExecutionEngine implements ExecutionEngineContract
         $execution = Execution::create(
             blueprintId: $blueprint->id(),
             revisionId: $revisionId,
+            ownerId: $ownerId,
             input: $input,
             context: $context,
         );
