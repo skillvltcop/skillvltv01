@@ -58,9 +58,9 @@ it('completes the teacher use flow from discovery to execution result', function
 
     $resultResponse->assertSuccessful();
     $resultResponse->assertJsonPath('status', 'completed');
-    $resultResponse->assertJsonPath('output.score', '59');
-    $resultResponse->assertJsonPath('output.max_score', '100');
-    $resultResponse->assertJsonPath('output.percentage', '59');
+    $resultResponse->assertJsonPath('output.score', 59);
+    $resultResponse->assertJsonPath('output.max_score', 100);
+    $resultResponse->assertJsonPath('output.percentage', 59);
     $resultResponse->assertJsonPath(
         'output.positioning',
         'needs_support',
