@@ -623,6 +623,55 @@ it('round trips the blueprint lifecycle status', function () {
         ->toBe(\App\Domain\Blueprint\Enums\LifecycleStatus::ACTIVE);
 });
 
+it('rejects a stale unfrozen revision after another writer freezes it', function () {
+    $blueprint = \App\Domain\Blueprint\Entities\Blueprint::create(
+        canonicalName: new \App\Domain\Blueprint\ValueObjects\CanonicalName(
+            'concurrent-freeze-test'
+        ),
+        namespace: new \App\Domain\Blueprint\ValueObjects\BlueprintNamespace(
+            'skillvlt.edu.test'
+        ),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision = $blueprint->addRevision(
+        number: new \App\Domain\Blueprint\ValueObjects\RevisionNumber('1.0.0'),
+        behaviorDigest: new \App\Domain\Blueprint\ValueObjects\BehaviorDigest(
+            'sha256:' . str_repeat('a', 64),
+        ),
+        contracts: [],
+        logic: [],
+        outputs: [],
+        policies: [],
+    );
+
+    $repository = new EloquentBlueprintRepository();
+    $repository->save($blueprint);
+
+    $staleWriter = $repository->find($blueprint->id());
+    $currentWriter = $repository->find($blueprint->id());
+
+    expect($staleWriter)->not->toBeNull();
+    expect($currentWriter)->not->toBeNull();
+
+    $currentWriter->freezeRevision($revision->id());
+    $repository->save($currentWriter);
+
+    expect(fn () => $repository->save($staleWriter))
+        ->toThrow(
+            \App\Domain\Blueprint\Exceptions\ConcurrentBlueprintRevisionException::class
+        );
+
+    $persisted = $repository->find($blueprint->id());
+
+    expect($persisted->revision($revision->id())->isFrozen())
+        ->toBeTrue();
+});
+
 it('rejects a stale concurrent revision write', function () {
     $blueprint = \App\Domain\Blueprint\Entities\Blueprint::create(
         canonicalName: new \App\Domain\Blueprint\ValueObjects\CanonicalName(
