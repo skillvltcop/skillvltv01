@@ -315,6 +315,11 @@ final class BehaviorContractValidator
             if ($type === 'return') {
                 $returnCount++;
 
+                if ($returnCount > 1) {
+                    $errors["{$nestedPrefix}.duplicate"] =
+                        'Only one "return" step is allowed in a map.';
+                }
+
                 if ($index !== $totalSteps - 1) {
                     $errors["{$nestedPrefix}.position"] =
                         'The map "return" step must be the last step.';
