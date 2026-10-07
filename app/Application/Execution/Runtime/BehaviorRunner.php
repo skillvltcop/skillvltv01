@@ -68,6 +68,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
                     input: $input,
                     context: $context,
                     state: $state,
+                    item: $item,
                 );
 
                 if (! is_array($source)) {
@@ -139,6 +140,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
         array $input,
         array $context,
         array &$state,
+        ?array $item = null,
     ): void {
         $condition = $step['condition'];
 
@@ -147,6 +149,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
             input: $input,
             context: $context,
             state: $state,
+            item: $item,
         );
 
         $expected = $condition['value'];
@@ -176,6 +179,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
         array $input,
         array $context,
         array &$state,
+        ?array $item = null,
     ): void {
         $left = $this->resolveCalculateOperand(
             $step['left'],
@@ -218,6 +222,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
         array $input,
         array $context,
         array $state,
+        ?array $item = null,
     ): mixed {
         if (is_string($operand)) {
             return $this->valueResolver->resolve(
@@ -225,6 +230,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
                 input: $input,
                 context: $context,
                 state: $state,
+                item: $item,
             );
         }
 
@@ -242,6 +248,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
         array $input,
         array $context,
         array &$state,
+        ?array $item = null,
     ): void {
         $template = $step['template'];
 
@@ -257,6 +264,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
                     input: $input,
                     context: $context,
                     state: $state,
+                    item: $item,
                 );
 
                 if (is_array($value) || is_object($value)) {
@@ -286,6 +294,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
         array $input,
         array $context,
         array $state,
+        ?array $item = null,
     ): array {
         $resolved = [];
 
@@ -295,6 +304,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
                 input: $input,
                 context: $context,
                 state: $state,
+                item: $item,
             );
         }
 
@@ -311,6 +321,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
         array $input,
         array $context,
         array $state,
+        ?array $item = null,
     ): mixed {
         if (is_string($value)) {
             return preg_replace_callback(
@@ -348,6 +359,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
                 input: $input,
                 context: $context,
                 state: $state,
+                item: $item,
             );
         }
 
