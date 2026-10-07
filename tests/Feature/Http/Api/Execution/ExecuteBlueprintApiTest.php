@@ -548,7 +548,7 @@ it('returns a failed execution when blueprint execution fails', function () {
     $execution = Execution::create(
         blueprintId: $blueprint->id(),
         revisionId: $revision->id(),
-        ownerId: 'user-1',
+        ownerId: (string) $user->id,
         input: [
             'student' => [
                 'name' => 'Ahmed',
