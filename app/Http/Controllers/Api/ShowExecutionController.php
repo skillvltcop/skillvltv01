@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
-use App\Domain\Blueprint\Repositories\BlueprintRepository;
-use App\Domain\Blueprint\ValueObjects\BlueprintId;
 use App\Domain\Execution\Repositories\ExecutionRepository;
 use App\Domain\Execution\ValueObjects\ExecutionId;
 use Illuminate\Http\JsonResponse;
@@ -15,7 +13,6 @@ final class ShowExecutionController
 {
     public function __construct(
         private ExecutionRepository $executionRepository,
-        private BlueprintRepository $blueprintRepository,
     ) {
     }
 
@@ -30,18 +27,6 @@ final class ShowExecutionController
         if ($executionEntity === null) {
             return response()->json([
                 'message' => 'Execution not found.',
-            ], 404);
-        }
-
-        $blueprint = $this->blueprintRepository->find(
-            new BlueprintId(
-                (string) $executionEntity->blueprintId(),
-            ),
-        );
-
-        if ($blueprint === null) {
-            return response()->json([
-                'message' => 'Blueprint not found.',
             ], 404);
         }
 
