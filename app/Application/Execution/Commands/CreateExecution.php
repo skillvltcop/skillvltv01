@@ -23,9 +23,9 @@ final class CreateExecution
     public function handle(
         string $blueprintId,
         string $revisionId,
-        string $ownerId,
         array $input,
         array $context = [],
+        ?string $ownerId = null,
     ): Execution {
         $execution = Execution::create(
             blueprintId: new BlueprintId($blueprintId),
