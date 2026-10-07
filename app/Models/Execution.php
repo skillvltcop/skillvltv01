@@ -22,6 +22,7 @@ final class Execution extends Model
         'id',
         'blueprint_id',
         'revision_id',
+        'owner_id',
         'input',
         'context',
         'status',
