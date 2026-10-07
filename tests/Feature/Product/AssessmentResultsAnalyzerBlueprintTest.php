@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use IlluminateFoundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 uses(
