@@ -24,9 +24,9 @@ final class ExecutionEngine implements ExecutionEngineContract
     public function execute(
         Blueprint $blueprint,
         RevisionId $revisionId,
-        string $ownerId,
         array $input,
         array $context = [],
+        ?string $ownerId = null,
     ): Execution {
         $revision = $blueprint->revision($revisionId);
 
