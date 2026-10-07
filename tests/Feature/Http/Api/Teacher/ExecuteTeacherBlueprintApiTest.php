@@ -33,9 +33,9 @@ it('executes a teacher tool by slug without requiring a revision id', function (
         'error',
     ]);
     $response->assertJsonPath('status', 'completed');
-    $response->assertJsonPath('result.score', '59');
-    $response->assertJsonPath('result.max_score', '100');
-    $response->assertJsonPath('result.percentage', '59');
+    $response->assertJsonPath('result.score', 59);
+    $response->assertJsonPath('result.max_score', 100);
+    $response->assertJsonPath('result.percentage', 59);
     $response->assertJsonPath('result.positioning', 'needs_support');
     $response->assertJsonMissingPath('output');
     $response->assertJsonMissingPath('revision_id');
@@ -73,9 +73,9 @@ it('keeps the teacher result contract for a ready result', function () {
 
     $response->assertSuccessful();
     $response->assertJsonPath('status', 'completed');
-    $response->assertJsonPath('result.score', '60');
-    $response->assertJsonPath('result.max_score', '100');
-    $response->assertJsonPath('result.percentage', '60');
+    $response->assertJsonPath('result.score', 60);
+    $response->assertJsonPath('result.max_score', 100);
+    $response->assertJsonPath('result.percentage', 60);
     $response->assertJsonPath('result.positioning', 'ready');
     $response->assertJsonPath('error', null);
 });
