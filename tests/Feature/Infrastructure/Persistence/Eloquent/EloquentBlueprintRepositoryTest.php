@@ -41,6 +41,41 @@ it('reconstitutes a blueprint from persistence without changing its identity', f
         ->toBe('skillvlt.edu.assessment');
 });
 
+
+it('scopes canonical name lookup by namespace', function () {
+    $first = BlueprintModel::query()->create([
+        'id' => (string) Str::ulid(),
+        'canonical_name' => 'shared-name',
+        'namespace' => 'skillvlt.edu.first',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'draft',
+    ]);
+
+    $second = BlueprintModel::query()->create([
+        'id' => (string) Str::ulid(),
+        'canonical_name' => 'shared-name',
+        'namespace' => 'skillvlt.edu.second',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'draft',
+    ]);
+
+    $repository = new EloquentBlueprintRepository();
+
+    $found = $repository->findByCanonicalName(
+        'skillvlt.edu.second',
+        'shared-name',
+    );
+
+    expect($found)->not->toBeNull()
+        ->and((string) $found->id())->toBe((string) $second->id)
+        ->and((string) $found->namespace())->toBe('skillvlt.edu.second')
+        ->and((string) $found->canonicalName())->toBe('shared-name');
+
+    expect((string) $first->id())->not->toBe((string) $second->id);
+});
+
 it('reconstitutes blueprint metadata from persistence', function () {
     $id = (string) Str::ulid();
 
