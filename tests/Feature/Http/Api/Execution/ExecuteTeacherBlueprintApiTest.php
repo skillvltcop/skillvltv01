@@ -37,9 +37,9 @@ it('returns a teacher-facing result without exposing execution internals', funct
         'error',
     ]);
     $response->assertJsonPath('status', 'completed');
-    $response->assertJsonPath('result.score', '59');
-    $response->assertJsonPath('result.max_score', '100');
-    $response->assertJsonPath('result.percentage', '59');
+    $response->assertJsonPath('result.score', 59);
+    $response->assertJsonPath('result.max_score', 100);
+    $response->assertJsonPath('result.percentage', 59);
     $response->assertJsonPath('result.positioning', 'needs_support');
 
     $response->assertJsonMissingPath('output');
@@ -67,9 +67,9 @@ it('executes the assessment positioning tool through its teacher-facing identifi
 
     $response->assertSuccessful();
     $response->assertJsonPath('status', 'completed');
-    $response->assertJsonPath('result.score', '59');
-    $response->assertJsonPath('result.max_score', '100');
-    $response->assertJsonPath('result.percentage', '59');
+    $response->assertJsonPath('result.score', 59);
+    $response->assertJsonPath('result.max_score', 100);
+    $response->assertJsonPath('result.percentage', 59);
     $response->assertJsonPath('result.positioning', 'needs_support');
 
     $response->assertJsonMissingPath('blueprint_id');
@@ -102,8 +102,8 @@ it('executes the assessment score calculator through its teacher-facing identifi
         'error',
     ]);
     $response->assertJsonPath('status', 'completed');
-    $response->assertJsonPath('result.score', '17');
-    $response->assertJsonPath('result.percentage', '85');
+    $response->assertJsonPath('result.score', 17);
+    $response->assertJsonPath('result.percentage', 85);
 
     $response->assertJsonMissingPath('output');
     $response->assertJsonMissingPath('revision_id');
