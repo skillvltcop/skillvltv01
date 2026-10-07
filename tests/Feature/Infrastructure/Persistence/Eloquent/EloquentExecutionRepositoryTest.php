@@ -48,6 +48,7 @@ it('persists and retrieves an execution through the repository', function () {
     $execution = Execution::create(
         blueprintId: $blueprintId,
         revisionId: $revisionId,
+        ownerId: 'user-1',
         input: [
             'student' => [
                 'name' => 'Ahmed',
@@ -138,6 +139,7 @@ it('updates an existing execution without changing its identity', function () {
     $execution = Execution::create(
         blueprintId: $blueprintId,
         revisionId: $revisionId,
+        ownerId: 'user-1',
         input: [
             'student' => [
                 'name' => 'Ahmed',
@@ -201,6 +203,7 @@ it('rejects a stale execution status rollback', function () {
     $execution = Execution::create(
         blueprintId: $blueprintId,
         revisionId: $revisionId,
+        ownerId: 'user-1',
         input: [],
         context: [],
     );
@@ -262,6 +265,7 @@ it('rejects a stale terminal execution overwrite', function () {
     $execution = Execution::create(
         blueprintId: $blueprintId,
         revisionId: $revisionId,
+        ownerId: 'user-1',
         input: [],
         context: [],
     );
@@ -329,6 +333,7 @@ it('rejects changing execution input and context after persistence', function ()
     $execution = Execution::create(
         blueprintId: $blueprintId,
         revisionId: $revisionId,
+        ownerId: 'user-1',
         input: [
             'score' => 10,
         ],
@@ -344,6 +349,7 @@ it('rejects changing execution input and context after persistence', function ()
         id: $execution->id(),
         blueprintId: $blueprintId,
         revisionId: $revisionId,
+        ownerId: 'user-1',
         input: [
             'score' => 99,
         ],
@@ -429,6 +435,7 @@ it('rejects changing an execution identity after persistence', function () {
     $execution = Execution::create(
         blueprintId: $blueprintAId,
         revisionId: $revisionAId,
+        ownerId: 'user-1',
         input: [],
         context: [],
     );
@@ -440,6 +447,7 @@ it('rejects changing an execution identity after persistence', function () {
         id: $execution->id(),
         blueprintId: $blueprintBId,
         revisionId: $revisionBId,
+        ownerId: 'user-1',
         input: [],
         context: [],
         status: \App\Domain\Execution\Enums\ExecutionStatus::PENDING,
@@ -500,6 +508,7 @@ it('persists and retrieves a completed execution with its output', function () {
     $execution = Execution::create(
         blueprintId: $blueprintId,
         revisionId: $revisionId,
+        ownerId: 'user-1',
         input: [
             'student' => [
                 'name' => 'Ahmed',
@@ -577,6 +586,7 @@ it('persists and retrieves a failed execution with its error', function () {
     $execution = Execution::create(
         blueprintId: $blueprintId,
         revisionId: $revisionId,
+        ownerId: 'user-1',
         input: [
             'student' => [
                 'name' => 'Ahmed',
@@ -710,6 +720,7 @@ it('rejects an execution referencing a revision from another blueprint', functio
     $execution = Execution::create(
         blueprintId: $blueprintBId,
         revisionId: $revisionAId,
+        ownerId: 'user-1',
         input: [],
         context: [],
     );
