@@ -299,6 +299,81 @@ it('rejects a stale terminal execution overwrite', function () {
         ]);
 });
 
+it('rejects changing execution input and context after persistence', function () {
+    $blueprintId = BlueprintId::generate();
+    $revisionId = RevisionId::generate();
+
+    Blueprint::query()->create([
+        'id' => (string) $blueprintId,
+        'canonical_name' => 'execution-input-context-immutability',
+        'namespace' => 'skillvlt.edu.test',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'draft',
+    ]);
+
+    BlueprintRevision::query()->create([
+        'id' => (string) $revisionId,
+        'blueprint_id' => (string) $blueprintId,
+        'revision_number' => '1.0.0',
+        'parent_revision_id' => null,
+        'behavior_digest' =>
+            'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        'contracts' => [],
+        'logic' => [],
+        'outputs' => [],
+        'policies' => [],
+        'frozen' => true,
+    ]);
+
+    $execution = Execution::create(
+        blueprintId: $blueprintId,
+        revisionId: $revisionId,
+        input: [
+            'score' => 10,
+        ],
+        context: [
+            'locale' => 'ar',
+        ],
+    );
+
+    $repository = new EloquentExecutionRepository();
+    $repository->save($execution);
+
+    $tampered = Execution::reconstitute(
+        id: $execution->id(),
+        blueprintId: $blueprintId,
+        revisionId: $revisionId,
+        input: [
+            'score' => 99,
+        ],
+        context: [
+            'locale' => 'fr',
+        ],
+        status: \App\Domain\Execution\Enums\ExecutionStatus::PENDING,
+        output: null,
+        error: null,
+    );
+
+    expect(fn () => $repository->save($tampered))
+        ->toThrow(
+            \App\Domain\Execution\Exceptions\ConcurrentExecutionException::class,
+            'The Execution was modified concurrently; reload it before saving.',
+        );
+
+    $persisted = $repository->find($execution->id());
+
+    expect($persisted->input())
+        ->toBe([
+            'score' => 10,
+        ]);
+
+    expect($persisted->context())
+        ->toBe([
+            'locale' => 'ar',
+        ]);
+});
+
 it('rejects changing an execution identity after persistence', function () {
     $blueprintAId = BlueprintId::generate();
     $revisionAId = RevisionId::generate();
