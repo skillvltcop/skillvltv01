@@ -7,11 +7,9 @@ use App\Application\Blueprint\Commands\AddBlueprintRevision;
 use App\Application\Blueprint\Commands\CreateBlueprint;
 use App\Application\Blueprint\Commands\FreezeBlueprintRevision;
 use App\Application\Blueprint\Commands\PromoteBlueprintRevision;
-use App\Application\Execution\Commands\ExecuteBlueprint;
-use App\Application\Execution\Runtime\BehaviorRunner;
 use App\Application\Behavior\BehaviorContractValidator;
-use App\Domain\Blueprint\Enums\LifecycleStatus;
 use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -21,6 +19,7 @@ uses(
 );
 
 it('probes the current DSL for assessment results analysis', function () {
+    $user = User::factory()->create();
     $repository = new EloquentBlueprintRepository();
 
     $blueprint = (new CreateBlueprint($repository))->handle(
@@ -28,7 +27,7 @@ it('probes the current DSL for assessment results analysis', function () {
         namespace: 'skillvlt.edu.assessment',
         ownership: [
             'type' => 'user',
-            'id' => (string) test()->createUser()->id,
+            'id' => (string) $user->id,
         ],
         metadata: [
             'title' => 'Assessment Results Analyzer',
@@ -98,24 +97,27 @@ it('probes the current DSL for assessment results analysis', function () {
         blueprintId: (string) $blueprint->id(),
     );
 
-    $user = test()->actingAsUser();
-    $result = (new ExecuteBlueprint($repository, new BehaviorRunner()))->handle(
-        blueprintId: (string) $blueprint->id(),
-        revisionId: (string) $revision->id(),
-        userId: (string) $user->id,
-        input: [
-            'learners' => [
-                ['name' => 'أحمد', 'score' => 14, 'max_score' => 20],
-                ['name' => 'سارة', 'score' => 18, 'max_score' => 20],
-                ['name' => 'يوسف', 'score' => 9, 'max_score' => 20],
-                ['name' => 'مريم', 'score' => 12, 'max_score' => 20],
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/execute",
+            [
+                'revision_id' => (string) $revision->id(),
+                'input' => [
+                    'learners' => [
+                        ['name' => 'أحمد', 'score' => 14, 'max_score' => 20],
+                        ['name' => 'سارة', 'score' => 18, 'max_score' => 20],
+                        ['name' => 'يوسف', 'score' => 9, 'max_score' => 20],
+                        ['name' => 'مريم', 'score' => 12, 'max_score' => 20],
+                    ],
+                ],
+                'context' => [],
             ],
-        ],
-        context: [],
-    );
+        );
 
-    expect($result->status()->value)->toBe('completed')
-        ->and($result->output())->toMatchArray([
-            'average_percentage' => 70,
-        ]);
+    $response->assertSuccessful();
+    $response->assertJsonPath('status', 'completed');
+
+    expect($response->json('output.average_percentage'))
+        ->toBe(70);
 });
