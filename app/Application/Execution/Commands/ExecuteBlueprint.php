@@ -27,6 +27,7 @@ final class ExecuteBlueprint
     public function handle(
         string $blueprintId,
         string $revisionId,
+        string $ownerId,
         array $input,
         array $context = [],
     ): Execution {
@@ -43,6 +44,7 @@ final class ExecuteBlueprint
         $execution = $this->engine->execute(
             blueprint: $blueprint,
             revisionId: new RevisionId($revisionId),
+            ownerId: $ownerId,
             input: $input,
             context: $context,
         );
