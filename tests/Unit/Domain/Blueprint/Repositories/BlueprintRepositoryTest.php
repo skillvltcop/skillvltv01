@@ -18,10 +18,15 @@ final class InMemoryBlueprintRepository implements BlueprintRepository
         return $this->items[(string) $id] ?? null;
     }
 
-    public function findByCanonicalName(string $canonicalName): ?Blueprint
-    {
+    public function findByCanonicalName(
+        string $namespace,
+        string $canonicalName,
+    ): ?Blueprint {
         foreach ($this->items as $blueprint) {
-            if ((string) $blueprint->canonicalName() === $canonicalName) {
+            if (
+                (string) $blueprint->namespace() === $namespace
+                && (string) $blueprint->canonicalName() === $canonicalName
+            ) {
                 return $blueprint;
             }
         }
