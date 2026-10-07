@@ -430,6 +430,7 @@ final class BehaviorContractValidator
         $step['data'],
         "{$prefix}.data",
         $errors,
+        $allowItemPaths,
     );
     }
 
@@ -447,6 +448,7 @@ final class BehaviorContractValidator
                 $data,
                 $prefix,
                 $errors,
+                $allowItemPaths,
             );
 
             return;
