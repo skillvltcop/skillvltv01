@@ -25,6 +25,13 @@ final class Blueprint
     private array $metadata;
 
     /**
+     * Snapshot of the metadata known to be persisted when this aggregate was loaded or saved.
+     *
+     * @var array<string, mixed>
+     */
+    private array $persistedMetadata;
+
+    /**
      * @var array<string, BlueprintRevision>
      */
     private array $revisions = [];
@@ -42,6 +49,7 @@ final class Blueprint
     ) {
         $this->ownership = self::copy($ownership);
         $this->metadata = self::copy($metadata);
+        $this->persistedMetadata = self::copy($metadata);
         $this->lifecycleStatus = LifecycleStatus::DRAFT;
     }
 
@@ -103,6 +111,19 @@ final class Blueprint
     public function updateMetadata(array $metadata): void
     {
         $this->metadata = self::copy($metadata);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function persistedMetadata(): array
+    {
+        return self::copy($this->persistedMetadata);
+    }
+
+    public function markMetadataAsPersisted(): void
+    {
+        $this->persistedMetadata = self::copy($this->metadata);
     }
 
     public function addRevision(
