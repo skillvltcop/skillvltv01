@@ -21,7 +21,10 @@ final class ExecuteTeacherBlueprintController
         TeacherExecuteBlueprintRequest $request,
         string $slug,
     ): JsonResponse {
-        $blueprintEntity = $this->repository->findByCanonicalName($slug);
+        $blueprintEntity = $this->repository->findByCanonicalName(
+            'skillvlt.edu.assessment',
+            $slug,
+        );
 
         if ($blueprintEntity === null) {
             return response()->json([
