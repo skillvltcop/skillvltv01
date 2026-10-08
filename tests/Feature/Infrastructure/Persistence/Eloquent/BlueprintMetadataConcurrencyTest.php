@@ -1,12 +1,12 @@
 <?php
 
-use AppDomainBlueprint\Entities\Blueprint as DomainBlueprint;
+use App\Domain\Blueprint\Entities\Blueprint as DomainBlueprint;
+use App\Domain\Blueprint\Exceptions\ConcurrentBlueprintRevisionException;
 use App\Domain\Blueprint\ValueObjects\BehaviorDigest;
 use App\Domain\Blueprint\ValueObjects\BlueprintNamespace;
 use App\Domain\Blueprint\ValueObjects\CanonicalName;
 use App\Domain\Blueprint\ValueObjects\RevisionNumber;
 use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
-use App\Domain\Blueprint\Exceptions\ConcurrentBlueprintRevisionException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
