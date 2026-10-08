@@ -137,6 +137,8 @@ final class EloquentBlueprintRepository implements BlueprintRepository
                     'current_revision_id' => (string) $blueprint->currentRevisionId(),
                 ]);
             }
+
+            $blueprint->markMetadataAsPersisted();
         });
     }
 
@@ -159,7 +161,7 @@ final class EloquentBlueprintRepository implements BlueprintRepository
                 : [];
         }
 
-        if ($blueprint->metadata() !== $persistedMetadata) {
+        if ($blueprint->persistedMetadata() !== $persistedMetadata) {
             throw new ConcurrentBlueprintRevisionException();
         }
     }
