@@ -19,7 +19,10 @@ final class AssessmentScoreCalculatorBlueprintSeeder extends Seeder
     {
         $repository = new EloquentBlueprintRepository();
 
-        $existing = $repository->findByCanonicalName('assessment-score-calculator');
+        $existing = $repository->findByCanonicalName(
+            'skillvlt.edu.assessment',
+            'assessment-score-calculator',
+        );
 
         $metadata = [
             'title' => [
