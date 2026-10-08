@@ -79,6 +79,8 @@ final class EloquentBlueprintRepository implements BlueprintRepository
             } else {
                 $this->assertLifecycleStatusIsCurrent($blueprint, $model);
 
+                $this->assertMetadataIsCurrent($blueprint, $model);
+
                 $this->assertRevisionHistoryIsCurrent(
                     $blueprint,
                     $model,
@@ -136,6 +138,30 @@ final class EloquentBlueprintRepository implements BlueprintRepository
                 ]);
             }
         });
+    }
+
+    private function assertMetadataIsCurrent(
+        Blueprint $blueprint,
+        BlueprintModel $model,
+    ): void {
+        $persistedMetadataModel = $model->metadata;
+
+        $persistedMetadata = $persistedMetadataModel?->payload;
+
+        if ($persistedMetadata === null) {
+            $persistedMetadata = $persistedMetadataModel
+                ? [
+                    'taxonomy' => $persistedMetadataModel->taxonomy,
+                    'documentation' => $persistedMetadataModel->documentation,
+                    'discovery' => $persistedMetadataModel->discovery,
+                    'lifecycle_metadata' => $persistedMetadataModel->lifecycle_metadata,
+                ]
+                : [];
+        }
+
+        if ($blueprint->metadata() !== $persistedMetadata) {
+            throw new ConcurrentBlueprintRevisionException();
+        }
     }
 
     private function assertRevisionHistoryIsCurrent(
