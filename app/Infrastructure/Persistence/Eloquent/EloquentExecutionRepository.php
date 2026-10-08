@@ -46,6 +46,8 @@ final class EloquentExecutionRepository implements ExecutionRepository
                 ->lockForUpdate()
                 ->find((string) $execution->id());
 
+            $this->assertRevisionBelongsToBlueprint($execution);
+
             if ($model !== null) {
                 $this->assertIdentityIsCurrent($execution, $model);
                 $this->assertOwnerIsCurrent($execution, $model);
@@ -80,6 +82,24 @@ final class EloquentExecutionRepository implements ExecutionRepository
                 'error' => $execution->error(),
             ]);
         });
+    }
+
+    private function assertRevisionBelongsToBlueprint(
+        DomainExecution $execution,
+    ): void {
+        $revision = \App\Models\BlueprintRevision::query()
+            ->select(['id', 'blueprint_id'])
+            ->find((string) $execution->revisionId());
+
+        if ($revision === null) {
+            return;
+        }
+
+        if ((string) $revision->blueprint_id !== (string) $execution->blueprintId()) {
+            throw new \DomainException(
+                'Execution revision does not belong to the Blueprint.',
+            );
+        }
     }
 
     private function assertIdentityIsCurrent(
