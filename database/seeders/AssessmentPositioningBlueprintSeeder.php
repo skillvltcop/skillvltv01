@@ -19,7 +19,10 @@ final class AssessmentPositioningBlueprintSeeder extends Seeder
     {
         $repository = new EloquentBlueprintRepository();
 
-        $existing = $repository->findByCanonicalName('assessment-positioning');
+        $existing = $repository->findByCanonicalName(
+            'skillvlt.edu.assessment',
+            'assessment-positioning',
+        );
 
         $metadata = [
                 'title' => [
