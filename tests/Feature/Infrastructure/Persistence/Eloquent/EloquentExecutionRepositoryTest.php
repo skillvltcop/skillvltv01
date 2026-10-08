@@ -733,5 +733,8 @@ it('rejects an execution referencing a revision from another blueprint', functio
     $repository = new EloquentExecutionRepository();
 
     expect(fn () => $repository->save($execution))
-        ->toThrow(\Illuminate\Database\QueryException::class);
+        ->toThrow(
+            \DomainException::class,
+            'Execution revision does not belong to the Blueprint.',
+        );
 });
