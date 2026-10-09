@@ -861,14 +861,14 @@ it('rejects a stale failure after another writer completes the execution', funct
 
     expect(fn () => $repository->save($staleWriter))
         ->toThrow(
-            \\App\\Domain\\Execution\\Exceptions\\ConcurrentExecutionException::class,
+            \App\Domain\Execution\Exceptions\ConcurrentExecutionException::class,
             'The Execution was modified concurrently; reload it before saving.',
         );
 
     $persisted = $repository->find($execution->id());
 
     expect($persisted->status())
-        ->toBe(\\App\\Domain\\Execution\\Enums\\ExecutionStatus::COMPLETED);
+        ->toBe(\App\Domain\Execution\Enums\ExecutionStatus::COMPLETED);
 
     expect($persisted->output())
         ->toBe(['result' => 'completed']);
