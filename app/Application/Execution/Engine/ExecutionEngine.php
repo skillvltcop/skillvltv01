@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Execution\Engine;
 
+use App\Application\Execution\InputContractValidator;
 use App\Application\Execution\Runtime\Contracts\BehaviorRunner;
 use App\Domain\Blueprint\Entities\Blueprint;
 use App\Domain\Blueprint\ValueObjects\RevisionId;
@@ -14,6 +15,7 @@ final class ExecutionEngine implements ExecutionEngineContract
 {
     public function __construct(
         private BehaviorRunner $runner,
+        private InputContractValidator $inputContractValidator = new InputContractValidator(),
     ) {
     }
 
@@ -56,6 +58,11 @@ final class ExecutionEngine implements ExecutionEngineContract
                 'Only an active Blueprint can be executed.'
             );
         }
+
+        $this->inputContractValidator->validate(
+            $revision->contracts(),
+            $input,
+        );
 
         $execution = Execution::create(
             blueprintId: $blueprint->id(),
