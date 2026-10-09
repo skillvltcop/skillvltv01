@@ -1,59 +1,80 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# SkillVLT
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+SkillVLT is a Laravel 12 application built around reusable **Blueprints**: versioned definitions that can be executed with input and context to produce outputs. The application separates Blueprint design and revision history from individual execution state.
 
-## About Laravel
+## Core concepts
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Blueprint** — a named, namespaced definition with ownership, metadata, and a lifecycle.
+- **Revision** — an immutable-in-practice version of a Blueprint's behavior, including contracts, logic, outputs, and policies. Revisions form a linear history; a new revision advances from the latest one.
+- **Execution** — a stateful run of a specific Blueprint revision. It records input, context, status, output, and any error.
+- **Runtime** — validates and runs behavior steps through the execution engine.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+The domain and application layers live under `app/Domain` and `app/Application`; persistence and HTTP adapters are kept in the infrastructure and presentation layers.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Requirements
 
-## Learning Laravel
+- PHP 8.2+
+- Composer
+- A database supported by the application (SQLite for local development; MySQL 8 is also exercised in CI)
+- Node.js and npm for frontend asset builds
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## Local setup
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+```
 
-## Laravel Sponsors
+Configure the database settings in `.env`, then run migrations:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```bash
+php artisan migrate
+```
 
-### Premium Partners
+To build frontend assets:
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+```bash
+npm install
+npm run build
+```
 
-## Contributing
+Start the local development environment with:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+composer run dev
+```
 
-## Code of Conduct
+## Running tests
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Run the full test suite locally:
 
-## Security Vulnerabilities
+```bash
+php artisan test
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+GitHub Actions runs the suite on PHP 8.2 against both SQLite and MySQL. MySQL-specific integration tests cover database locking and concurrency behavior; SQLite skips tests that require MySQL semantics.
+
+## API overview
+
+The API routes are defined in `routes/api.php` and are protected by Laravel Sanctum authentication, except for login.
+
+The main resource groups include:
+
+- Authentication: `/api/auth/login`, `/api/auth/me`, and `/api/auth/logout`
+- Blueprint discovery and reading: `/api/blueprints`, discovery endpoints, and revision endpoints
+- Blueprint lifecycle and revision operations: create, add revision, freeze, promote, activate, deprecate, and sunset
+- Execution: execute a Blueprint or teacher tool, then retrieve an execution by ID
+
+Consult `routes/api.php` for the authoritative route definitions.
+
+## Design constraints
+
+- Blueprint definitions and execution records have separate lifecycles.
+- Executions reference a specific revision, preserving which behavior was run.
+- Revision promotion moves forward to a newer revision; it is not a rollback mechanism.
+- Concurrent writes must preserve lifecycle and execution-state invariants.
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+See the repository's license and dependency notices before redistributing the application.
