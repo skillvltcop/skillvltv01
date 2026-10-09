@@ -1,13 +1,13 @@
 <?php
 
-use App\Application\Execution\Engine\ExecutionEngine;
-use App\Application\Execution\InputContractValidator;
-use App\Application\Execution\Runtime\Contracts\BehaviorRunner;
-use App\Domain\Blueprint\Entities\Blueprint;
-use App\Domain\Blueprint\ValueObjects\BehaviorDigest;
-use App\Domain\Blueprint\ValueObjects\BlueprintNamespace;
-use App\Domain\Blueprint\ValueObjects\CanonicalName;
-use App\Domain\Blueprint\ValueObjects\RevisionNumber;
+use App\\Application\\Execution\\Engine\\ExecutionEngine;
+use App\\Application\\Execution\\InputContractValidator;
+use App\\Application\\Execution\\Runtime\\Contracts\\BehaviorRunner;
+use App\\Domain\\Blueprint\\Entities\\Blueprint;
+use App\\Domain\\Blueprint\\ValueObjects\\BehaviorDigest;
+use App\\Domain\\Blueprint\\ValueObjects\\BlueprintNamespace;
+use App\\Domain\\Blueprint\\ValueObjects\\CanonicalName;
+use App\\Domain\\Blueprint\\ValueObjects\\RevisionNumber;
 
 it('rejects missing required input fields before invoking the behavior runner', function () {
     $blueprint = Blueprint::create(
@@ -79,6 +79,20 @@ it('allows input that contains every required field', function () {
             ],
         ],
         ['score' => 8, 'max_score' => 10],
+    ))->not->toThrow(DomainException::class);
+});
+
+it('treats a present null value as present rather than as a missing required field', function () {
+    $validator = new InputContractValidator();
+
+    expect(fn () => $validator->validate(
+        [
+            'input' => [
+                'type' => 'object',
+                'required' => ['comment'],
+            ],
+        ],
+        ['comment' => null],
     ))->not->toThrow(DomainException::class);
 });
 
