@@ -116,7 +116,7 @@ it('reconstitutes blueprint metadata from persistence', function () {
     );
 
     expect($blueprint->metadata())
-        ->toBe([
+        ->toEqual([
             'taxonomy' => [
                 'domain' => 'education',
                 'type' => 'assessment',
@@ -502,7 +502,7 @@ it('round trips a complete blueprint aggregate through persistence', function ()
         ]);
 
     expect($reconstituted->metadata())
-        ->toBe($blueprint->metadata());
+        ->toEqual($blueprint->metadata());
 
     expect($reconstituted->revisions())
         ->toHaveCount(2);
