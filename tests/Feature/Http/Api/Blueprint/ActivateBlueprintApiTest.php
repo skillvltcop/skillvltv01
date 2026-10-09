@@ -359,3 +359,24 @@ it('rejects activating a deprecated blueprint', function () {
         'lifecycle_status' => 'deprecated',
     ]);
 });
+
+it('rejects unauthenticated blueprint activation', function () {
+    $repository = new EloquentBlueprintRepository();
+    $owner = User::factory()->create();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'unauthenticated-activate',
+        namespace: 'skillvlt.edu.assessment',
+        ownership: [
+            'type' => 'user',
+            'id' => (string) $owner->id,
+        ],
+        metadata: [],
+    );
+
+    $response = $this->postJson(
+        "/api/blueprints/{$blueprint->id()}/activate",
+    );
+
+    $response->assertUnauthorized();
+});
