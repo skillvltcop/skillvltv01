@@ -3,10 +3,8 @@
 use App\Domain\Blueprint\ValueObjects\BlueprintId;
 use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
 use App\Models\Blueprint as BlueprintModel;
-use Illuminate\Support\Str;
-use PDO;
-use PDOException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 it('locks the blueprint row while loading the execution snapshot on MySQL', function () {
     if (DB::connection()->getDriverName() !== 'mysql') {
