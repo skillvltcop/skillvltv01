@@ -82,6 +82,20 @@ it('allows input that contains every required field', function () {
     ))->not->toThrow(DomainException::class);
 });
 
+it('treats a present null value as present rather than as a missing required field', function () {
+    $validator = new InputContractValidator();
+
+    expect(fn () => $validator->validate(
+        [
+            'input' => [
+                'type' => 'object',
+                'required' => ['comment'],
+            ],
+        ],
+        ['comment' => null],
+    ))->not->toThrow(DomainException::class);
+});
+
 it('preserves compatibility when the input contract has no required list', function () {
     $validator = new InputContractValidator();
 
