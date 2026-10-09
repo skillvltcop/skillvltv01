@@ -31,7 +31,7 @@ final class ExecuteBlueprint
         array $context = [],
         ?string $ownerId = null,
     ): Execution {
-        $blueprint = $this->blueprintRepository->find(
+        $blueprint = $this->blueprintRepository->findForExecution(
             new BlueprintId($blueprintId),
         );
 

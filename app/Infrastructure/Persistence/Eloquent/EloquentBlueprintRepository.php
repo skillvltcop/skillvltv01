@@ -35,6 +35,29 @@ final class EloquentBlueprintRepository implements BlueprintRepository
         return $this->toDomain($model);
     }
 
+    public function findForExecution(BlueprintId $id): ?Blueprint
+    {
+        return DB::transaction(function () use ($id): ?Blueprint {
+            $model = BlueprintModel::query()
+                ->whereKey((string) $id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($model === null) {
+                return null;
+            }
+
+            // Keep the Blueprint row locked while loading its Revision graph.
+            // Writers using save() acquire the same row lock before mutation.
+            $model->load([
+                'revisions.parentRevision',
+                'currentRevision',
+            ]);
+
+            return $this->toDomain($model);
+        });
+    }
+
     public function findByCanonicalName(
         string $namespace,
         string $canonicalName,

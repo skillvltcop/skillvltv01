@@ -1,6 +1,10 @@
 <?php
 
 use App\Domain\Blueprint\Entities\Blueprint as DomainBlueprint;
+use App\Domain\Blueprint\ValueObjects\CanonicalName;
+use App\Domain\Blueprint\ValueObjects\BlueprintNamespace;
+use App\Domain\Blueprint\ValueObjects\RevisionNumber;
+use App\Domain\Blueprint\ValueObjects\BehaviorDigest;
 use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
 use App\Models\Blueprint as BlueprintModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -1147,5 +1151,55 @@ it('prevents deleting a blueprint that has executions', function () {
     expect(\App\Models\Execution::query()
         ->where('blueprint_id', $blueprint->id)
         ->exists())->toBeTrue();
+});
+
+it('loads the blueprint and current revision graph for execution', function () {
+    $blueprint = DomainBlueprint::create(
+        canonicalName: new CanonicalName(
+            'execution-consistent-read',
+        ),
+        namespace: new BlueprintNamespace(
+            'skillvlt.edu.execution',
+        ),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision = $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('a', 64),
+        ),
+        contracts: [],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => ['result' => 'ok'],
+                ],
+            ],
+        ],
+        outputs: [],
+        policies: [],
+    );
+
+    $revision->freeze();
+    $blueprint->promoteRevision($revision->id());
+    $blueprint->activate();
+
+    $repository = new EloquentBlueprintRepository();
+    $repository->save($blueprint);
+
+    $loaded = $repository->findForExecution($blueprint->id());
+
+    expect($loaded)->not->toBeNull()
+        ->and($loaded->lifecycleStatus()->value)->toBe('active')
+        ->and((string) $loaded->currentRevisionId())->toBe((string) $revision->id())
+        ->and($loaded->revision($revision->id()))->not->toBeNull();
 });
 
