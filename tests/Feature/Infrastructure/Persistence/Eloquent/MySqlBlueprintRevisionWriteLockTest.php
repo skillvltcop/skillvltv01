@@ -7,8 +7,6 @@ use App\Domain\Blueprint\ValueObjects\CanonicalName;
 use App\Domain\Blueprint\ValueObjects\RevisionNumber;
 use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
 use Illuminate\Support\Facades\DB;
-use PDO;
-use PDOException;
 
 it('locks the blueprint row while saving revision history on MySQL', function () {
     if (DB::connection()->getDriverName() !== 'mysql') {
