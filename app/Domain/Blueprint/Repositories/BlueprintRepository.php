@@ -11,6 +11,8 @@ interface BlueprintRepository
 {
     public function find(BlueprintId $id): ?Blueprint;
 
+    public function findForExecution(BlueprintId $id): ?Blueprint;
+
     public function findByCanonicalName(
         string $namespace,
         string $canonicalName,
