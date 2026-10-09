@@ -308,6 +308,75 @@ it('rejects a stale terminal execution overwrite', function () {
         ]);
 });
 
+it('rejects a stale successful completion after a concurrent failure', function () {
+    $blueprintId = BlueprintId::generate();
+    $revisionId = RevisionId::generate();
+
+    Blueprint::query()->create([
+        'id' => (string) $blueprintId,
+        'canonical_name' => 'concurrent-completed-failed-test',
+        'namespace' => 'skillvlt.edu.test',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'draft',
+    ]);
+
+    BlueprintRevision::query()->create([
+        'id' => (string) $revisionId,
+        'blueprint_id' => (string) $blueprintId,
+        'revision_number' => '1.0.0',
+        'parent_revision_id' => null,
+        'behavior_digest' =>
+            'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        'contracts' => [],
+        'logic' => [],
+        'outputs' => [],
+        'policies' => [],
+        'frozen' => true,
+    ]);
+
+    $execution = Execution::create(
+        blueprintId: $blueprintId,
+        revisionId: $revisionId,
+        ownerId: $this->ownerId,
+        input: [],
+        context: [],
+    );
+
+    $repository = new EloquentExecutionRepository();
+    $repository->save($execution);
+
+    $staleWriter = $repository->find($execution->id());
+    $currentWriter = $repository->find($execution->id());
+
+    expect($staleWriter)->not->toBeNull();
+    expect($currentWriter)->not->toBeNull();
+
+    $currentWriter->start();
+    $currentWriter->fail('current failure');
+    $repository->save($currentWriter);
+
+    $staleWriter->start();
+    $staleWriter->complete(['result' => 'stale success']);
+
+    expect(fn () => $repository->save($staleWriter))
+        ->toThrow(
+            \\App\\Domain\\Execution\\Exceptions\\ConcurrentExecutionException::class,
+            'The Execution was modified concurrently; reload it before saving.',
+        );
+
+    $persisted = $repository->find($execution->id());
+
+    expect($persisted->status())
+        ->toBe(\\App\\Domain\\Execution\\Enums\\ExecutionStatus::FAILED);
+
+    expect($persisted->output())
+        ->toBeNull();
+
+    expect($persisted->error())
+        ->toBe('current failure');
+});
+
 it('rejects changing execution input and context after persistence', function () {
     $blueprintId = BlueprintId::generate();
     $revisionId = RevisionId::generate();
