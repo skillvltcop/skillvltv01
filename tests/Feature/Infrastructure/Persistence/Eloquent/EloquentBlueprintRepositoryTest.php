@@ -1,6 +1,10 @@
 <?php
 
 use App\Domain\Blueprint\Entities\Blueprint as DomainBlueprint;
+use App\Domain\Blueprint\ValueObjects\CanonicalName;
+use App\Domain\Blueprint\ValueObjects\BlueprintNamespace;
+use App\Domain\Blueprint\ValueObjects\RevisionNumber;
+use App\Domain\Blueprint\ValueObjects\BehaviorDigest;
 use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
 use App\Models\Blueprint as BlueprintModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -1151,10 +1155,10 @@ it('prevents deleting a blueprint that has executions', function () {
 
 it('loads the blueprint and current revision graph for execution', function () {
     $blueprint = DomainBlueprint::create(
-        canonicalName: new \App\Domain\Blueprint\\ValueObjects\\CanonicalName(
+        canonicalName: new CanonicalName(
             'execution-consistent-read',
         ),
-        namespace: new \App\Domain\Blueprint\\ValueObjects\\BlueprintNamespace(
+        namespace: new BlueprintNamespace(
             'skillvlt.edu.execution',
         ),
         ownership: [
@@ -1165,8 +1169,8 @@ it('loads the blueprint and current revision graph for execution', function () {
     );
 
     $revision = $blueprint->addRevision(
-        number: new \App\Domain\Blueprint\\ValueObjects\\RevisionNumber('1.0.0'),
-        behaviorDigest: new \App\Domain\Blueprint\\ValueObjects\\BehaviorDigest(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: new BehaviorDigest(
             'sha256:' . str_repeat('a', 64),
         ),
         contracts: [],
