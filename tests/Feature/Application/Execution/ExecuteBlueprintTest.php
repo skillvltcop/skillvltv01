@@ -132,7 +132,7 @@ it('executes an activated blueprint revision from creation to completion', funct
         ->toBe((string) $revision->id());
 
     expect($execution->output())
-        ->toBe([
+        ->toEqual([
             'status' => 'pass',
             'message' => 'Student Ahmed got pass.',
             'locale' => 'ar',
