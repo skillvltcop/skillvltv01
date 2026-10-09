@@ -187,3 +187,75 @@ it('rejects a stale revision append after another writer adds a newer revision',
         ->toBe('sha256:' . str_repeat('d', 64));
 });
 
+
+it('rejects a stale promotion after another writer promotes a newer revision', function () {
+    $blueprint = DomainBlueprint::create(
+        canonicalName: new CanonicalName('concurrent-promotion-test'),
+        namespace: new BlueprintNamespace('skillvlt.edu.test'),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $first = $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('f', 64),
+        ),
+        contracts: [],
+        logic: [],
+        outputs: [],
+        policies: [],
+    );
+    $blueprint->freezeRevision($first->id());
+    $blueprint->promoteRevision($first->id());
+    $blueprint->activate();
+
+    $second = $blueprint->addRevision(
+        number: new RevisionNumber('1.1.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('a', 64),
+        ),
+        contracts: [],
+        logic: [],
+        outputs: [],
+        policies: [],
+    );
+    $blueprint->freezeRevision($second->id());
+
+    $third = $blueprint->addRevision(
+        number: new RevisionNumber('1.2.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('b', 64),
+        ),
+        contracts: [],
+        logic: [],
+        outputs: [],
+        policies: [],
+    );
+    $blueprint->freezeRevision($third->id());
+
+    $repository = new EloquentBlueprintRepository();
+    $repository->save($blueprint);
+
+    $staleWriter = $repository->find($blueprint->id());
+    $currentWriter = $repository->find($blueprint->id());
+
+    expect($staleWriter)->not->toBeNull();
+    expect($currentWriter)->not->toBeNull();
+
+    $currentWriter->promoteRevision($third->id());
+    $repository->save($currentWriter);
+
+    // The stale writer tries to promote 1.1.0 after 1.2.0 became current.
+    $staleWriter->promoteRevision($second->id());
+
+    expect(fn () => $repository->save($staleWriter))
+        ->toThrow(ConcurrentBlueprintRevisionException::class);
+
+    $persisted = $repository->find($blueprint->id());
+
+    expect((string) $persisted->currentRevision()->number())->toBe('1.2.0');
+});
