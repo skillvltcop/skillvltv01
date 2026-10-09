@@ -293,3 +293,65 @@ it('rejects unauthenticated blueprint revision listing', function () {
 
     $response->assertUnauthorized();
 });
+
+it('allows an authenticated user to list revisions of a system-owned blueprint', function () {
+    $user = User::factory()->create();
+
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'system-owned-revisions',
+        namespace: 'skillvlt.edu.system',
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision = (new AddBlueprintRevision(
+        repository: $repository,
+        behaviorContractValidator: new BehaviorContractValidator(),
+    ))->handle(
+        blueprintId: (string) $blueprint->id(),
+        number: '1.0.0',
+        behaviorDigest:
+            'sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'status' => 'ok',
+                    ],
+                ],
+            ],
+        ],
+        outputs: [
+            'type' => 'assessment-result',
+        ],
+        policies: [
+            'visibility' => 'public',
+        ],
+    );
+
+    $response = $this
+        ->actingAs($user)
+        ->getJson(
+            "/api/blueprints/{$blueprint->id()}/revisions",
+        );
+
+    $response
+        ->assertSuccessful()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', (string) $revision->id())
+        ->assertJsonPath('data.0.blueprint_id', (string) $blueprint->id())
+        ->assertJsonPath('data.0.number', '1.0.0');
+});
