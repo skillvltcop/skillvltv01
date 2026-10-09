@@ -757,7 +757,7 @@ it('continues an already-started execution if the blueprint lifecycle changes du
             ];
         });
 
-    $engine = new \\App\\Application\\Execution\\Engine\\ExecutionEngine(
+    $engine = new \App\Application\Execution\Engine\ExecutionEngine(
         runner: $runner,
     );
 
