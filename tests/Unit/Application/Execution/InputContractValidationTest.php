@@ -1,13 +1,13 @@
 <?php
 
-use App\\Application\\Execution\\Engine\\ExecutionEngine;
-use App\\Application\\Execution\\InputContractValidator;
-use App\\Application\\Execution\\Runtime\\Contracts\\BehaviorRunner;
-use App\\Domain\\Blueprint\\Entities\\Blueprint;
-use App\\Domain\\Blueprint\\ValueObjects\\BehaviorDigest;
-use App\\Domain\\Blueprint\\ValueObjects\\BlueprintNamespace;
-use App\\Domain\\Blueprint\\ValueObjects\\CanonicalName;
-use App\\Domain\\Blueprint\\ValueObjects\\RevisionNumber;
+use App\Application\Execution\Engine\ExecutionEngine;
+use App\Application\Execution\InputContractValidator;
+use App\Application\Execution\Runtime\Contracts\BehaviorRunner;
+use App\Domain\Blueprint\Entities\Blueprint;
+use App\Domain\Blueprint\ValueObjects\BehaviorDigest;
+use App\Domain\Blueprint\ValueObjects\BlueprintNamespace;
+use App\Domain\Blueprint\ValueObjects\CanonicalName;
+use App\Domain\Blueprint\ValueObjects\RevisionNumber;
 
 it('rejects missing required input fields before invoking the behavior runner', function () {
     $blueprint = Blueprint::create(
