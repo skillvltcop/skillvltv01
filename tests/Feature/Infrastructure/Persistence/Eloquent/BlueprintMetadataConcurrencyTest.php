@@ -121,3 +121,69 @@ it('rejects a stale lifecycle write after a newer transition to sunset', functio
     expect($persisted->lifecycleStatus()->value)->toBe('sunset');
 });
 
+it('rejects a stale revision append after another writer adds a newer revision', function () {
+    $blueprint = DomainBlueprint::create(
+        canonicalName: new CanonicalName('concurrent-revision-test'),
+        namespace: new BlueprintNamespace('skillvlt.edu.test'),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('c', 64),
+        ),
+        contracts: [],
+        logic: [],
+        outputs: [],
+        policies: [],
+    );
+
+    $repository = new EloquentBlueprintRepository();
+    $repository->save($blueprint);
+
+    $staleWriter = $repository->find($blueprint->id());
+    $currentWriter = $repository->find($blueprint->id());
+
+    expect($staleWriter)->not->toBeNull();
+    expect($currentWriter)->not->toBeNull();
+
+    $currentWriter->addRevision(
+        number: new RevisionNumber('1.1.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('d', 64),
+        ),
+        contracts: [],
+        logic: [],
+        outputs: [],
+        policies: [],
+    );
+    $repository->save($currentWriter);
+
+    // This aggregate is stale and still believes 1.0.0 is the latest Revision.
+    $staleWriter->addRevision(
+        number: new RevisionNumber('1.1.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('e', 64),
+        ),
+        contracts: [],
+        logic: [],
+        outputs: [],
+        policies: [],
+    );
+
+    expect(fn () => $repository->save($staleWriter))
+        ->toThrow(ConcurrentBlueprintRevisionException::class);
+
+    $persisted = $repository->find($blueprint->id());
+
+    expect($persisted->revisions())->toHaveCount(2)
+        ->and((string) $persisted->latestRevision()->number())->toBe('1.1.0')
+        ->and((string) $persisted->latestRevision()->behaviorDigest())
+        ->toBe('sha256:' . str_repeat('d', 64));
+});
+
