@@ -68,3 +68,56 @@ it('rejects a stale blueprint metadata overwrite', function () {
             ],
         ]);
 });
+
+it('rejects a stale lifecycle write after a newer transition to sunset', function () {
+    $blueprint = DomainBlueprint::create(
+        canonicalName: new CanonicalName('concurrent-lifecycle-test'),
+        namespace: new BlueprintNamespace('skillvlt.edu.test'),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [
+            'taxonomy' => [
+                'domain' => 'education',
+            ],
+        ],
+    );
+
+    $revision = $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('b', 64),
+        ),
+        contracts: [],
+        logic: [],
+        outputs: [],
+        policies: [],
+    );
+
+    $blueprint->freezeRevision($revision->id());
+    $blueprint->promoteRevision($revision->id());
+    $blueprint->activate();
+
+    $repository = new EloquentBlueprintRepository();
+    $repository->save($blueprint);
+
+    $staleWriter = $repository->find($blueprint->id());
+    $currentWriter = $repository->find($blueprint->id());
+
+    expect($staleWriter)->not->toBeNull();
+    expect($currentWriter)->not->toBeNull();
+
+    $currentWriter->sunset();
+    $repository->save($currentWriter);
+
+    $staleWriter->deprecate();
+
+    expect(fn () => $repository->save($staleWriter))
+        ->toThrow(ConcurrentBlueprintRevisionException::class);
+
+    $persisted = $repository->find($blueprint->id());
+
+    expect($persisted->lifecycleStatus()->value)->toBe('sunset');
+});
+
