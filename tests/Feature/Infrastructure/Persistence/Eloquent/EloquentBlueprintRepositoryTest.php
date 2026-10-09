@@ -1149,3 +1149,53 @@ it('prevents deleting a blueprint that has executions', function () {
         ->exists())->toBeTrue();
 });
 
+it('loads the blueprint and revision graph for execution under a row lock transaction', function () {
+    $blueprint = DomainBlueprint::create(
+        canonicalName: new \\App\\Domain\\Blueprint\\ValueObjects\\CanonicalName(
+            'execution-consistent-read',
+        ),
+        namespace: new \\App\\Domain\\Blueprint\\ValueObjects\\BlueprintNamespace(
+            'skillvlt.edu.execution',
+        ),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision = $blueprint->addRevision(
+        number: new \\App\\Domain\\Blueprint\\ValueObjects\\RevisionNumber('1.0.0'),
+        behaviorDigest: new \\App\\Domain\\Blueprint\\ValueObjects\\BehaviorDigest(
+            'sha256:' . str_repeat('a', 64),
+        ),
+        contracts: [],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => ['result' => 'ok'],
+                ],
+            ],
+        ],
+        outputs: [],
+        policies: [],
+    );
+
+    $revision->freeze();
+    $blueprint->promoteRevision($revision->id());
+    $blueprint->activate();
+
+    $repository = new EloquentBlueprintRepository();
+    $repository->save($blueprint);
+
+    $loaded = $repository->findForExecution($blueprint->id());
+
+    expect($loaded)->not->toBeNull()
+        ->and($loaded->lifecycleStatus()->value)->toBe('active')
+        ->and((string) $loaded->currentRevisionId())->toBe((string) $revision->id())
+        ->and($loaded->revision($revision->id()))->not->toBeNull();
+});
+
