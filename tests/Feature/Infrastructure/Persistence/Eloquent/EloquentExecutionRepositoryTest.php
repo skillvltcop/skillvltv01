@@ -738,3 +738,71 @@ it('rejects an execution referencing a revision from another blueprint', functio
             'Execution revision does not belong to the Blueprint.',
         );
 });
+
+it('rejects a stale failure after another writer completes the execution', function () {
+    $blueprintId = BlueprintId::generate();
+    $revisionId = RevisionId::generate();
+
+    Blueprint::query()->create([
+        'id' => (string) $blueprintId,
+        'canonical_name' => 'execution-terminal-status-conflict',
+        'namespace' => 'skillvlt.edu.test',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'draft',
+    ]);
+
+    BlueprintRevision::query()->create([
+        'id' => (string) $revisionId,
+        'blueprint_id' => (string) $blueprintId,
+        'revision_number' => '1.0.0',
+        'parent_revision_id' => null,
+        'behavior_digest' =>
+            'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        'contracts' => [],
+        'logic' => [],
+        'outputs' => [],
+        'policies' => [],
+        'frozen' => true,
+    ]);
+
+    $execution = Execution::create(
+        blueprintId: $blueprintId,
+        revisionId: $revisionId,
+        ownerId: $this->ownerId,
+        input: [],
+        context: [],
+    );
+
+    $repository = new EloquentExecutionRepository();
+    $repository->save($execution);
+
+    $staleWriter = $repository->find($execution->id());
+    $currentWriter = $repository->find($execution->id());
+
+    expect($staleWriter)->not->toBeNull();
+    expect($currentWriter)->not->toBeNull();
+
+    $currentWriter->start();
+    $currentWriter->complete(['result' => 'completed']);
+    $repository->save($currentWriter);
+
+    $staleWriter->start();
+    $staleWriter->fail('stale failure');
+
+    expect(fn () => $repository->save($staleWriter))
+        ->toThrow(
+            \\App\\Domain\\Execution\\Exceptions\\ConcurrentExecutionException::class,
+            'The Execution was modified concurrently; reload it before saving.',
+        );
+
+    $persisted = $repository->find($execution->id());
+
+    expect($persisted->status())
+        ->toBe(\\App\\Domain\\Execution\\Enums\\ExecutionStatus::COMPLETED);
+
+    expect($persisted->output())
+        ->toBe(['result' => 'completed']);
+
+    expect($persisted->error())->toBeNull();
+});
