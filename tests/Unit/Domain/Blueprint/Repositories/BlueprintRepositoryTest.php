@@ -18,6 +18,11 @@ final class InMemoryBlueprintRepository implements BlueprintRepository
         return $this->items[(string) $id] ?? null;
     }
 
+    public function findForExecution(BlueprintId $id): ?Blueprint
+    {
+        return $this->find($id);
+    }
+
     public function findByCanonicalName(
         string $namespace,
         string $canonicalName,
