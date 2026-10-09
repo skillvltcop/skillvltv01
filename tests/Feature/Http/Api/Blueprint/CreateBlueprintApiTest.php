@@ -175,3 +175,12 @@ it('does not allow the client to choose blueprint ownership', function () {
         ->assertJsonPath('ownership.type', 'user')
         ->assertJsonPath('ownership.id', (string) $user->id);
 });
+
+it('rejects unauthenticated blueprint creation', function () {
+    $response = $this->postJson('/api/blueprints', [
+        'canonical_name' => 'unauthenticated-blueprint',
+        'namespace' => 'skillvlt.edu.assessment',
+    ]);
+
+    $response->assertUnauthorized();
+});

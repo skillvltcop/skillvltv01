@@ -1,5 +1,7 @@
 <?php
 
+use App\Application\Blueprint\Commands\CreateBlueprint;
+use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
 use App\Models\User;
 use Database\Seeders\AssessmentPositioningBlueprintSeeder;
 use Database\Seeders\AssessmentScoreCalculatorBlueprintSeeder;
@@ -138,4 +140,36 @@ it('rejects unauthenticated teacher blueprint execution', function () {
     );
 
     $response->assertUnauthorized();
+});
+
+it('forbids executing another user-owned blueprint through the teacher endpoint', function () {
+    $repository = new EloquentBlueprintRepository();
+    $owner = User::factory()->create();
+    $actor = User::factory()->create();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'private-teacher-assessment',
+        namespace: 'skillvlt.edu.assessment',
+        ownership: [
+            'type' => 'user',
+            'id' => (string) $owner->id,
+        ],
+        metadata: [],
+    );
+
+    $response = $this
+        ->actingAs($actor)
+        ->postJson(
+            "/api/teacher/tools/{$blueprint->canonicalName()}/execute",
+            [
+                'input' => [],
+                'context' => [],
+            ],
+        );
+
+    $response
+        ->assertForbidden()
+        ->assertJson([
+            'message' => 'Forbidden.',
+        ]);
 });
