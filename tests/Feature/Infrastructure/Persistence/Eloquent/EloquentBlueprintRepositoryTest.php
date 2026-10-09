@@ -1149,12 +1149,12 @@ it('prevents deleting a blueprint that has executions', function () {
         ->exists())->toBeTrue();
 });
 
-it('loads the blueprint and revision graph for execution under a row lock transaction', function () {
+it('loads the blueprint and current revision graph for execution', function () {
     $blueprint = DomainBlueprint::create(
-        canonicalName: new \\App\\Domain\\Blueprint\\ValueObjects\\CanonicalName(
+        canonicalName: new \App\Domain\Blueprint\\ValueObjects\\CanonicalName(
             'execution-consistent-read',
         ),
-        namespace: new \\App\\Domain\\Blueprint\\ValueObjects\\BlueprintNamespace(
+        namespace: new \App\Domain\Blueprint\\ValueObjects\\BlueprintNamespace(
             'skillvlt.edu.execution',
         ),
         ownership: [
@@ -1165,8 +1165,8 @@ it('loads the blueprint and revision graph for execution under a row lock transa
     );
 
     $revision = $blueprint->addRevision(
-        number: new \\App\\Domain\\Blueprint\\ValueObjects\\RevisionNumber('1.0.0'),
-        behaviorDigest: new \\App\\Domain\\Blueprint\\ValueObjects\\BehaviorDigest(
+        number: new \App\Domain\Blueprint\\ValueObjects\\RevisionNumber('1.0.0'),
+        behaviorDigest: new \App\Domain\Blueprint\\ValueObjects\\BehaviorDigest(
             'sha256:' . str_repeat('a', 64),
         ),
         contracts: [],
