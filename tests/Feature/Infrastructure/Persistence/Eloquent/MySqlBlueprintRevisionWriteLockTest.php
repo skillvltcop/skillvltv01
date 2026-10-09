@@ -18,7 +18,7 @@ it('locks the blueprint row while saving revision history on MySQL', function ()
 
     $blueprint = DomainBlueprint::create(
         canonicalName: new CanonicalName('mysql-revision-write-lock'),
-        namespace: new BlueprintNamespace('skillvlt.test.mysql-lock'),
+        namespace: new BlueprintNamespace('skillvlt.test.mysqllock'),
         ownership: [
             'type' => 'system',
             'id' => 'skillvlt',
