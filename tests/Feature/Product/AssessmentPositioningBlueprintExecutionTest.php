@@ -52,3 +52,28 @@ it('executes the seeded assessment positioning system blueprint through the HTTP
         $response->assertJsonPath('output.positioning', $expectedPositioning);
     }
 });
+
+it('returns 422 when a required input field is missing through the blueprint API', function () {
+    $user = User::factory()->create();
+
+    (new AssessmentPositioningBlueprintSeeder())->run();
+
+    $blueprint = (new EloquentBlueprintRepository())->discover()[0];
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/execute",
+            [
+                'revision_id' => (string) $blueprint->currentRevisionId(),
+                'input' => ['score' => 59],
+                'context' => [],
+            ],
+        );
+
+    $response->assertUnprocessable();
+    $response->assertJsonPath(
+        'message',
+        'Input is missing required field(s): max_score.',
+    );
+});

@@ -66,3 +66,25 @@ it('completes the teacher use flow from discovery to execution result', function
         'needs_support',
     );
 });
+
+it('returns 422 when a required input field is missing through the teacher API', function () {
+    $user = User::factory()->create();
+
+    (new AssessmentPositioningBlueprintSeeder())->run();
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            '/api/teacher/tools/assessment-positioning/execute',
+            [
+                'input' => ['score' => 59],
+                'context' => [],
+            ],
+        );
+
+    $response->assertUnprocessable();
+    $response->assertJsonPath(
+        'message',
+        'Input is missing required field(s): max_score.',
+    );
+});
