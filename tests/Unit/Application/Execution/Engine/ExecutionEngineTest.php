@@ -699,3 +699,87 @@ it('keeps the executed revision identity after the blueprint promotes a newer re
             'version' => '1.0.0',
         ]);
 });
+
+it('continues an already-started execution if the blueprint lifecycle changes during behavior execution', function () {
+    $blueprint = Blueprint::create(
+        canonicalName: new CanonicalName('execution-lifecycle-race'),
+        namespace: new BlueprintNamespace('skillvlt.edu.execution'),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision = $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('a', 64),
+        ),
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'completed',
+                    ],
+                ],
+            ],
+        ],
+        outputs: [
+            'type' => 'execution-result',
+        ],
+        policies: [],
+    );
+
+    $revision->freeze();
+    $blueprint->promoteRevision($revision->id());
+    $blueprint->activate();
+
+    $runner = Mockery::mock(BehaviorRunnerContract::class);
+
+    $runner
+        ->shouldReceive('run')
+        ->once()
+        ->andReturnUsing(function () use ($blueprint): array {
+            // Simulate a lifecycle change after the engine has accepted the execution.
+            $blueprint->deprecate();
+
+            return [
+                'result' => 'completed',
+            ];
+        });
+
+    $engine = new \\App\\Application\\Execution\\Engine\\ExecutionEngine(
+        runner: $runner,
+    );
+
+    $execution = $engine->execute(
+        blueprint: $blueprint,
+        revisionId: $revision->id(),
+        input: [],
+        context: [],
+    );
+
+    expect($blueprint->lifecycleStatus()->value)
+        ->toBe('deprecated');
+
+    expect($execution->status())
+        ->toBe(ExecutionStatus::COMPLETED);
+
+    expect($execution->output())
+        ->toBe([
+            'result' => 'completed',
+        ]);
+
+    expect((string) $execution->revisionId())
+        ->toBe((string) $revision->id());
+});
+
