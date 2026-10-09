@@ -62,7 +62,7 @@ it('executes an activated blueprint and persists the execution', function () {
     $blueprint->activate();
 
     $repository
-        ->shouldReceive('find')
+        ->shouldReceive('findForExecution')
         ->once()
         ->with(Mockery::on(
             fn ($id) => (string) $id === (string) $blueprint->id(),
@@ -149,7 +149,7 @@ it('fails when the blueprint does not exist', function () {
     $engine = Mockery::mock(ExecutionEngineContract::class);
 
     $repository
-        ->shouldReceive('find')
+        ->shouldReceive('findForExecution')
         ->once()
         ->andReturn(null);
 
@@ -203,7 +203,7 @@ it('delegates an invalid revision to the execution engine', function () {
     );
 
     $repository
-        ->shouldReceive('find')
+        ->shouldReceive('findForExecution')
         ->once()
         ->andReturn($blueprint);
 
@@ -310,7 +310,7 @@ it('persists a failed execution returned by the execution engine', function () {
     $blueprint->activate();
 
     $repository
-        ->shouldReceive('find')
+        ->shouldReceive('findForExecution')
         ->once()
         ->with(Mockery::on(
             fn ($id) => (string) $id === (string) $blueprint->id(),
