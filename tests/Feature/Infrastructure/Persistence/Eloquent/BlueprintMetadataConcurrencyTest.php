@@ -259,3 +259,64 @@ it('rejects a stale promotion after another writer promotes a newer revision', f
 
     expect((string) $persisted->currentRevision()->number())->toBe('1.2.0');
 });
+
+it('rejects a stale revision promotion after another writer sunsets the Blueprint', function () {
+    $blueprint = DomainBlueprint::create(
+        canonicalName: new CanonicalName('concurrent-sunset-promotion-test'),
+        namespace: new BlueprintNamespace('skillvlt.edu.test'),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $first = $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('c', 64),
+        ),
+        contracts: [],
+        logic: [],
+        outputs: [],
+        policies: [],
+    );
+    $blueprint->freezeRevision($first->id());
+    $blueprint->promoteRevision($first->id());
+    $blueprint->activate();
+
+    $next = $blueprint->addRevision(
+        number: new RevisionNumber('1.1.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('d', 64),
+        ),
+        contracts: [],
+        logic: [],
+        outputs: [],
+        policies: [],
+    );
+    $blueprint->freezeRevision($next->id());
+
+    $repository = new EloquentBlueprintRepository();
+    $repository->save($blueprint);
+
+    $staleWriter = $repository->find($blueprint->id());
+    $currentWriter = $repository->find($blueprint->id());
+
+    expect($staleWriter)->not->toBeNull();
+    expect($currentWriter)->not->toBeNull();
+
+    $currentWriter->sunset();
+    $repository->save($currentWriter);
+
+    // This stale aggregate still believes the Blueprint is active.
+    $staleWriter->promoteRevision($next->id());
+
+    expect(fn () => $repository->save($staleWriter))
+        ->toThrow(ConcurrentBlueprintRevisionException::class);
+
+    $persisted = $repository->find($blueprint->id());
+
+    expect($persisted->lifecycleStatus()->value)->toBe('sunset')
+        ->and((string) $persisted->currentRevision()->number())->toBe('1.0.0');
+});
