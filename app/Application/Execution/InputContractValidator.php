@@ -16,7 +16,10 @@ final class InputContractValidator
      */
     public function validate(array $contracts, array $input): void
     {
-        $required = $contracts['input']['required'] ?? [];
+        $inputContract = $contracts['input'] ?? null;
+        $required = is_array($inputContract)
+            ? ($inputContract['required'] ?? [])
+            : [];
 
         if (! is_array($required) || $required === []) {
             return;
