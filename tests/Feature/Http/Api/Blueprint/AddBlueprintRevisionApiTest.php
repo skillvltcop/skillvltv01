@@ -597,3 +597,55 @@ it('rejects a revision number lower than the latest revision through the HTTP AP
         'revision_number' => '1.1.0',
     ]);
 });
+
+
+it('returns 422 and does not persist a revision for a malformed input contract', function () {
+    $user = User::factory()->create();
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprint = (new CreateBlueprint($repository))->handle(
+        canonicalName: 'assessment-rubric-invalid-input-contract',
+        namespace: 'skillvlt.edu.assessment',
+        ownership: [
+            'type' => 'user',
+            'id' => (string) $user->id,
+        ],
+        metadata: [],
+    );
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson(
+            "/api/blueprints/{$blueprint->id()}/revisions",
+            [
+                'number' => '1.0.0',
+                'contracts' => [
+                    'input' => [
+                        'type' => 'object',
+                        'required' => ['primary' => 'score'],
+                    ],
+                ],
+                'logic' => [
+                    'type' => 'steps',
+                    'version' => 1,
+                    'steps' => [
+                        [
+                            'type' => 'return',
+                            'data' => ['status' => 'ok'],
+                        ],
+                    ],
+                ],
+                'outputs' => ['type' => 'assessment-result'],
+                'policies' => ['visibility' => 'public'],
+            ],
+        );
+
+    $response
+        ->assertUnprocessable()
+        ->assertJsonPath(
+            'message',
+            'Input contract required must be a list of non-empty strings.',
+        );
+
+    $this->assertDatabaseCount('blueprint_revisions', 0);
+});
