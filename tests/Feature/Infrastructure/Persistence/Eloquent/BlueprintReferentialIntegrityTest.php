@@ -1,10 +1,10 @@
 <?php
 
-use App\\Models\\Blueprint;
-use App\\Models\\BlueprintRevision;
-use Illuminate\\Database\\QueryException;
-use Illuminate\\Foundation\\Testing\\RefreshDatabase;
-use Illuminate\\Support\\Str;
+use App\Models\Blueprint;
+use App\Models\BlueprintRevision;
+use Illuminate\Database\QueryException;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
 
