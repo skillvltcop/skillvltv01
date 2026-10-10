@@ -4,6 +4,7 @@ use App\Models\Blueprint;
 use App\Models\BlueprintRevision;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
@@ -56,6 +57,24 @@ it('prevents a revision from using a parent belonging to another blueprint', fun
         '1.0.0',
         (string) $foreignParent->id,
     ))->toThrow(QueryException::class);
+});
+
+it('prevents an execution from referencing a revision belonging to another blueprint', function () {
+    $first = createIntegrityBlueprint('integrity-first-execution');
+    $second = createIntegrityBlueprint('integrity-second-execution');
+    $foreignRevision = createIntegrityRevision($second, '1.0.0');
+
+    expect(fn () => DB::table('executions')->insert([
+        'id' => (string) Str::ulid(),
+        'blueprint_id' => (string) $first->id,
+        'revision_id' => (string) $foreignRevision->id,
+        'owner_id' => 'integrity-owner',
+        'input' => json_encode([]),
+        'context' => json_encode([]),
+        'status' => 'pending',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]))->toThrow(QueryException::class);
 });
 
 it('enforces revision number uniqueness within a blueprint at the database level', function () {
