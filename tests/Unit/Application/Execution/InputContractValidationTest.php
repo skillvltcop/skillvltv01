@@ -104,3 +104,20 @@ it('preserves compatibility when the input contract has no required list', funct
         [],
     ))->not->toThrow(DomainException::class);
 });
+
+it('rejects malformed input contract definitions during execution', function (array $contracts) {
+    $validator = new InputContractValidator();
+
+    expect(fn () => $validator->validate($contracts, []))
+        ->toThrow(DomainException::class);
+})->with([
+    'non-array input contract' => [
+        ['input' => null],
+    ],
+    'associative required declaration' => [
+        ['input' => ['required' => ['primary' => 'score']]],
+    ],
+    'non-string required field' => [
+        ['input' => ['required' => ['score', 123]]],
+    ],
+]);
