@@ -159,3 +159,22 @@ it('cascades blueprint deletion when its current revision is set and no executio
     expect(BlueprintRevision::query()->whereKey((string) $revision->id)->exists())
         ->toBeFalse();
 });
+
+
+it('prevents deleting a revision that is still the blueprint current revision', function () {
+    $blueprint = createIntegrityBlueprint('integrity-current-revision-delete');
+    $revision = createIntegrityRevision($blueprint, '1.0.0');
+
+    $blueprint->update([
+        'current_revision_id' => (string) $revision->id,
+    ]);
+
+    expect(fn () => $revision->delete())
+        ->toThrow(QueryException::class);
+
+    expect(BlueprintRevision::query()->whereKey((string) $revision->id)->exists())
+        ->toBeTrue();
+
+    expect($blueprint->fresh()->current_revision_id)
+        ->toBe((string) $revision->id);
+});
