@@ -87,3 +87,26 @@ it('enforces revision number uniqueness within a blueprint at the database level
         '1.0.0',
     ))->toThrow(QueryException::class);
 });
+
+it('prevents deleting a blueprint that has executions', function () {
+    $blueprint = createIntegrityBlueprint('integrity-blueprint-with-execution');
+    $revision = createIntegrityRevision($blueprint, '1.0.0');
+
+    DB::table('executions')->insert([
+        'id' => (string) Str::ulid(),
+        'blueprint_id' => (string) $blueprint->id,
+        'revision_id' => (string) $revision->id,
+        'owner_id' => null,
+        'input' => json_encode([]),
+        'context' => json_encode([]),
+        'status' => 'pending',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    expect(fn () => $blueprint->delete())
+        ->toThrow(QueryException::class);
+
+    expect(Blueprint::query()->whereKey((string) $blueprint->id)->exists())
+        ->toBeTrue();
+});
