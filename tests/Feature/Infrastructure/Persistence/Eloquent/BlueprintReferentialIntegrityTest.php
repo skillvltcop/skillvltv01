@@ -203,3 +203,31 @@ it('prevents deleting a parent revision that has child revisions', function () {
     expect($child->fresh()->parent_revision_id)
         ->toBe((string) $parent->id);
 });
+
+it('prevents deleting a revision referenced by an execution', function () {
+    $blueprint = createIntegrityBlueprint('integrity-execution-revision-delete');
+    $revision = createIntegrityRevision($blueprint, '1.0.0');
+    $executionId = (string) Str::ulid();
+
+    DB::table('executions')->insert([
+        'id' => $executionId,
+        'blueprint_id' => (string) $blueprint->id,
+        'revision_id' => (string) $revision->id,
+        'owner_id' => 'integrity-owner',
+        'input' => json_encode([]),
+        'context' => json_encode([]),
+        'status' => 'pending',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    expect(fn () => $revision->delete())
+        ->toThrow(QueryException::class);
+
+    expect(BlueprintRevision::query()->whereKey((string) $revision->id)->exists())
+        ->toBeTrue();
+
+    expect(DB::table('executions')->where('id', $executionId)->value('revision_id'))
+        ->toBe((string) $revision->id);
+});
+
