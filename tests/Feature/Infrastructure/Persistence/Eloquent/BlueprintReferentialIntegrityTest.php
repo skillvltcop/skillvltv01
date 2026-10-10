@@ -91,6 +91,7 @@ it('enforces revision number uniqueness within a blueprint at the database level
 it('prevents deleting a blueprint that has executions', function () {
     $blueprint = createIntegrityBlueprint('integrity-blueprint-with-execution');
     $revision = createIntegrityRevision($blueprint, '1.0.0');
+    $blueprint->update(['current_revision_id' => (string) $revision->id]);
 
     DB::table('executions')->insert([
         'id' => (string) Str::ulid(),
@@ -109,6 +110,9 @@ it('prevents deleting a blueprint that has executions', function () {
 
     expect(Blueprint::query()->whereKey((string) $blueprint->id)->exists())
         ->toBeTrue();
+
+    expect($blueprint->fresh()->current_revision_id)
+        ->toBe((string) $revision->id);
 });
 
 it('cascades blueprint deletion to revisions and metadata when no executions exist', function () {
@@ -137,4 +141,21 @@ it('cascades blueprint deletion to revisions and metadata when no executions exi
     expect(DB::table('blueprint_metadata')
         ->where('blueprint_id', (string) $blueprint->id)
         ->exists())->toBeFalse();
+});
+
+it('cascades blueprint deletion when its current revision is set and no executions exist', function () {
+    $blueprint = createIntegrityBlueprint('integrity-blueprint-current-cascade-delete');
+    $revision = createIntegrityRevision($blueprint, '1.0.0');
+
+    $blueprint->update([
+        'current_revision_id' => (string) $revision->id,
+    ]);
+
+    $blueprint->delete();
+
+    expect(Blueprint::query()->whereKey((string) $blueprint->id)->exists())
+        ->toBeFalse();
+
+    expect(BlueprintRevision::query()->whereKey((string) $revision->id)->exists())
+        ->toBeFalse();
 });
