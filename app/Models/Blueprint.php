@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class Blueprint extends Model
 {
@@ -27,6 +29,29 @@ class Blueprint extends Model
         'lifecycle_status',
         'current_revision_id',
     ];
+
+    public function delete(): ?bool
+    {
+        try {
+            return DB::transaction(function (): ?bool {
+                if ($this->current_revision_id !== null) {
+                    $this->newQuery()
+                        ->whereKey($this->getKey())
+                        ->update(['current_revision_id' => null]);
+
+                    $this->setAttribute('current_revision_id', null);
+                }
+
+                return parent::delete();
+            });
+        } catch (Throwable $exception) {
+            if ($this->exists) {
+                $this->refresh();
+            }
+
+            throw $exception;
+        }
+    }
 
     public function revisions(): HasMany
     {
