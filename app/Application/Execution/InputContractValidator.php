@@ -6,6 +6,11 @@ namespace App\Application\Execution;
 
 final class InputContractValidator
 {
+    public function __construct(
+        private InputContractDefinitionValidator $definitionValidator = new InputContractDefinitionValidator(),
+    ) {
+    }
+
     /**
      * Validate the required fields declared by a revision's input contract.
      *
@@ -16,19 +21,21 @@ final class InputContractValidator
      */
     public function validate(array $contracts, array $input): void
     {
+        $this->definitionValidator->validate($contracts);
+
         $inputContract = $contracts['input'] ?? null;
         $required = is_array($inputContract)
             ? ($inputContract['required'] ?? [])
             : [];
 
-        if (! is_array($required) || $required === []) {
+        if ($required === []) {
             return;
         }
 
         $missing = [];
 
         foreach ($required as $field) {
-            if (is_string($field) && ! array_key_exists($field, $input)) {
+            if (! array_key_exists($field, $input)) {
                 $missing[] = $field;
             }
         }
