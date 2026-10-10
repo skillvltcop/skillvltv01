@@ -21,14 +21,16 @@ function createIntegrityBlueprint(string $name): Blueprint
     ]);
 }
 
-function createIntegrityRevision(Blueprint $blueprint, string $number, ?string $parentId = null): BlueprintRevision
+function createIntegrityRevision(Blueprint $blueprint, string $number, ?string $parentId = null, ?string $digest = null): BlueprintRevision
 {
+    $digest ??= 'sha256:' . str_repeat('a', 64);
+
     return BlueprintRevision::query()->create([
         'id' => (string) Str::ulid(),
         'blueprint_id' => (string) $blueprint->id,
         'revision_number' => $number,
         'parent_revision_id' => $parentId,
-        'behavior_digest' => 'sha256:' . str_repeat('a', 64),
+        'behavior_digest' => $digest,
         'contracts' => [],
         'logic' => [],
         'outputs' => [],
@@ -177,4 +179,27 @@ it('prevents deleting a revision that is still the blueprint current revision', 
 
     expect($blueprint->fresh()->current_revision_id)
         ->toBe((string) $revision->id);
+});
+
+it('prevents deleting a parent revision that has child revisions', function () {
+    $blueprint = createIntegrityBlueprint('integrity-parent-revision-delete');
+    $parent = createIntegrityRevision($blueprint, '1.0.0');
+    $child = createIntegrityRevision(
+        $blueprint,
+        '1.1.0',
+        (string) $parent->id,
+        'sha256:' . str_repeat('b', 64),
+    );
+
+    expect(fn () => $parent->delete())
+        ->toThrow(QueryException::class);
+
+    expect(BlueprintRevision::query()->whereKey((string) $parent->id)->exists())
+        ->toBeTrue();
+
+    expect(BlueprintRevision::query()->whereKey((string) $child->id)->exists())
+        ->toBeTrue();
+
+    expect($child->fresh()->parent_revision_id)
+        ->toBe((string) $parent->id);
 });
