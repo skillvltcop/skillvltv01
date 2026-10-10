@@ -63,6 +63,24 @@ final class AssessmentScoreCalculatorBlueprintSeeder extends Seeder
                     blueprintId: (string) $existing->id(),
                     revisionId: (string) $revision->id(),
                 );
+            } else {
+                $seededRevision = collect($existing->revisions())->first(
+                    fn ($revision): bool => (string) $revision->number() === '1.0.0'
+                );
+                $currentRevision = $existing->currentRevision();
+
+                if (
+                    $seededRevision !== null
+                    && (
+                        $currentRevision === null
+                        || $seededRevision->number()->isGreaterThan($currentRevision->number())
+                    )
+                ) {
+                    (new PromoteBlueprintRevision($repository))->handle(
+                        blueprintId: (string) $existing->id(),
+                        revisionId: (string) $seededRevision->id(),
+                    );
+                }
             }
 
             if ($existing->lifecycleStatus()->value === 'draft') {
