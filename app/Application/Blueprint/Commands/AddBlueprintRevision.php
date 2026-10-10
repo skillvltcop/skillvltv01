@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Blueprint\Commands;
 
 use App\Application\Behavior\BehaviorContractValidator;
+use App\Application\Execution\InputContractDefinitionValidator;
 use App\Application\Behavior\BehaviorDigestCalculator;
 use App\Domain\Blueprint\Entities\BlueprintRevision;
 use App\Domain\Blueprint\Repositories\BlueprintRepository;
@@ -17,6 +18,7 @@ final class AddBlueprintRevision
         private BlueprintRepository $repository,
         private BehaviorContractValidator $behaviorContractValidator,
         private BehaviorDigestCalculator $behaviorDigestCalculator = new BehaviorDigestCalculator(),
+        private InputContractDefinitionValidator $inputContractDefinitionValidator = new InputContractDefinitionValidator(),
     ) {
     }
 
@@ -39,6 +41,7 @@ final class AddBlueprintRevision
             );
         }
 
+        $this->inputContractDefinitionValidator->validate($contracts);
         $this->behaviorContractValidator->validate($logic);
 
         // Kept only for backward compatibility with existing application callers.
