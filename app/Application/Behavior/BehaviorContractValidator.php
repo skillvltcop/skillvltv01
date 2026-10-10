@@ -493,6 +493,15 @@ final class BehaviorContractValidator
             $matches,
         );
 
+        $remaining = preg_replace(self::PLACEHOLDER_REGEX, '', $text);
+
+        if (str_contains($remaining, '{') || str_contains($remaining, '}')) {
+            $errors["{$errorKey}.placeholder"] =
+                'Malformed placeholder braces.';
+
+            return;
+        }
+
         foreach ($matches[1] as $path) {
             if (! $this->isValidPath($path, $allowItemPaths)) {
                 $errors["{$errorKey}.placeholder"] =
