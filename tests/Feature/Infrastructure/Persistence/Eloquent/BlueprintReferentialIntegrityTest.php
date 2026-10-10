@@ -110,3 +110,31 @@ it('prevents deleting a blueprint that has executions', function () {
     expect(Blueprint::query()->whereKey((string) $blueprint->id)->exists())
         ->toBeTrue();
 });
+
+it('cascades blueprint deletion to revisions and metadata when no executions exist', function () {
+    $blueprint = createIntegrityBlueprint('integrity-blueprint-cascade-delete');
+    $revision = createIntegrityRevision($blueprint, '1.0.0');
+
+    DB::table('blueprint_metadata')->insert([
+        'blueprint_id' => (string) $blueprint->id,
+        'taxonomy' => json_encode([]),
+        'documentation' => json_encode([]),
+        'discovery' => null,
+        'lifecycle_metadata' => json_encode([]),
+        'payload' => json_encode([]),
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $blueprint->delete();
+
+    expect(Blueprint::query()->whereKey((string) $blueprint->id)->exists())
+        ->toBeFalse();
+
+    expect(BlueprintRevision::query()->whereKey((string) $revision->id)->exists())
+        ->toBeFalse();
+
+    expect(DB::table('blueprint_metadata')
+        ->where('blueprint_id', (string) $blueprint->id)
+        ->exists())->toBeFalse();
+});
