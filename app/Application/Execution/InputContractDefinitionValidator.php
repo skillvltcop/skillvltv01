@@ -7,7 +7,7 @@ namespace App\Application\Execution;
 final class InputContractDefinitionValidator
 {
     /**
-     * Validate the shape of the optional input.required declaration.
+     * Validate the shape of the optional input contract's required declaration.
      *
      * @param array<string, mixed> $contracts
      */
@@ -19,7 +19,13 @@ final class InputContractDefinitionValidator
 
         $inputContract = $contracts['input'];
 
-        if (! is_array($inputContract) || ! array_key_exists('required', $inputContract)) {
+        if (! is_array($inputContract)) {
+            throw new \DomainException(
+                'Input contract must be an array.'
+            );
+        }
+
+        if (! array_key_exists('required', $inputContract)) {
             return;
         }
 

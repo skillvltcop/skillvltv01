@@ -24,6 +24,21 @@ it('allows contracts without an input required declaration for backward compatib
         ->not->toThrow(DomainException::class);
 });
 
+it('rejects a non-array input contract', function (mixed $inputContract) {
+    $validator = new InputContractDefinitionValidator();
+
+    expect(fn () => $validator->validate([
+        'input' => $inputContract,
+    ]))->toThrow(
+        DomainException::class,
+        'Input contract must be an array.',
+    );
+})->with([
+    'null' => [null],
+    'string' => ['invalid'],
+    'integer' => [123],
+]);
+
 it('rejects a non-array required declaration', function () {
     $validator = new InputContractDefinitionValidator();
 
