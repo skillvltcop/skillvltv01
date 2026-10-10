@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\\Application\\Execution;
+namespace App\Application\Execution;
 
 final class InputContractDefinitionValidator
 {
@@ -20,7 +20,7 @@ final class InputContractDefinitionValidator
         $inputContract = $contracts['input'];
 
         if (! is_array($inputContract)) {
-            throw new \\DomainException(
+            throw new \DomainException(
                 'Input contract must be an array.'
             );
         }
@@ -32,7 +32,7 @@ final class InputContractDefinitionValidator
         $required = $inputContract['required'];
 
         if (! is_array($required) || ! array_is_list($required)) {
-            throw new \\DomainException(
+            throw new \DomainException(
                 'Input contract required must be a list of non-empty strings.'
             );
         }
@@ -41,13 +41,13 @@ final class InputContractDefinitionValidator
 
         foreach ($required as $field) {
             if (! is_string($field) || trim($field) === '') {
-                throw new \\DomainException(
+                throw new \DomainException(
                     'Input contract required must contain only non-empty strings.'
                 );
             }
 
             if (in_array($field, $seen, true)) {
-                throw new \\DomainException(
+                throw new \DomainException(
                     sprintf('Input contract required contains duplicate field "%s".', $field)
                 );
             }
