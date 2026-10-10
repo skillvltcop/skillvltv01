@@ -41,7 +41,7 @@ final class InputContractValidator
         }
 
         if ($missing !== []) {
-            throw new \\DomainException(
+            throw new \DomainException(
                 'Input is missing required field(s): ' . implode(', ', $missing) . '.'
             );
         }
