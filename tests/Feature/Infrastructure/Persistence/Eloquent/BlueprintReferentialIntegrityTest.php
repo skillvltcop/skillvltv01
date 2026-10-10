@@ -213,7 +213,7 @@ it('prevents deleting a revision referenced by an execution', function () {
         'id' => $executionId,
         'blueprint_id' => (string) $blueprint->id,
         'revision_id' => (string) $revision->id,
-        'owner_id' => 'integrity-owner',
+        'owner_id' => null,
         'input' => json_encode([]),
         'context' => json_encode([]),
         'status' => 'pending',
