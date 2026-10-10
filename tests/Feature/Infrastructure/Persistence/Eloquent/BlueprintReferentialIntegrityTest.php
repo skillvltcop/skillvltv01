@@ -21,8 +21,10 @@ function createIntegrityBlueprint(string $name): Blueprint
     ]);
 }
 
-function createIntegrityRevision(Blueprint $blueprint, string $number, ?string $parentId = null, string $digest = 'sha256:' . str_repeat('a', 64)): BlueprintRevision
+function createIntegrityRevision(Blueprint $blueprint, string $number, ?string $parentId = null, ?string $digest = null): BlueprintRevision
 {
+    $digest ??= 'sha256:' . str_repeat('a', 64);
+
     return BlueprintRevision::query()->create([
         'id' => (string) Str::ulid(),
         'blueprint_id' => (string) $blueprint->id,
