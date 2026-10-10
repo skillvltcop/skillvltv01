@@ -1,6 +1,6 @@
 <?php
 
-use App\\Application\\Execution\\InputContractDefinitionValidator;
+use App\Application\Execution\InputContractDefinitionValidator;
 
 it('accepts a list of unique non-empty required field names', function () {
     $validator = new InputContractDefinitionValidator();
