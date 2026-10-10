@@ -231,3 +231,29 @@ it('prevents deleting a revision referenced by an execution', function () {
         ->toBe((string) $revision->id);
 });
 
+it('cascades blueprint deletion through a revision chain when the current revision is set', function () {
+    $blueprint = createIntegrityBlueprint('integrity-blueprint-revision-chain-delete');
+    $parent = createIntegrityRevision($blueprint, '1.0.0');
+    $child = createIntegrityRevision(
+        $blueprint,
+        '1.1.0',
+        (string) $parent->id,
+        'sha256:' . str_repeat('c', 64),
+    );
+
+    $blueprint->update([
+        'current_revision_id' => (string) $child->id,
+    ]);
+
+    $blueprint->delete();
+
+    expect(Blueprint::query()->whereKey((string) $blueprint->id)->exists())
+        ->toBeFalse();
+
+    expect(BlueprintRevision::query()->whereKey((string) $parent->id)->exists())
+        ->toBeFalse();
+
+    expect(BlueprintRevision::query()->whereKey((string) $child->id)->exists())
+        ->toBeFalse();
+});
+
