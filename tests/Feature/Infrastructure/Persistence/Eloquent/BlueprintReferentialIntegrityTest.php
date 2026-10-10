@@ -1,11 +1,11 @@
 <?php
 
-use App\Models\Blueprint;
-use App\Models\BlueprintRevision;
-use Illuminate\Database\QueryException;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+use App\\Models\\Blueprint;
+use App\\Models\\BlueprintRevision;
+use Illuminate\\Database\\QueryException;
+use Illuminate\\Foundation\\Testing\\RefreshDatabase;
+use Illuminate\\Support\\Facades\\DB;
+use Illuminate\\Support\\Str;
 
 uses(RefreshDatabase::class);
 
@@ -137,4 +137,21 @@ it('cascades blueprint deletion to revisions and metadata when no executions exi
     expect(DB::table('blueprint_metadata')
         ->where('blueprint_id', (string) $blueprint->id)
         ->exists())->toBeFalse();
+});
+
+it('cascades blueprint deletion when its current revision is set and no executions exist', function () {
+    $blueprint = createIntegrityBlueprint('integrity-blueprint-current-cascade-delete');
+    $revision = createIntegrityRevision($blueprint, '1.0.0');
+
+    $blueprint->update([
+        'current_revision_id' => (string) $revision->id,
+    ]);
+
+    $blueprint->delete();
+
+    expect(Blueprint::query()->whereKey((string) $blueprint->id)->exists())
+        ->toBeFalse();
+
+    expect(BlueprintRevision::query()->whereKey((string) $revision->id)->exists())
+        ->toBeFalse();
 });
