@@ -525,3 +525,13 @@ test('it rejects steps after a return inside a map', function () {
             ->toHaveKey('steps.0.steps.0.position');
     }
 });
+
+
+test('it rejects placeholders wrapped in extra balanced braces', function () {
+    $contract = validBehaviorContract();
+
+    $contract['steps'][1]['template'] = 'Value: {{input.score}}';
+
+    expect(fn () => $this->validator->validate($contract))
+        ->toThrow(InvalidBehaviorContractException::class);
+});
