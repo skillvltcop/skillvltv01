@@ -4,6 +4,7 @@ use App\Domain\Blueprint\Enums\LifecycleStatus;
 use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
 use Database\Seeders\AssessmentScoreCalculatorBlueprintSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 uses(
