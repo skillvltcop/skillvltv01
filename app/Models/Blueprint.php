@@ -42,6 +42,39 @@ class Blueprint extends Model
                     $this->setAttribute('current_revision_id', null);
                 }
 
+                // MySQL checks the self-referencing parent_revision_id foreign key
+                // while cascading blueprint deletion. Delete revisions leaf-first
+                // so child revisions never block deletion of their parents.
+                $remainingRevisions = $this->revisions()->get();
+
+                while ($remainingRevisions->isNotEmpty()) {
+                    $parentIds = $remainingRevisions
+                        ->pluck('parent_revision_id')
+                        ->filter()
+                        ->map(fn ($id): string => (string) $id)
+                        ->all();
+
+                    $leaves = $remainingRevisions->reject(
+                        fn (BlueprintRevision $revision): bool => in_array(
+                            (string) $revision->id,
+                            $parentIds,
+                            true,
+                        ),
+                    );
+
+                    if ($leaves->isEmpty()) {
+                        // Leave invalid/cyclic revision graphs to the database
+                        // constraints; the transaction will roll back safely.
+                        break;
+                    }
+
+                    foreach ($leaves as $revision) {
+                        $revision->delete();
+                    }
+
+                    $remainingRevisions = $this->revisions()->get();
+                }
+
                 return parent::delete();
             });
         } catch (Throwable $exception) {
