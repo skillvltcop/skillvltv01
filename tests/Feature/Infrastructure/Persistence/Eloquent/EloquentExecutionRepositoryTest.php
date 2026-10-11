@@ -1199,7 +1199,7 @@ it('rejects reconstituting a completed execution with an error', function () {
         output: ['result' => 'original'],
         error: 'Unexpected error.',
     ))->toThrow(
-        \\DomainException::class,
+        \DomainException::class,
         'A completed execution must have output and no error.',
     );
 
