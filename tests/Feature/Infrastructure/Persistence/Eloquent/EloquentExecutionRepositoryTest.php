@@ -3,6 +3,8 @@
 use App\Domain\Blueprint\ValueObjects\BlueprintId;
 use App\Domain\Blueprint\ValueObjects\RevisionId;
 use App\Domain\Execution\Entities\Execution;
+use App\Domain\Execution\Enums\ExecutionStatus;
+use App\Domain\Execution\Exceptions\ConcurrentExecutionException;
 use App\Infrastructure\Persistence\Eloquent\EloquentExecutionRepository;
 use App\Models\Blueprint;
 use App\Models\BlueprintRevision;
@@ -874,4 +876,68 @@ it('rejects a stale failure after another writer completes the execution', funct
         ->toBe(['result' => 'completed']);
 
     expect($persisted->error())->toBeNull();
+});
+
+
+it('rejects changing an execution owner after persistence', function () {
+    $blueprintId = BlueprintId::generate();
+    $revisionId = RevisionId::generate();
+
+    Blueprint::query()->create([
+        'id' => (string) $blueprintId,
+        'canonical_name' => 'execution-owner-immutability',
+        'namespace' => 'skillvlt.edu.test',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'draft',
+    ]);
+
+    BlueprintRevision::query()->create([
+        'id' => (string) $revisionId,
+        'blueprint_id' => (string) $blueprintId,
+        'revision_number' => '1.0.0',
+        'parent_revision_id' => null,
+        'behavior_digest' =>
+            'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        'contracts' => [],
+        'logic' => [],
+        'outputs' => [],
+        'policies' => [],
+        'frozen' => true,
+    ]);
+
+    $execution = Execution::create(
+        blueprintId: $blueprintId,
+        revisionId: $revisionId,
+        ownerId: $this->ownerId,
+        input: [],
+        context: [],
+    );
+
+    $repository = new EloquentExecutionRepository();
+    $repository->save($execution);
+
+    $otherOwnerId = (string) User::factory()->create()->id;
+
+    $tampered = Execution::reconstitute(
+        id: $execution->id(),
+        blueprintId: $blueprintId,
+        revisionId: $revisionId,
+        ownerId: $otherOwnerId,
+        input: [],
+        context: [],
+        status: ExecutionStatus::PENDING,
+        output: null,
+        error: null,
+    );
+
+    expect(fn () => $repository->save($tampered))
+        ->toThrow(
+            ConcurrentExecutionException::class,
+            'The Execution was modified concurrently; reload it before saving.',
+        );
+
+    $persisted = $repository->find($execution->id());
+
+    expect($persisted->ownerId())->toBe($this->ownerId);
 });
