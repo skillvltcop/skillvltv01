@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Models\User;
+use Database\Seeders\AssessmentResultsAnalyzerBlueprintSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -10,33 +12,26 @@ uses(
     RefreshDatabase::class,
 );
 
-it('defines the assessment results analyzer v1 contract', function () {
-    $input = [
-        'learners' => [
-            ['name' => 'أحمد', 'score' => 14, 'max_score' => 20],
-            ['name' => 'سارة', 'score' => 18, 'max_score' => 20],
-            ['name' => 'يوسف', 'score' => 9, 'max_score' => 20],
-            ['name' => 'مريم', 'score' => 12, 'max_score' => 20],
-        ],
-    ];
+it('publishes the assessment results analyzer as a discoverable system tool', function () {
+    $user = User::factory()->create();
 
-    $expected = [
-        'count' => 4,
-        'average_percentage' => 66.25,
-        'ready_count' => 2,
-        'needs_support_count' => 2,
-        'success_rate' => 50,
-    ];
+    (new AssessmentResultsAnalyzerBlueprintSeeder())->run();
 
-    expect($input['learners'])
-        ->toHaveCount(4);
+    $response = $this
+        ->actingAs($user)
+        ->getJson('/api/teacher/blueprints/discover?locale=ar');
 
-    expect($expected)
-        ->toBe([
-            'count' => 4,
-            'average_percentage' => 66.25,
-            'ready_count' => 2,
-            'needs_support_count' => 2,
-            'success_rate' => 50,
-        ]);
+    $response->assertSuccessful();
+
+    $response->assertJsonPath(
+        'data.0.slug',
+        'assessment-results-analyzer',
+    );
+
+    $response->assertJsonPath(
+        'data.0.title',
+        'محلل نتائج التقويم',
+    );
+
+    $response->assertJsonPath('data.0.target_level', '5-6');
 });

@@ -439,3 +439,126 @@ it('uses strict type comparison for equality', function () {
         context: [],
     )['status'])->toBe('fail');
 });
+
+it('maps learner results and aggregates assessment group statistics', function () {
+    $runner = createBehaviorRunner();
+
+    $result = $runner->run(
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'map',
+                    'source' => 'input.learners',
+                    'assign_to' => 'results',
+                    'steps' => [
+                        [
+                            'type' => 'calculate',
+                            'operation' => 'divide',
+                            'left' => 'item.score',
+                            'right' => 'item.max_score',
+                            'assign_to' => 'ratio',
+                        ],
+                        [
+                            'type' => 'calculate',
+                            'operation' => 'multiply',
+                            'left' => 'state.ratio',
+                            'right' => 100,
+                            'assign_to' => 'percentage',
+                        ],
+                        [
+                            'type' => 'evaluate_rule',
+                            'condition' => [
+                                'field' => 'state.percentage',
+                                'operator' => 'gte',
+                                'value' => 60,
+                            ],
+                            'assign_to' => 'positioning',
+                            'true_value' => 'ready',
+                            'false_value' => 'needs_support',
+                        ],
+                        [
+                            'type' => 'return',
+                            'data' => [
+                                'name' => '{item.name}',
+                                'percentage' => '{state.percentage}',
+                                'positioning' => '{state.positioning}',
+                            ],
+                        ],
+                    ],
+                ],
+                [
+                    'type' => 'aggregate',
+                    'source' => 'state.results',
+                    'operation' => 'count',
+                    'assign_to' => 'learner_count',
+                ],
+                [
+                    'type' => 'aggregate',
+                    'source' => 'state.results',
+                    'operation' => 'average',
+                    'field' => 'percentage',
+                    'assign_to' => 'average_percentage',
+                ],
+                [
+                    'type' => 'aggregate',
+                    'source' => 'state.results',
+                    'operation' => 'count_matching',
+                    'field' => 'positioning',
+                    'operator' => 'eq',
+                    'value' => 'ready',
+                    'assign_to' => 'ready_count',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'learners' => '{state.results}',
+                        'count' => '{state.learner_count}',
+                        'average_percentage' => '{state.average_percentage}',
+                        'ready_count' => '{state.ready_count}',
+                    ],
+                ],
+            ],
+        ],
+        input: [
+            'learners' => [
+                ['name' => 'Ahmed', 'score' => 14, 'max_score' => 20],
+                ['name' => 'Sara', 'score' => 18, 'max_score' => 20],
+                ['name' => 'Youssef', 'score' => 9, 'max_score' => 20],
+                ['name' => 'Mariam', 'score' => 12, 'max_score' => 20],
+            ],
+        ],
+    );
+
+    expect($result['count'])->toBe(4);
+    expect($result['average_percentage'])->toBe(66.25);
+    expect($result['ready_count'])->toBe(3);
+    expect($result['learners'])->toHaveCount(4);
+    expect($result['learners'][2]['positioning'])->toBe('needs_support');
+});
+
+it('rejects averaging an empty collection', function () {
+    $runner = createBehaviorRunner();
+
+    expect(fn () => $runner->run(
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'aggregate',
+                    'source' => 'input.items',
+                    'operation' => 'average',
+                    'field' => 'score',
+                    'assign_to' => 'average',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => ['average' => '{state.average}'],
+                ],
+            ],
+        ],
+        input: ['items' => []],
+    ))->toThrow(DomainException::class, 'Cannot average an empty collection.');
+});

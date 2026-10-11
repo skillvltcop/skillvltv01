@@ -132,6 +132,12 @@ final class BehaviorContractValidator
                     $errors,
                 ),
 
+                'aggregate' => $this->validateAggregate(
+                    $step,
+                    $prefix,
+                    $errors,
+                ),
+
                 default => $errors["{$prefix}.type"] =
                     sprintf('Unknown step type "%s".', $type),
             };
@@ -155,6 +161,7 @@ final class BehaviorContractValidator
         array $step,
         string $prefix,
         array &$errors,
+        bool $allowItemPaths = false,
     ): void {
         $condition = $step['condition'] ?? null;
 
@@ -169,7 +176,7 @@ final class BehaviorContractValidator
 
         if (
             ! is_string($field)
-            || ! $this->isValidPath($field)
+            || ! $this->isValidPath($field, $allowItemPaths)
         ) {
             $errors["{$prefix}.condition.field"] =
                 'Field must be a valid input., context., or state. path.';
@@ -342,6 +349,12 @@ final class BehaviorContractValidator
                     $errors,
                     true,
                 ),
+                'evaluate_rule' => $this->validateEvaluateRule(
+                    $nestedStep,
+                    $nestedPrefix,
+                    $errors,
+                    true,
+                ),
                 default => $errors["{$nestedPrefix}.type"] =
                     sprintf('Unknown map step type "%s".', $type),
             };
@@ -350,6 +363,68 @@ final class BehaviorContractValidator
         if ($returnCount === 0) {
             $errors["{$prefix}.sequence"] =
                 'The map steps must end with a "return" step.';
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $step
+     * @param array<string, string> $errors
+     */
+    private function validateAggregate(
+        array $step,
+        string $prefix,
+        array &$errors,
+    ): void {
+        $source = $step['source'] ?? null;
+
+        if (! is_string($source) || ! $this->isValidPath($source)) {
+            $errors["{$prefix}.source"] =
+                'source must be a valid input., context., or state. path.';
+        }
+
+        $operation = $step['operation'] ?? null;
+
+        if (! is_string($operation) || ! in_array(
+            $operation,
+            ['count', 'sum', 'average', 'count_matching'],
+            true,
+        )) {
+            $errors["{$prefix}.operation"] =
+                'operation must be one of: count, sum, average, count_matching.';
+        }
+
+        if (in_array($operation, ['sum', 'average', 'count_matching'], true)) {
+            $field = $step['field'] ?? null;
+
+            if (
+                ! is_string($field)
+                || preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*$/', $field) !== 1
+            ) {
+                $errors["{$prefix}.field"] =
+                    'field must be a dotted identifier path.';
+            }
+        }
+
+        if ($operation === 'count_matching') {
+            if (! array_key_exists('value', $step)) {
+                $errors["{$prefix}.value"] =
+                    'count_matching must define a comparison value.';
+            }
+
+            if (! in_array($step['operator'] ?? null, ['eq', 'neq', 'gt', 'gte', 'lt', 'lte'], true)) {
+                $errors["{$prefix}.operator"] =
+                    'count_matching operator must be eq, neq, gt, gte, lt, or lte.';
+            }
+        }
+
+        $assignTo = $step['assign_to'] ?? null;
+
+        if (
+            ! is_string($assignTo)
+            || preg_match(self::IDENTIFIER_REGEX, $assignTo) !== 1
+        ) {
+            $errors["{$prefix}.assign_to"] =
+                'assign_to must be a simple identifier matching [a-zA-Z_][a-zA-Z0-9_]*.';
         }
     }
 
