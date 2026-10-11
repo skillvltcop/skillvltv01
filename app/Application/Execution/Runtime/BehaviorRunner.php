@@ -121,7 +121,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
                 );
 
                 if (! is_array($source)) {
-                    throw new \\DomainException('Aggregate source must be an array.');
+                    throw new \DomainException('Aggregate source must be an array.');
                 }
 
                 $operation = $step['operation'];
@@ -135,10 +135,10 @@ final class BehaviorRunner implements BehaviorRunnerContract
 
                 foreach ($source as $entry) {
                     if (! is_array($entry)) {
-                        throw new \\DomainException('Aggregate items must be arrays.');
+                        throw new \DomainException('Aggregate items must be arrays.');
                     }
 
-                    $missing = new \\stdClass();
+                    $missing = new \stdClass();
                     $value = data_get($entry, $step['field'], $missing);
 
                     if ($value === $missing) {
@@ -177,7 +177,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
                 $state[$step['assign_to']] = match ($operation) {
                     'sum' => array_sum($values),
                     'average' => $values === []
-                        ? throw new \\DomainException('Cannot average an empty collection.')
+                        ? throw new \DomainException('Cannot average an empty collection.')
                         : array_sum($values) / count($values),
                     'count_matching' => count($values),
                 };
