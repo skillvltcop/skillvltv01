@@ -161,6 +161,7 @@ final class BehaviorContractValidator
         array $step,
         string $prefix,
         array &$errors,
+        bool $allowItemPaths = false,
     ): void {
         $condition = $step['condition'] ?? null;
 
@@ -175,7 +176,7 @@ final class BehaviorContractValidator
 
         if (
             ! is_string($field)
-            || ! $this->isValidPath($field)
+            || ! $this->isValidPath($field, $allowItemPaths)
         ) {
             $errors["{$prefix}.condition.field"] =
                 'Field must be a valid input., context., or state. path.';
