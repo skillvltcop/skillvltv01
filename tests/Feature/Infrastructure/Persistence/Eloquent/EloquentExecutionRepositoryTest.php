@@ -1467,3 +1467,72 @@ it('rejects regressing a persisted running execution to pending', function () {
     expect($persisted->output())->toBeNull();
     expect($persisted->error())->toBeNull();
 });
+
+
+it('rejects switching a persisted completed execution to failed', function () {
+    $blueprintId = BlueprintId::generate();
+    $revisionId = RevisionId::generate();
+
+    Blueprint::query()->create([
+        'id' => (string) $blueprintId,
+        'canonical_name' => 'execution-terminal-status-switch',
+        'namespace' => 'skillvlt.edu.test',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'draft',
+    ]);
+
+    BlueprintRevision::query()->create([
+        'id' => (string) $revisionId,
+        'blueprint_id' => (string) $blueprintId,
+        'revision_number' => '1.0.0',
+        'parent_revision_id' => null,
+        'behavior_digest' =>
+            'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        'contracts' => [],
+        'logic' => [],
+        'outputs' => [],
+        'policies' => [],
+        'frozen' => true,
+    ]);
+
+    $execution = Execution::create(
+        blueprintId: $blueprintId,
+        revisionId: $revisionId,
+        ownerId: $this->ownerId,
+        input: [],
+        context: [],
+    );
+
+    $repository = new EloquentExecutionRepository();
+    $repository->save($execution);
+
+    $completed = $repository->find($execution->id());
+    $completed->start();
+    $completed->complete(['result' => 'persisted']);
+    $repository->save($completed);
+
+    $tampered = Execution::reconstitute(
+        id: $execution->id(),
+        blueprintId: $blueprintId,
+        revisionId: $revisionId,
+        ownerId: $this->ownerId,
+        input: [],
+        context: [],
+        status: ExecutionStatus::FAILED,
+        output: null,
+        error: 'conflicting failure',
+    );
+
+    expect(fn () => $repository->save($tampered))
+        ->toThrow(
+            ConcurrentExecutionException::class,
+            'The Execution was modified concurrently; reload it before saving.',
+        );
+
+    $persisted = $repository->find($execution->id());
+
+    expect($persisted->status())->toBe(ExecutionStatus::COMPLETED);
+    expect($persisted->output())->toBe(['result' => 'persisted']);
+    expect($persisted->error())->toBeNull();
+});
