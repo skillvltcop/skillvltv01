@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             AssessmentPositioningBlueprintSeeder::class,
             AssessmentScoreCalculatorBlueprintSeeder::class,
+            AssessmentResultsAnalyzerBlueprintSeeder::class,
         ]);
 
         // User::factory(10)->create();
