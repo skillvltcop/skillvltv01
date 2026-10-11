@@ -111,6 +111,80 @@ final class BehaviorRunner implements BehaviorRunnerContract
                 continue;
             }
 
+            if ($type === 'aggregate') {
+                $source = $this->valueResolver->resolve(
+                    path: $step['source'],
+                    input: $input,
+                    context: $context,
+                    state: $state,
+                    item: $item,
+                );
+
+                if (! is_array($source)) {
+                    throw new \\DomainException('Aggregate source must be an array.');
+                }
+
+                $operation = $step['operation'];
+
+                if ($operation === 'count') {
+                    $state[$step['assign_to']] = count($source);
+                    continue;
+                }
+
+                $values = [];
+
+                foreach ($source as $entry) {
+                    if (! is_array($entry)) {
+                        throw new \\DomainException('Aggregate items must be arrays.');
+                    }
+
+                    $missing = new \\stdClass();
+                    $value = data_get($entry, $step['field'], $missing);
+
+                    if ($value === $missing) {
+                        throw new \\DomainException(
+                            sprintf('Aggregate field "%s" is missing.', $step['field'])
+                        );
+                    }
+
+                    if ($operation === 'count_matching') {
+                        $expected = $step['value'];
+                        $matches = match ($step['operator']) {
+                            'eq' => $value === $expected,
+                            'neq' => $value !== $expected,
+                            'gt' => is_numeric($value) && is_numeric($expected) && $value > $expected,
+                            'gte' => is_numeric($value) && is_numeric($expected) && $value >= $expected,
+                            'lt' => is_numeric($value) && is_numeric($expected) && $value < $expected,
+                            'lte' => is_numeric($value) && is_numeric($expected) && $value <= $expected,
+                        };
+
+                        if ($matches) {
+                            $values[] = $value;
+                        }
+
+                        continue;
+                    }
+
+                    if (! is_int($value) && ! is_float($value)) {
+                        throw new \\DomainException(
+                            sprintf('Aggregate field "%s" must be numeric.', $step['field'])
+                        );
+                    }
+
+                    $values[] = $value;
+                }
+
+                $state[$step['assign_to']] = match ($operation) {
+                    'sum' => array_sum($values),
+                    'average' => $values === []
+                        ? throw new \\DomainException('Cannot average an empty collection.')
+                        : array_sum($values) / count($values),
+                    'count_matching' => count($values),
+                };
+
+                continue;
+            }
+
             if ($type === 'return') {
                 return $this->resolveData(
                     data: $step['data'],
