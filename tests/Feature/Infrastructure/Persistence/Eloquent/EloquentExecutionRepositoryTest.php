@@ -3,6 +3,8 @@
 use App\Domain\Blueprint\ValueObjects\BlueprintId;
 use App\Domain\Blueprint\ValueObjects\RevisionId;
 use App\Domain\Execution\Entities\Execution;
+use App\Domain\Execution\Enums\ExecutionStatus;
+use App\Domain\Execution\Exceptions\ConcurrentExecutionException;
 use App\Infrastructure\Persistence\Eloquent\EloquentExecutionRepository;
 use App\Models\Blueprint;
 use App\Models\BlueprintRevision;
@@ -924,14 +926,14 @@ it('rejects changing an execution owner after persistence', function () {
         ownerId: $otherOwnerId,
         input: [],
         context: [],
-        status: \App\Domain\\Execution\\Enums\\ExecutionStatus::PENDING,
+        status: ExecutionStatus::PENDING,
         output: null,
         error: null,
     );
 
     expect(fn () => $repository->save($tampered))
         ->toThrow(
-            \App\Domain\\Execution\\Exceptions\\ConcurrentExecutionException::class,
+            ConcurrentExecutionException::class,
             'The Execution was modified concurrently; reload it before saving.',
         );
 
