@@ -546,6 +546,77 @@ it('rejects changing an execution identity after persistence', function () {
         ->toBe((string) $revisionAId);
 });
 
+it('rejects changing an execution revision after persistence', function () {
+    $blueprintId = BlueprintId::generate();
+    $originalRevisionId = RevisionId::generate();
+    $replacementRevisionId = RevisionId::generate();
+
+    Blueprint::query()->create([
+        'id' => (string) $blueprintId,
+        'canonical_name' => 'execution-revision-immutability',
+        'namespace' => 'skillvlt.edu.test',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'draft',
+    ]);
+
+    foreach ([
+        [$originalRevisionId, '1.0.0'],
+        [$replacementRevisionId, '1.1.0'],
+    ] as [$revisionId, $revisionNumber]) {
+        BlueprintRevision::query()->create([
+            'id' => (string) $revisionId,
+            'blueprint_id' => (string) $blueprintId,
+            'revision_number' => $revisionNumber,
+            'parent_revision_id' => null,
+            'behavior_digest' =>
+                'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            'contracts' => [],
+            'logic' => [],
+            'outputs' => [],
+            'policies' => [],
+            'frozen' => true,
+        ]);
+    }
+
+    $execution = Execution::create(
+        blueprintId: $blueprintId,
+        revisionId: $originalRevisionId,
+        ownerId: $this->ownerId,
+        input: [],
+        context: [],
+    );
+
+    $repository = new EloquentExecutionRepository();
+    $repository->save($execution);
+
+    $tampered = Execution::reconstitute(
+        id: $execution->id(),
+        blueprintId: $blueprintId,
+        revisionId: $replacementRevisionId,
+        ownerId: $this->ownerId,
+        input: [],
+        context: [],
+        status: ExecutionStatus::PENDING,
+        output: null,
+        error: null,
+    );
+
+    expect(fn () => $repository->save($tampered))
+        ->toThrow(
+            ConcurrentExecutionException::class,
+            'The Execution was modified concurrently; reload it before saving.',
+        );
+
+    $persisted = $repository->find($execution->id());
+
+    expect((string) $persisted->blueprintId())
+        ->toBe((string) $blueprintId);
+
+    expect((string) $persisted->revisionId())
+        ->toBe((string) $originalRevisionId);
+});
+
 it('persists and retrieves a completed execution with its output', function () {
     $blueprintId = BlueprintId::generate();
     $revisionId = RevisionId::generate();
