@@ -876,7 +876,7 @@ it('rejects an execution referencing a revision from another blueprint', functio
 
     expect(fn () => $repository->save($execution))
         ->toThrow(
-            \DomainException::class,
+        \DomainException::class,
             'Execution revision does not belong to the Blueprint.',
         );
 });
