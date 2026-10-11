@@ -1263,7 +1263,7 @@ it('rejects reconstituting a failed execution with output', function () {
         output: ['result' => 'unexpected'],
         error: 'Original failure.',
     ))->toThrow(
-        \\DomainException::class,
+        \DomainException::class,
         'A failed execution must have an error and no output.',
     );
 
