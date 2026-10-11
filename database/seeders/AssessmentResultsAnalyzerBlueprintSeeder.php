@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Database\\Seeders;
+namespace Database\Seeders;
 
-use App\\Application\\Behavior\\BehaviorContractValidator;
-use App\\Application\\Blueprint\\Commands\\ActivateBlueprint;
-use App\\Application\\Blueprint\\Commands\\AddBlueprintRevision;
-use App\\Application\\Blueprint\\Commands\\CreateBlueprint;
-use App\\Application\\Blueprint\\Commands\\FreezeBlueprintRevision;
-use App\\Application\\Blueprint\\Commands\\PromoteBlueprintRevision;
-use App\\Infrastructure\\Persistence\\Eloquent\\EloquentBlueprintRepository;
-use Illuminate\\Database\\Seeder;
+use App\Application\Behavior\BehaviorContractValidator;
+use App\Application\Blueprint\Commands\ActivateBlueprint;
+use App\Application\Blueprint\Commands\AddBlueprintRevision;
+use App\Application\Blueprint\Commands\CreateBlueprint;
+use App\Application\Blueprint\Commands\FreezeBlueprintRevision;
+use App\Application\Blueprint\Commands\PromoteBlueprintRevision;
+use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
+use Illuminate\Database\Seeder;
 
 final class AssessmentResultsAnalyzerBlueprintSeeder extends Seeder
 {
