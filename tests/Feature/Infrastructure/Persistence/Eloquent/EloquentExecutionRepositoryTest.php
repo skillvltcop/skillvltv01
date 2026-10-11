@@ -1147,7 +1147,7 @@ it('rejects changing a persisted completed execution output', function () {
 });
 
 
-it('rejects adding an error to a persisted completed execution', function () {
+it('rejects reconstituting a completed execution with an error', function () {
     $blueprintId = BlueprintId::generate();
     $revisionId = RevisionId::generate();
 
@@ -1188,7 +1188,7 @@ it('rejects adding an error to a persisted completed execution', function () {
     $repository = new EloquentExecutionRepository();
     $repository->save($execution);
 
-    $tampered = Execution::reconstitute(
+    expect(fn () => Execution::reconstitute(
         id: $execution->id(),
         blueprintId: $blueprintId,
         revisionId: $revisionId,
@@ -1198,13 +1198,10 @@ it('rejects adding an error to a persisted completed execution', function () {
         status: ExecutionStatus::COMPLETED,
         output: ['result' => 'original'],
         error: 'Unexpected error.',
+    ))->toThrow(
+        \\DomainException::class,
+        'A completed execution must have output and no error.',
     );
-
-    expect(fn () => $repository->save($tampered))
-        ->toThrow(
-            ConcurrentExecutionException::class,
-            'The Execution was modified concurrently; reload it before saving.',
-        );
 
     $persisted = $repository->find($execution->id());
 
