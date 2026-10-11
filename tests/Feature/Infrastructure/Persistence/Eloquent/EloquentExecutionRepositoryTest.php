@@ -924,14 +924,14 @@ it('rejects changing an execution owner after persistence', function () {
         ownerId: $otherOwnerId,
         input: [],
         context: [],
-        status: \\App\\Domain\\Execution\\Enums\\ExecutionStatus::PENDING,
+        status: \App\Domain\\Execution\\Enums\\ExecutionStatus::PENDING,
         output: null,
         error: null,
     );
 
     expect(fn () => $repository->save($tampered))
         ->toThrow(
-            \\App\\Domain\\Execution\\Exceptions\\ConcurrentExecutionException::class,
+            \App\Domain\\Execution\\Exceptions\\ConcurrentExecutionException::class,
             'The Execution was modified concurrently; reload it before saving.',
         );
 
