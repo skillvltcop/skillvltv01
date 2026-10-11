@@ -1336,3 +1336,66 @@ it('rejects changing an execution input after persistence', function () {
     expect($persisted->input())->toBe(['student' => ['name' => 'Original']]);
     expect($persisted->context())->toBe(['locale' => 'ar']);
 });
+
+
+it('rejects changing an execution context after persistence', function () {
+    $blueprintId = BlueprintId::generate();
+    $revisionId = RevisionId::generate();
+
+    Blueprint::query()->create([
+        'id' => (string) $blueprintId,
+        'canonical_name' => 'execution-context-immutability',
+        'namespace' => 'skillvlt.edu.test',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'draft',
+    ]);
+
+    BlueprintRevision::query()->create([
+        'id' => (string) $revisionId,
+        'blueprint_id' => (string) $blueprintId,
+        'revision_number' => '1.0.0',
+        'parent_revision_id' => null,
+        'behavior_digest' =>
+            'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        'contracts' => [],
+        'logic' => [],
+        'outputs' => [],
+        'policies' => [],
+        'frozen' => true,
+    ]);
+
+    $execution = Execution::create(
+        blueprintId: $blueprintId,
+        revisionId: $revisionId,
+        ownerId: $this->ownerId,
+        input: ['student' => ['name' => 'Original']],
+        context: ['locale' => 'ar'],
+    );
+
+    $repository = new EloquentExecutionRepository();
+    $repository->save($execution);
+
+    $tampered = Execution::reconstitute(
+        id: $execution->id(),
+        blueprintId: $blueprintId,
+        revisionId: $revisionId,
+        ownerId: $this->ownerId,
+        input: ['student' => ['name' => 'Original']],
+        context: ['locale' => 'fr'],
+        status: ExecutionStatus::PENDING,
+        output: null,
+        error: null,
+    );
+
+    expect(fn () => $repository->save($tampered))
+        ->toThrow(
+            ConcurrentExecutionException::class,
+            'The Execution was modified concurrently; reload it before saving.',
+        );
+
+    $persisted = $repository->find($execution->id());
+
+    expect($persisted->input())->toBe(['student' => ['name' => 'Original']]);
+    expect($persisted->context())->toBe(['locale' => 'ar']);
+});
