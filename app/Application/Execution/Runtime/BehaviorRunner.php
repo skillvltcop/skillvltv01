@@ -142,7 +142,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
                     $value = data_get($entry, $step['field'], $missing);
 
                     if ($value === $missing) {
-                        throw new \\DomainException(
+                        throw new \DomainException(
                             sprintf('Aggregate field "%s" is missing.', $step['field'])
                         );
                     }
@@ -166,7 +166,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
                     }
 
                     if (! is_int($value) && ! is_float($value)) {
-                        throw new \\DomainException(
+                        throw new \DomainException(
                             sprintf('Aggregate field "%s" must be numeric.', $step['field'])
                         );
                     }
