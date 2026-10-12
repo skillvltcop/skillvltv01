@@ -197,3 +197,28 @@ it('accepts scores equal to the maximum through the generic execution API', func
     $response->assertJsonPath('output.needs_support_count', 0);
     $response->assertJsonPath('output.success_rate', 100);
 });
+
+it('classifies a learner at the support threshold as ready through the generic execution API', function () {
+    $user = User::factory()->create();
+    [$blueprint, $revisionId] = analyzerBlueprintForGenericExecution();
+
+    $response = $this->actingAs($user)->postJson(
+        "/api/blueprints/{$blueprint->id()}/execute",
+        [
+            'revision_id' => $revisionId,
+            'input' => [
+                'learners' => [
+                    ['name' => 'Threshold Learner', 'score' => 12, 'max_score' => 20],
+                ],
+            ],
+            'context' => [],
+        ],
+    );
+
+    $response->assertSuccessful();
+    $response->assertJsonPath('status', 'completed');
+    $response->assertJsonPath('output.learners.0.percentage', 60);
+    $response->assertJsonPath('output.learners.0.positioning', 'ready');
+    $response->assertJsonPath('output.ready_count', 1);
+    $response->assertJsonPath('output.needs_support_count', 0);
+});
