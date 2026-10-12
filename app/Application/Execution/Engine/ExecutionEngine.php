@@ -4,18 +4,19 @@ declare(strict_types=1);
 
 namespace App\Application\Execution\Engine;
 
+use App\Application\Execution\AssessmentResultsAnalyzerInputValidator;
 use App\Application\Execution\InputContractValidator;
 use App\Application\Execution\Runtime\Contracts\BehaviorRunner;
 use App\Domain\Blueprint\Entities\Blueprint;
 use App\Domain\Blueprint\ValueObjects\RevisionId;
 use App\Domain\Execution\Entities\Execution;
-use App\Application\Execution\Engine\ExecutionEngineContract;
 
 final class ExecutionEngine implements ExecutionEngineContract
 {
     public function __construct(
         private BehaviorRunner $runner,
-        private InputContractValidator $inputContractValidator = new InputContractValidator(),\n        private AssessmentResultsAnalyzerInputValidator $assessmentResultsAnalyzerInputValidator = new AssessmentResultsAnalyzerInputValidator(),
+        private InputContractValidator $inputContractValidator = new InputContractValidator(),
+        private AssessmentResultsAnalyzerInputValidator $assessmentResultsAnalyzerInputValidator = new AssessmentResultsAnalyzerInputValidator(),
     ) {
     }
 
@@ -33,31 +34,25 @@ final class ExecutionEngine implements ExecutionEngineContract
         $revision = $blueprint->revision($revisionId);
 
         if ($revision === null) {
-            throw new \DomainException(
-                'Revision does not belong to the Blueprint.'
-            );
+            throw new \DomainException('Revision does not belong to the Blueprint.');
         }
 
         if (! $revision->isFrozen()) {
-            throw new \DomainException(
-                'Only a frozen revision can be executed.'
-            );
+            throw new \DomainException('Only a frozen revision can be executed.');
         }
 
         if (
             $blueprint->currentRevisionId() === null
             || (string) $blueprint->currentRevisionId() !== (string) $revisionId
         ) {
-            throw new \DomainException(
-                'Only the current revision can be executed.'
-            );
+            throw new \DomainException('Only the current revision can be executed.');
         }
 
         if ($blueprint->lifecycleStatus()->value !== 'active') {
-            throw new \DomainException(
-                'Only an active Blueprint can be executed.'
-            );
+            throw new \DomainException('Only an active Blueprint can be executed.');
         }
+
+        $this->assessmentResultsAnalyzerInputValidator->validate($blueprint, $input);
 
         $this->inputContractValidator->validate(
             $revision->contracts(),
