@@ -109,6 +109,26 @@ it('rejects invalid learner field values through the generic blueprint execution
             'learner' => ['name' => str_repeat('a', 121), 'score' => 1, 'max_score' => 20],
             'message' => 'Input learners.0.name must be a non-empty string of at most 120 characters.',
         ],
+        [
+            'learner' => ['score' => 1, 'max_score' => 20],
+            'message' => 'Input learners.0.name must be a non-empty string of at most 120 characters.',
+        ],
+        [
+            'learner' => ['name' => 'Learner', 'max_score' => 20],
+            'message' => 'Input learners.0.score must be a non-negative number.',
+        ],
+        [
+            'learner' => ['name' => 'Learner', 'score' => 'not-a-number', 'max_score' => 20],
+            'message' => 'Input learners.0.score must be a non-negative number.',
+        ],
+        [
+            'learner' => ['name' => 'Learner', 'score' => 1],
+            'message' => 'Input learners.0.max_score must be greater than zero.',
+        ],
+        [
+            'learner' => ['name' => 'Learner', 'score' => 1, 'max_score' => 'not-a-number'],
+            'message' => 'Input learners.0.max_score must be greater than zero.',
+        ],
     ];
 
     foreach ($invalidLearners as $case) {
