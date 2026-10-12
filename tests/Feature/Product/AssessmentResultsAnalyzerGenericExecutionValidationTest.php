@@ -222,3 +222,29 @@ it('classifies a learner at the support threshold as ready through the generic e
     $response->assertJsonPath('output.ready_count', 1);
     $response->assertJsonPath('output.needs_support_count', 0);
 });
+
+it('classifies a learner below the support threshold as needing support through the generic execution API', function () {
+    $user = User::factory()->create();
+    [$blueprint, $revisionId] = analyzerBlueprintForGenericExecution();
+
+    $response = $this->actingAs($user)->postJson(
+        "/api/blueprints/{$blueprint->id()}/execute",
+        [
+            'revision_id' => $revisionId,
+            'input' => [
+                'learners' => [
+                    ['name' => 'Support Learner', 'score' => 59, 'max_score' => 100],
+                ],
+            ],
+            'context' => [],
+        ],
+    );
+
+    $response->assertSuccessful();
+    $response->assertJsonPath('status', 'completed');
+    $response->assertJsonPath('output.learners.0.percentage', 59);
+    $response->assertJsonPath('output.learners.0.positioning', 'needs_support');
+    $response->assertJsonPath('output.ready_count', 0);
+    $response->assertJsonPath('output.needs_support_count', 1);
+    $response->assertJsonPath('output.success_rate', 0);
+});
