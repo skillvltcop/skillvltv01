@@ -248,3 +248,33 @@ it('classifies a learner below the support threshold as needing support through 
     $response->assertJsonPath('output.needs_support_count', 1);
     $response->assertJsonPath('output.success_rate', 0);
 });
+
+it('summarizes a mixed cohort of ready and support learners through the generic execution API', function () {
+    $user = User::factory()->create();
+    [$blueprint, $revisionId] = analyzerBlueprintForGenericExecution();
+
+    $response = $this->actingAs($user)->postJson(
+        "/api/blueprints/{$blueprint->id()}/execute",
+        [
+            'revision_id' => $revisionId,
+            'input' => [
+                'learners' => [
+                    ['name' => 'Ready Learner', 'score' => 12, 'max_score' => 20],
+                    ['name' => 'Support Learner', 'score' => 59, 'max_score' => 100],
+                ],
+            ],
+            'context' => [],
+        ],
+    );
+
+    $response->assertSuccessful();
+    $response->assertJsonPath('status', 'completed');
+    $response->assertJsonPath('output.count', 2);
+    $response->assertJsonPath('output.learners.0.positioning', 'ready');
+    $response->assertJsonPath('output.learners.1.positioning', 'needs_support');
+    $response->assertJsonPath('output.average_percentage', 59.5);
+    $response->assertJsonPath('output.ready_count', 1);
+    $response->assertJsonPath('output.needs_support_count', 1);
+    $response->assertJsonPath('output.success_rate', 50);
+});
+
