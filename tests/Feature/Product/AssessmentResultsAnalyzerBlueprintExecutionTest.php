@@ -43,3 +43,57 @@ it('analyzes a complete learner group through the teacher API', function () {
     $response->assertJsonPath('result.learners.2.positioning', 'needs_support');
     $response->assertJsonPath('result.learners.3.positioning', 'ready');
 });
+
+
+it('rejects an empty learner group through the teacher API', function () {
+    $user = User::factory()->create();
+
+    (new AssessmentResultsAnalyzerBlueprintSeeder())->run();
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson('/api/teacher/tools/assessment-results-analyzer/execute', [
+            'input' => ['learners' => []],
+        ]);
+
+    $response->assertUnprocessable();
+    $response->assertJsonValidationErrors(['input.learners']);
+});
+
+it('rejects learner scores above the maximum through the teacher API', function () {
+    $user = User::factory()->create();
+
+    (new AssessmentResultsAnalyzerBlueprintSeeder())->run();
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson('/api/teacher/tools/assessment-results-analyzer/execute', [
+            'input' => [
+                'learners' => [
+                    ['name' => 'Learner', 'score' => 21, 'max_score' => 20],
+                ],
+            ],
+        ]);
+
+    $response->assertUnprocessable();
+    $response->assertJsonValidationErrors(['input.learners.0.score']);
+});
+
+it('rejects non-positive maximum scores through the teacher API', function () {
+    $user = User::factory()->create();
+
+    (new AssessmentResultsAnalyzerBlueprintSeeder())->run();
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson('/api/teacher/tools/assessment-results-analyzer/execute', [
+            'input' => [
+                'learners' => [
+                    ['name' => 'Learner', 'score' => 0, 'max_score' => 0],
+                ],
+            ],
+        ]);
+
+    $response->assertUnprocessable();
+    $response->assertJsonValidationErrors(['input.learners.0.max_score']);
+});
