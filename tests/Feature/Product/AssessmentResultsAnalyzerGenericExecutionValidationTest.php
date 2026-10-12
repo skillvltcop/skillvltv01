@@ -165,7 +165,7 @@ it('accepts zero scores and learner names at the maximum allowed length through 
 
     $response->assertSuccessful();
     $response->assertJsonPath('status', 'completed');
-    $response->assertJsonPath('result.count', 1);
-    $response->assertJsonPath('result.learners.0.name', str_repeat('a', 120));
-    $response->assertJsonPath('result.learners.0.percentage', 0);
+    $response->assertJsonPath('output.count', 1);
+    $response->assertJsonPath('output.learners.0.name', str_repeat('a', 120));
+    $response->assertJsonPath('output.learners.0.percentage', 0);
 });
