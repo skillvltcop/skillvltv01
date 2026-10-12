@@ -15,7 +15,7 @@ final class ExecutionEngine implements ExecutionEngineContract
 {
     public function __construct(
         private BehaviorRunner $runner,
-        private InputContractValidator $inputContractValidator = new InputContractValidator(),
+        private InputContractValidator $inputContractValidator = new InputContractValidator(),\n        private AssessmentResultsAnalyzerInputValidator $assessmentResultsAnalyzerInputValidator = new AssessmentResultsAnalyzerInputValidator(),
     ) {
     }
 
