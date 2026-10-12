@@ -302,3 +302,23 @@ it('validates every learner record and reports the invalid learner index through
     ]);
 });
 
+it('rejects missing or non-array learner groups through the generic blueprint execution API', function () {
+    $user = User::factory()->create();
+    [$blueprint, $revisionId] = analyzerBlueprintForGenericExecution();
+
+    foreach ([[], ['learners' => 'not-an-array']] as $input) {
+        $response = $this->actingAs($user)->postJson(
+            "/api/blueprints/{$blueprint->id()}/execute",
+            [
+                'revision_id' => $revisionId,
+                'input' => $input,
+                'context' => [],
+            ],
+        );
+
+        $response->assertUnprocessable();
+        $response->assertJson([
+            'message' => 'Input learners must be a non-empty array.',
+        ]);
+    }
+});
