@@ -169,3 +169,28 @@ it('accepts zero scores and learner names at the maximum allowed length through 
     $response->assertJsonPath('output.learners.0.name', str_repeat('a', 120));
     $response->assertJsonPath('output.learners.0.percentage', 0);
 });
+
+it('accepts scores equal to the maximum through the generic execution API', function () {
+    $user = User::factory()->create();
+    [$blueprint, $revisionId] = analyzerBlueprintForGenericExecution();
+
+    $response = $this->actingAs($user)->postJson(
+        "/api/blueprints/{$blueprint->id()}/execute",
+        [
+            'revision_id' => $revisionId,
+            'input' => [
+                'learners' => [
+                    ['name' => 'Perfect Score', 'score' => 20, 'max_score' => 20],
+                ],
+            ],
+            'context' => [],
+        ],
+    );
+
+    $response->assertSuccessful();
+    $response->assertJsonPath('status', 'completed');
+    $response->assertJsonPath('output.count', 1);
+    $response->assertJsonPath('output.learners.0.score', 20);
+    $response->assertJsonPath('output.learners.0.percentage', 100);
+    $response->assertJsonPath('output.learners.0.positioning', 'ready');
+});
