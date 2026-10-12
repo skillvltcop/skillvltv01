@@ -193,4 +193,7 @@ it('accepts scores equal to the maximum through the generic execution API', func
     $response->assertJsonPath('output.learners.0.score', 20);
     $response->assertJsonPath('output.learners.0.percentage', 100);
     $response->assertJsonPath('output.learners.0.positioning', 'ready');
+    $response->assertJsonPath('output.ready_count', 1);
+    $response->assertJsonPath('output.needs_support_count', 0);
+    $response->assertJsonPath('output.success_rate', 100);
 });
