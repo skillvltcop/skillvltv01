@@ -86,3 +86,42 @@ it('rejects malformed learner records through the generic blueprint execution AP
         'message' => 'Input learners.0 must be an object.',
     ]);
 });
+
+
+it('rejects invalid learner field values through the generic blueprint execution API', function () {
+    $user = User::factory()->create();
+    [$blueprint, $revisionId] = analyzerBlueprintForGenericExecution();
+
+    $invalidLearners = [
+        [
+            'learner' => ['name' => 'Learner', 'score' => -1, 'max_score' => 20],
+            'message' => 'Input learners.0.score must be a non-negative number.',
+        ],
+        [
+            'learner' => ['name' => 'Learner', 'score' => 0, 'max_score' => 0],
+            'message' => 'Input learners.0.max_score must be greater than zero.',
+        ],
+        [
+            'learner' => ['name' => '   ', 'score' => 1, 'max_score' => 20],
+            'message' => 'Input learners.0.name must be a non-empty string of at most 120 characters.',
+        ],
+        [
+            'learner' => ['name' => str_repeat('a', 121), 'score' => 1, 'max_score' => 20],
+            'message' => 'Input learners.0.name must be a non-empty string of at most 120 characters.',
+        ],
+    ];
+
+    foreach ($invalidLearners as $case) {
+        $response = $this->actingAs($user)->postJson(
+            "/api/blueprints/{$blueprint->id()}/execute",
+            [
+                'revision_id' => $revisionId,
+                'input' => ['learners' => [$case['learner']]],
+                'context' => [],
+            ],
+        );
+
+        $response->assertUnprocessable();
+        $response->assertJson(['message' => $case['message']]);
+    }
+});
