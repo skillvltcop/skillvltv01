@@ -278,3 +278,27 @@ it('summarizes a mixed cohort of ready and support learners through the generic 
     $response->assertJsonPath('output.success_rate', 50);
 });
 
+it('validates every learner record and reports the invalid learner index through the generic execution API', function () {
+    $user = User::factory()->create();
+    [$blueprint, $revisionId] = analyzerBlueprintForGenericExecution();
+
+    $response = $this->actingAs($user)->postJson(
+        "/api/blueprints/{$blueprint->id()}/execute",
+        [
+            'revision_id' => $revisionId,
+            'input' => [
+                'learners' => [
+                    ['name' => 'Valid Learner', 'score' => 15, 'max_score' => 20],
+                    ['name' => 'Invalid Learner', 'score' => 21, 'max_score' => 20],
+                ],
+            ],
+            'context' => [],
+        ],
+    );
+
+    $response->assertUnprocessable();
+    $response->assertJson([
+        'message' => 'Input learners.1.score may not exceed max_score.',
+    ]);
+});
+
