@@ -65,3 +65,24 @@ it('rejects empty analyzer learner groups through the generic blueprint executio
         'message' => 'Input learners must be a non-empty array.',
     ]);
 });
+
+it('rejects malformed learner records through the generic blueprint execution API', function () {
+    $user = User::factory()->create();
+    [$blueprint, $revisionId] = analyzerBlueprintForGenericExecution();
+
+    $response = $this->actingAs($user)->postJson(
+        "/api/blueprints/{$blueprint->id()}/execute",
+        [
+            'revision_id' => $revisionId,
+            'input' => [
+                'learners' => ['not-a-learner-record'],
+            ],
+            'context' => [],
+        ],
+    );
+
+    $response->assertUnprocessable();
+    $response->assertJson([
+        'message' => 'Input learners.0 must be an object.',
+    ]);
+});
