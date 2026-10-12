@@ -145,3 +145,27 @@ it('rejects invalid learner field values through the generic blueprint execution
         $response->assertJson(['message' => $case['message']]);
     }
 });
+
+it('accepts zero scores and learner names at the maximum allowed length through the generic execution API', function () {
+    $user = User::factory()->create();
+    [$blueprint, $revisionId] = analyzerBlueprintForGenericExecution();
+
+    $response = $this->actingAs($user)->postJson(
+        "/api/blueprints/{$blueprint->id()}/execute",
+        [
+            'revision_id' => $revisionId,
+            'input' => [
+                'learners' => [
+                    ['name' => str_repeat('a', 120), 'score' => 0, 'max_score' => 20],
+                ],
+            ],
+            'context' => [],
+        ],
+    );
+
+    $response->assertSuccessful();
+    $response->assertJsonPath('status', 'completed');
+    $response->assertJsonPath('result.count', 1);
+    $response->assertJsonPath('result.learners.0.name', str_repeat('a', 120));
+    $response->assertJsonPath('result.learners.0.percentage', 0);
+});
