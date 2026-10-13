@@ -157,3 +157,14 @@ it('normalizes numeric-string operands before arithmetic', function () {
 
     expect((float) $result['result'])->toBe(0.75);
 });
+
+it('normalizes a numeric-string operand when paired with a numeric literal', function () {
+    $runner = calculateStepRunner();
+
+    $result = $runner->run(
+        logic: calculateBehavior('multiply', 'input.score', 100),
+        input: ['score' => '0.75'],
+    );
+
+    expect((float) $result['result'])->toBe(75.0);
+});
