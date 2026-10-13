@@ -705,3 +705,37 @@ it('counts matching entries in an aggregate source', function () {
         ],
     ))->toBe(['count' => 2]);
 });
+
+it('counts matching entries with a greater-than comparison', function () {
+    $runner = createBehaviorRunner();
+
+    expect($runner->run(
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'aggregate',
+                    'source' => 'input.learners',
+                    'operation' => 'count_matching',
+                    'field' => 'score',
+                    'operator' => 'gt',
+                    'value' => 10,
+                    'assign_to' => 'high_score_count',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => ['count' => '{state.high_score_count}'],
+                ],
+            ],
+        ],
+        input: [
+            'learners' => [
+                ['score' => 7],
+                ['score' => 12],
+                ['score' => 15],
+                ['score' => 10],
+            ],
+        ],
+    ))->toBe(['count' => 2]);
+});
