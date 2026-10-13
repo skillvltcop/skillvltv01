@@ -181,3 +181,14 @@ it('rejects non-numeric string operands at contract validation', function ($oper
     'empty string' => '',
     'whitespace' => ' ',
 ]);
+
+it('normalizes scientific-notation numeric strings before arithmetic', function () {
+    $runner = calculateStepRunner();
+
+    $result = $runner->run(
+        logic: calculateBehavior('multiply', 'input.score', 100),
+        input: ['score' => '7.5e-1'],
+    );
+
+    expect((float) $result['result'])->toBe(75.0);
+});
