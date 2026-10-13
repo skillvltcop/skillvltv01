@@ -110,3 +110,58 @@ it('rejects a zero numeric-string denominator in mapped calculations', function 
         input: ['learners' => [['score' => '1.0', 'max_score' => '0.0']]],
     ))->toThrow(DomainException::class, 'Division by zero is not allowed.');
 });
+
+
+it('isolates state between mapped collection items', function () {
+    $runner = new BehaviorRunner(
+        new ValueResolver(),
+        new BehaviorContractValidator(),
+    );
+
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'calculate',
+                        'operation' => 'multiply',
+                        'left' => 'item.score',
+                        'right' => 1,
+                        'assign_to' => 'score',
+                    ],
+                    [
+                        'type' => 'return',
+                        'data' => [
+                            'name' => '{item.name}',
+                            'score' => '{state.score}',
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    expect($runner->run(
+        logic: $logic,
+        input: [
+            'learners' => [
+                ['name' => 'first', 'score' => 12],
+                ['name' => 'second', 'score' => 3],
+            ],
+        ],
+    ))->toBe([
+        'results' => [
+            ['name' => 'first', 'score' => 12],
+            ['name' => 'second', 'score' => 3],
+        ],
+    ]);
+});
