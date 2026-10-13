@@ -269,3 +269,14 @@ it('normalizes zero integer numeric strings before arithmetic', function () {
 
     expect((float) $result['result'])->toBe(0.0);
 });
+
+it('normalizes leading-zero numeric strings before arithmetic', function () {
+    $runner = calculateStepRunner();
+
+    $result = $runner->run(
+        logic: calculateBehavior('multiply', 'input.score', 10),
+        input: ['score' => '007'],
+    );
+
+    expect((float) $result['result'])->toBe(70.0);
+});
