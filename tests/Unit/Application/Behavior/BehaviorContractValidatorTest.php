@@ -219,6 +219,19 @@ test('it rejects unsupported evaluate_rule operator', function () {
         ->toThrow(InvalidBehaviorContractException::class);
 });
 
+test('it accepts numeric strings for strict equality and inequality operators', function ($operator) {
+    $contract = validBehaviorContract();
+
+    $contract['steps'][0]['condition']['operator'] = $operator;
+    $contract['steps'][0]['condition']['value'] = '10';
+
+    expect(fn () => $this->validator->validate($contract))
+        ->not->toThrow(InvalidBehaviorContractException::class);
+})->with([
+    'eq',
+    'neq',
+]);
+
 test('it rejects non-numeric comparison values for numeric operators', function ($operator) {
     $contract = validBehaviorContract();
 
