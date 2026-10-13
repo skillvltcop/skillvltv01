@@ -324,3 +324,14 @@ it('normalizes leading-zero scientific-notation decimals before arithmetic', fun
 
     expect((float) $result['result'])->toBe(75.0);
 });
+
+it('normalizes leading-zero negative decimals before arithmetic', function () {
+    $runner = calculateStepRunner();
+
+    $result = $runner->run(
+        logic: calculateBehavior('multiply', 'input.score', 100),
+        input: ['score' => '-00.75'],
+    );
+
+    expect((float) $result['result'])->toBe(-75.0);
+});
