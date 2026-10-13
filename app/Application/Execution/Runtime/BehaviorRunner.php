@@ -270,6 +270,15 @@ final class BehaviorRunner implements BehaviorRunnerContract
             $item,
         );
 
+        // Input validation accepts numeric strings, so normalize them before arithmetic.
+        if (is_string($left) && is_numeric($left)) {
+            $left = (float) $left;
+        }
+
+        if (is_string($right) && is_numeric($right)) {
+            $right = (float) $right;
+        }
+
         if (
             (! is_int($left) && ! is_float($left))
             || (! is_int($right) && ! is_float($right))
