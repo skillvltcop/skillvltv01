@@ -146,3 +146,14 @@ it('rejects invalid calculate operands before runtime execution', function () {
         input: ['left' => 10],
     ))->toThrow(InvalidBehaviorContractException::class);
 });
+
+it('normalizes numeric-string operands before arithmetic', function () {
+    $runner = calculateStepRunner();
+
+    $result = $runner->run(
+        logic: calculateBehavior('divide', 'input.score', 'input.max_score'),
+        input: ['score' => '7.5', 'max_score' => '10'],
+    );
+
+    expect((float) $result['result'])->toBe(0.75);
+});
