@@ -875,3 +875,37 @@ it('counts matching entries with a strict inequality comparison', function () {
         ],
     ))->toBe(['count' => 3]);
 });
+
+it('counts matching entries with an equality comparison', function () {
+    $runner = createBehaviorRunner();
+
+    expect($runner->run(
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'aggregate',
+                    'source' => 'input.learners',
+                    'operation' => 'count_matching',
+                    'field' => 'score',
+                    'operator' => 'eq',
+                    'value' => 10,
+                    'assign_to' => 'matching_score_count',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => ['count' => '{state.matching_score_count}'],
+                ],
+            ],
+        ],
+        input: [
+            'learners' => [
+                ['score' => 7],
+                ['score' => 10],
+                ['score' => 12],
+                ['score' => 10],
+            ],
+        ],
+    ))->toBe(['count' => 2]);
+});
