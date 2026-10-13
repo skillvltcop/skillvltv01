@@ -562,3 +562,35 @@ it('rejects averaging an empty collection', function () {
         input: ['items' => []],
     ))->toThrow(DomainException::class, 'Cannot average an empty collection.');
 });
+
+
+it('sums a numeric field across an aggregate source', function () {
+    $runner = createBehaviorRunner();
+
+    expect($runner->run(
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'aggregate',
+                    'source' => 'input.learners',
+                    'operation' => 'sum',
+                    'field' => 'score',
+                    'assign_to' => 'total_score',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => ['total' => '{state.total_score}'],
+                ],
+            ],
+        ],
+        input: [
+            'learners' => [
+                ['score' => 12],
+                ['score' => 3],
+                ['score' => 5],
+            ],
+        ],
+    ))->toBe(['total' => 20]);
+});
