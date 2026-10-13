@@ -270,3 +270,50 @@ it('returns an empty list when mapping an empty source', function () {
         input: ['learners' => []],
     ))->toBe(['results' => []]);
 });
+
+
+it('preserves source order when mapping collection items', function () {
+    $runner = new BehaviorRunner(
+        new ValueResolver(),
+        new BehaviorContractValidator(),
+    );
+
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'return',
+                        'data' => ['name' => '{item.name}'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    expect($runner->run(
+        logic: $logic,
+        input: [
+            'learners' => [
+                ['name' => 'third'],
+                ['name' => 'first'],
+                ['name' => 'second'],
+            ],
+        ],
+    ))->toBe([
+        'results' => [
+            ['name' => 'third'],
+            ['name' => 'first'],
+            ['name' => 'second'],
+        ],
+    ]);
+});
