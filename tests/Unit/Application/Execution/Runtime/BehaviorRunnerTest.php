@@ -807,3 +807,37 @@ it('counts matching entries with a greater-than-or-equal comparison', function (
         ],
     ))->toBe(['count' => 2]);
 });
+
+it('counts matching entries with a less-than comparison', function () {
+    $runner = createBehaviorRunner();
+
+    expect($runner->run(
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'aggregate',
+                    'source' => 'input.learners',
+                    'operation' => 'count_matching',
+                    'field' => 'score',
+                    'operator' => 'lt',
+                    'value' => 10,
+                    'assign_to' => 'low_score_count',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => ['count' => '{state.low_score_count}'],
+                ],
+            ],
+        ],
+        input: [
+            'learners' => [
+                ['score' => 7],
+                ['score' => 12],
+                ['score' => 10],
+                ['score' => 4],
+            ],
+        ],
+    ))->toBe(['count' => 2]);
+});
