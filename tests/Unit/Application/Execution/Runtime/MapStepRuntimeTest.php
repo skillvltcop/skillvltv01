@@ -165,3 +165,38 @@ it('isolates state between mapped collection items', function () {
         ],
     ]);
 });
+
+
+it('rejects non-array items in mapped collections', function () {
+    $runner = new BehaviorRunner(
+        new ValueResolver(),
+        new BehaviorContractValidator(),
+    );
+
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'return',
+                        'data' => ['name' => '{item.name}'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    expect(fn () => $runner->run(
+        logic: $logic,
+        input: ['learners' => [['name' => 'first'], 'invalid-item']],
+    ))->toThrow(DomainException::class, 'Map items must be arrays.');
+});
