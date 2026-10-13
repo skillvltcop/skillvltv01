@@ -353,3 +353,36 @@ it('accepts decimal learner scores and calculates their percentages through the 
     $response->assertJsonPath('output.needs_support_count', 1);
     $response->assertJsonPath('output.success_rate', 50);
 });
+
+it('preserves fractional percentages and classifies learners around the support threshold', function () {
+    $user = User::factory()->create();
+    [$blueprint, $revisionId] = analyzerBlueprintForGenericExecution();
+
+    $response = $this->actingAs($user)->postJson(
+        "/api/blueprints/{$blueprint->id()}/execute",
+        [
+            'revision_id' => $revisionId,
+            'input' => [
+                'learners' => [
+                    ['name' => 'Below Threshold', 'score' => 1, 'max_score' => 3],
+                    ['name' => 'Above Threshold', 'score' => 2, 'max_score' => 3],
+                ],
+            ],
+            'context' => [],
+        ],
+    );
+
+    $response->assertSuccessful();
+    $response->assertJsonPath('status', 'completed');
+    $response->assertJsonPath('output.count', 2);
+    $output = $response->json('output');
+
+    expect(abs($output['learners'][0]['percentage'] - (100 / 3)))->toBeLessThan(0.000001)
+        ->and($output['learners'][0]['positioning'])->toBe('needs_support')
+        ->and(abs($output['learners'][1]['percentage'] - (200 / 3)))->toBeLessThan(0.000001)
+        ->and($output['learners'][1]['positioning'])->toBe('ready')
+        ->and(abs($output['average_percentage'] - 50))->toBeLessThan(0.000001)
+        ->and($output['ready_count'])->toBe(1)
+        ->and($output['needs_support_count'])->toBe(1)
+        ->and(abs($output['success_rate'] - 50))->toBeLessThan(0.000001);
+});
