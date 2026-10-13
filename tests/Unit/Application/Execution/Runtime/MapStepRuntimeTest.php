@@ -462,3 +462,52 @@ it('uses context values as operands in mapped calculations', function () {
         ],
     ]);
 });
+
+it('maps items from a context collection', function () {
+    $runner = new BehaviorRunner(
+        new ValueResolver(),
+        new BehaviorContractValidator(),
+    );
+
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'context.learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'return',
+                        'data' => [
+                            'name' => '{item.name}',
+                            'level' => '{item.level}',
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    expect($runner->run(
+        logic: $logic,
+        input: [],
+        context: [
+            'learners' => [
+                ['name' => 'first', 'level' => 5],
+                ['name' => 'second', 'level' => 6],
+            ],
+        ],
+    ))->toBe([
+        'results' => [
+            ['name' => 'first', 'level' => 5],
+            ['name' => 'second', 'level' => 6],
+        ],
+    ]);
+});
+
