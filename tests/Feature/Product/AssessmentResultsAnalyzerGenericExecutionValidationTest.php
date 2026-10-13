@@ -386,3 +386,31 @@ it('preserves fractional percentages and classifies learners around the support 
         ->and($output['needs_support_count'])->toBe(1)
         ->and(abs($output['success_rate'] - 50))->toBeLessThan(0.000001);
 });
+
+it('accepts numeric-string scores and calculates percentages through the generic execution API', function () {
+    $user = User::factory()->create();
+    [$blueprint, $revisionId] = analyzerBlueprintForGenericExecution();
+
+    $response = $this->actingAs($user)->postJson(
+        "/api/blueprints/{$blueprint->id()}/execute",
+        [
+            'revision_id' => $revisionId,
+            'input' => [
+                'learners' => [
+                    ['name' => 'Numeric Strings', 'score' => '7.5', 'max_score' => '10'],
+                ],
+            ],
+            'context' => [],
+        ],
+    );
+
+    $response->assertSuccessful();
+    $response->assertJsonPath('status', 'completed');
+    $response->assertJsonPath('output.count', 1);
+    $response->assertJsonPath('output.learners.0.percentage', 75);
+    $response->assertJsonPath('output.learners.0.positioning', 'ready');
+    $response->assertJsonPath('output.average_percentage', 75);
+    $response->assertJsonPath('output.ready_count', 1);
+    $response->assertJsonPath('output.needs_support_count', 0);
+    $response->assertJsonPath('output.success_rate', 100);
+});
