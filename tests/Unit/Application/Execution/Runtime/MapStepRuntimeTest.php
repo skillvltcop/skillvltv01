@@ -317,3 +317,50 @@ it('preserves source order when mapping collection items', function () {
         ],
     ]);
 });
+
+
+it('maps associative source arrays into an ordered result list', function () {
+    $runner = new BehaviorRunner(
+        new ValueResolver(),
+        new BehaviorContractValidator(),
+    );
+
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'return',
+                        'data' => ['name' => '{item.name}'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    expect($runner->run(
+        logic: $logic,
+        input: [
+            'learners' => [
+                'learner-c' => ['name' => 'third'],
+                'learner-a' => ['name' => 'first'],
+                'learner-b' => ['name' => 'second'],
+            ],
+        ],
+    ))->toBe([
+        'results' => [
+            ['name' => 'third'],
+            ['name' => 'first'],
+            ['name' => 'second'],
+        ],
+    ]);
+});
