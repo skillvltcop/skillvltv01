@@ -976,3 +976,20 @@ it('uses strict equality when counting matching entries', function () {
         ],
     ))->toBe(['count' => 1]);
 });
+
+it('uses strict type comparison for inequality', function () {
+    $runner = createBehaviorRunner();
+
+    $logic = executableBehavior();
+    $logic['steps'][0]['condition']['operator'] = 'neq';
+    $logic['steps'][0]['condition']['value'] = '14';
+
+    expect($runner->run(
+        logic: $logic,
+        input: [
+            'student_name' => 'Ahmed',
+            'score' => 14,
+        ],
+        context: [],
+    )['status'])->toBe('pass');
+});
