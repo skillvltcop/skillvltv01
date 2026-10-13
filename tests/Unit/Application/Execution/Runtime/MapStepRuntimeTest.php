@@ -407,3 +407,58 @@ it('resolves context values inside mapped steps', function () {
         ],
     ]);
 });
+
+it('uses context values as operands in mapped calculations', function () {
+    $runner = new BehaviorRunner(
+        new ValueResolver(),
+        new BehaviorContractValidator(),
+    );
+
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'calculate',
+                        'operation' => 'add',
+                        'left' => 'item.score',
+                        'right' => 'context.bonus',
+                        'assign_to' => 'adjusted_score',
+                    ],
+                    [
+                        'type' => 'return',
+                        'data' => [
+                            'name' => '{item.name}',
+                            'score' => '{state.adjusted_score}',
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    expect($runner->run(
+        logic: $logic,
+        input: [
+            'learners' => [
+                ['name' => 'first', 'score' => 10],
+                ['name' => 'second', 'score' => 25],
+            ],
+        ],
+        context: ['bonus' => 3],
+    ))->toBe([
+        'results' => [
+            ['name' => 'first', 'score' => 13],
+            ['name' => 'second', 'score' => 28],
+        ],
+    ]);
+});
