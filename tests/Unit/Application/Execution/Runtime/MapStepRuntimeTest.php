@@ -200,3 +200,38 @@ it('rejects non-array items in mapped collections', function () {
         input: ['learners' => [['name' => 'first'], 'invalid-item']],
     ))->toThrow(DomainException::class, 'Map items must be arrays.');
 });
+
+
+it('rejects a non-array source in map steps', function () {
+    $runner = new BehaviorRunner(
+        new ValueResolver(),
+        new BehaviorContractValidator(),
+    );
+
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'return',
+                        'data' => ['name' => '{item.name}'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    expect(fn () => $runner->run(
+        logic: $logic,
+        input: ['learners' => 'not-an-array'],
+    ))->toThrow(DomainException::class, 'Map source must be an array.');
+});
