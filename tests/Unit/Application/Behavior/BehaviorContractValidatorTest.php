@@ -535,3 +535,34 @@ test('it rejects placeholders wrapped in extra balanced braces', function () {
     expect(fn () => $this->validator->validate($contract))
         ->toThrow(InvalidBehaviorContractException::class);
 });
+
+test('it rejects malformed calculate operand types', function ($operand) {
+    $contract = validBehaviorContract();
+    $contract['steps'] = [
+        [
+            'type' => 'calculate',
+            'operation' => 'add',
+            'left' => $operand,
+            'right' => 1,
+            'assign_to' => 'result',
+        ],
+        [
+            'type' => 'return',
+            'data' => ['result' => '{state.result}'],
+        ],
+    ];
+
+    expect(fn () => $this->validator->validate($contract))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        $this->validator->validate($contract);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())->toHaveKey('steps.0.left');
+    }
+})->with([
+    'boolean operand' => true,
+    'array operand' => [['value' => 1]],
+    'null operand' => null,
+    'invalid path' => 'invalid.path',
+]);
