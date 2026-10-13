@@ -427,7 +427,7 @@ it('uses context values as operands in mapped calculations', function () {
                         'type' => 'calculate',
                         'operation' => 'add',
                         'left' => 'item.score',
-                        'right' => 'context.bonus',
+                        'right' => 'context.scoring.bonus',
                         'assign_to' => 'adjusted_score',
                     ],
                     [
@@ -454,7 +454,7 @@ it('uses context values as operands in mapped calculations', function () {
                 ['name' => 'second', 'score' => 25],
             ],
         ],
-        context: ['bonus' => 3],
+        context: ['scoring' => ['bonus' => 3]],
     ))->toBe([
         'results' => [
             ['name' => 'first', 'score' => 13],
