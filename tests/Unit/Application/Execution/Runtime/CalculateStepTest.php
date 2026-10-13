@@ -168,3 +168,16 @@ it('normalizes a numeric-string operand when paired with a numeric literal', fun
 
     expect((float) $result['result'])->toBe(75.0);
 });
+
+it('rejects non-numeric string operands at contract validation', function ($operand) {
+    $runner = calculateStepRunner();
+
+    expect(fn () => $runner->run(
+        logic: calculateBehavior('add', $operand, 1),
+        input: [],
+    ))->toThrow(InvalidBehaviorContractException::class);
+})->with([
+    'plain text' => 'not-a-number',
+    'empty string' => '',
+    'whitespace' => ' ',
+]);
