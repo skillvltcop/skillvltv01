@@ -594,3 +594,29 @@ it('sums a numeric field across an aggregate source', function () {
         ],
     ))->toBe(['total' => 20]);
 });
+
+
+it('returns zero when summing an empty aggregate source', function () {
+    $runner = createBehaviorRunner();
+
+    expect($runner->run(
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'aggregate',
+                    'source' => 'input.learners',
+                    'operation' => 'sum',
+                    'field' => 'score',
+                    'assign_to' => 'total_score',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => ['total' => '{state.total_score}'],
+                ],
+            ],
+        ],
+        input: ['learners' => []],
+    ))->toBe(['total' => 0]);
+});
