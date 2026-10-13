@@ -203,3 +203,14 @@ it('normalizes scientific-notation numeric strings with positive exponents', fun
 
     expect((float) $result['result'])->toBe(750.0);
 });
+
+it('normalizes negative numeric-string operands before arithmetic', function () {
+    $runner = calculateStepRunner();
+
+    $result = $runner->run(
+        logic: calculateBehavior('multiply', 'input.score', 100),
+        input: ['score' => '-0.75'],
+    );
+
+    expect((float) $result['result'])->toBe(-75.0);
+});
