@@ -562,7 +562,7 @@ test('it rejects malformed calculate operand types', function ($operand) {
     }
 })->with([
     'boolean operand' => true,
-    'array operand' => ['value' => 1],
+    'array operand' => [['value' => 1]],
     'null operand' => null,
     'invalid path' => 'invalid.path',
 ]);
