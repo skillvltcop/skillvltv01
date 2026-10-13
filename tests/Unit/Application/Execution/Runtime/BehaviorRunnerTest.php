@@ -620,3 +620,28 @@ it('returns zero when summing an empty aggregate source', function () {
         input: ['learners' => []],
     ))->toBe(['total' => 0]);
 });
+
+
+it('returns zero when counting an empty aggregate source', function () {
+    $runner = createBehaviorRunner();
+
+    expect($runner->run(
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'aggregate',
+                    'source' => 'input.learners',
+                    'operation' => 'count',
+                    'assign_to' => 'learner_count',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => ['count' => '{state.learner_count}'],
+                ],
+            ],
+        ],
+        input: ['learners' => []],
+    ))->toBe(['count' => 0]);
+});
