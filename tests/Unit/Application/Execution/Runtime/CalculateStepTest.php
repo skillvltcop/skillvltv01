@@ -302,3 +302,14 @@ it('normalizes leading-zero decimal fractions before arithmetic', function () {
 
     expect((float) $result['result'])->toBe(7.5);
 });
+
+it('normalizes leading-zero decimals with trailing zeros before arithmetic', function () {
+    $runner = calculateStepRunner();
+
+    $result = $runner->run(
+        logic: calculateBehavior('multiply', 'input.score', 100),
+        input: ['score' => '000.7500'],
+    );
+
+    expect((float) $result['result'])->toBe(75.0);
+});
