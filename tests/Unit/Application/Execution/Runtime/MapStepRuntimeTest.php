@@ -511,3 +511,59 @@ it('maps items from a context collection', function () {
     ]);
 });
 
+
+
+it('maps a collection produced by an earlier step in state', function () {
+    $runner = new BehaviorRunner(
+        new ValueResolver(),
+        new BehaviorContractValidator(),
+    );
+
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => 'named_learners',
+                'steps' => [
+                    [
+                        'type' => 'return',
+                        'data' => ['name' => '{item.name}'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'map',
+                'source' => 'state.named_learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'return',
+                        'data' => ['name' => '{item.name}'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    expect($runner->run(
+        logic: $logic,
+        input: [
+            'learners' => [
+                ['name' => 'first'],
+                ['name' => 'second'],
+            ],
+        ],
+    ))->toBe([
+        'results' => [
+            ['name' => 'first'],
+            ['name' => 'second'],
+        ],
+    ]);
+});
