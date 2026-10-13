@@ -280,3 +280,14 @@ it('normalizes leading-zero numeric strings before arithmetic', function () {
 
     expect((float) $result['result'])->toBe(70.0);
 });
+
+it('normalizes leading-zero decimal numeric strings before arithmetic', function () {
+    $runner = calculateStepRunner();
+
+    $result = $runner->run(
+        logic: calculateBehavior('multiply', 'input.score', 100),
+        input: ['score' => '00.75'],
+    );
+
+    expect((float) $result['result'])->toBe(75.0);
+});
