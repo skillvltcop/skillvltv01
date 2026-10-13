@@ -68,3 +68,45 @@ it('maps nested steps over each collection item', function () {
         ],
     ]);
 });
+
+
+it('rejects a zero numeric-string denominator in mapped calculations', function () {
+    $runner = new BehaviorRunner(
+        new ValueResolver(),
+        new BehaviorContractValidator(),
+    );
+
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'calculate',
+                        'operation' => 'divide',
+                        'left' => 'item.score',
+                        'right' => 'item.max_score',
+                        'assign_to' => 'percentage',
+                    ],
+                    [
+                        'type' => 'return',
+                        'data' => ['percentage' => '{state.percentage}'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    expect(fn () => $runner->run(
+        logic: $logic,
+        input: ['learners' => [['score' => '1.0', 'max_score' => '0.0']]],
+    ))->toThrow(DomainException::class, 'Division by zero is not allowed.');
+});
