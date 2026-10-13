@@ -291,3 +291,14 @@ it('normalizes leading-zero decimal numeric strings before arithmetic', function
 
     expect((float) $result['result'])->toBe(75.0);
 });
+
+it('normalizes leading-zero decimal fractions before arithmetic', function () {
+    $runner = calculateStepRunner();
+
+    $result = $runner->run(
+        logic: calculateBehavior('multiply', 'input.score', 1000),
+        input: ['score' => '000.0075'],
+    );
+
+    expect((float) $result['result'])->toBe(7.5);
+});
