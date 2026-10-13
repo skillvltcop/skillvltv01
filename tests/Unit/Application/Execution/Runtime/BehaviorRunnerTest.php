@@ -702,5 +702,6 @@ it('counts matching entries in an aggregate source', function () {
                 ['positioning' => 'needs_support'],
                 ['positioning' => 'ready'],
             ],
+        ],
     ))->toBe(['count' => 2]);
 });
