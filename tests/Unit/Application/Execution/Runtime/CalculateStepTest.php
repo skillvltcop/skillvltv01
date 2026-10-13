@@ -225,3 +225,14 @@ it('normalizes negative scientific-notation numeric strings before arithmetic', 
 
     expect((float) $result['result'])->toBe(-75.0);
 });
+
+it('normalizes negative scientific-notation strings with positive exponents', function () {
+    $runner = calculateStepRunner();
+
+    $result = $runner->run(
+        logic: calculateBehavior('multiply', 'input.score', 10),
+        input: ['score' => '-7.5E+1'],
+    );
+
+    expect((float) $result['result'])->toBe(-750.0);
+});
