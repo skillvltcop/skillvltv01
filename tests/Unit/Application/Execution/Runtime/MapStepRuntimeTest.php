@@ -364,3 +364,46 @@ it('maps associative source arrays into an ordered result list', function () {
         ],
     ]);
 });
+
+it('resolves context values inside mapped steps', function () {
+    $runner = new BehaviorRunner(
+        new ValueResolver(),
+        new BehaviorContractValidator(),
+    );
+
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'return',
+                        'data' => [
+                            'name' => '{item.name}',
+                            'locale' => '{context.locale}',
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    expect($runner->run(
+        logic: $logic,
+        input: ['learners' => [['name' => 'first'], ['name' => 'second']]],
+        context: ['locale' => 'ar'],
+    ))->toBe([
+        'results' => [
+            ['name' => 'first', 'locale' => 'ar'],
+            ['name' => 'second', 'locale' => 'ar'],
+        ],
+    ]);
+});
