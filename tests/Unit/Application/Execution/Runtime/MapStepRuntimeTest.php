@@ -160,8 +160,8 @@ it('isolates state between mapped collection items', function () {
         ],
     ))->toBe([
         'results' => [
-            ['name' => 'first', 'score' => 12.0],
-            ['name' => 'second', 'score' => 3.0],
+            ['name' => 'first', 'score' => 12],
+            ['name' => 'second', 'score' => 3],
         ],
     ]);
 });
