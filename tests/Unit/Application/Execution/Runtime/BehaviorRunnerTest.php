@@ -672,3 +672,35 @@ it('returns zero when count_matching has an empty aggregate source', function ()
         input: ['learners' => []],
     ))->toBe(['count' => 0]);
 });
+
+it('counts matching entries in an aggregate source', function () {
+    $runner = createBehaviorRunner();
+
+    expect($runner->run(
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'aggregate',
+                    'source' => 'input.learners',
+                    'operation' => 'count_matching',
+                    'field' => 'positioning',
+                    'operator' => 'eq',
+                    'value' => 'ready',
+                    'assign_to' => 'ready_count',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => ['count' => '{state.ready_count}'],
+                ],
+            ],
+        ],
+        input: [
+            'learners' => [
+                ['positioning' => 'ready'],
+                ['positioning' => 'needs_support'],
+                ['positioning' => 'ready'],
+            ],
+    ))->toBe(['count' => 2]);
+});
