@@ -56,7 +56,7 @@ it('maps nested steps over each collection item', function () {
         input: [
             'learners' => [
                 ['name' => 'أحمد', 'score' => 14, 'max_score' => 20],
-                ['name' => 'سارة', 'score' => 18, 'max_score' => 20],
+                ['name' => 'سارة', 'score' => '18.0', 'max_score' => '20.0'],
             ],
         ],
     );
