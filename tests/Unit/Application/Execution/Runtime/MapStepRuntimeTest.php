@@ -235,3 +235,38 @@ it('rejects a non-array source in map steps', function () {
         input: ['learners' => 'not-an-array'],
     ))->toThrow(DomainException::class, 'Map source must be an array.');
 });
+
+
+it('returns an empty list when mapping an empty source', function () {
+    $runner = new BehaviorRunner(
+        new ValueResolver(),
+        new BehaviorContractValidator(),
+    );
+
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'return',
+                        'data' => ['name' => '{item.name}'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    expect($runner->run(
+        logic: $logic,
+        input: ['learners' => []],
+    ))->toBe(['results' => []]);
+});
