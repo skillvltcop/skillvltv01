@@ -579,3 +579,33 @@ test('it rejects malformed calculate operand types', function ($operand) {
     'null operand' => null,
     'invalid path' => 'invalid.path',
 ]);
+
+test('it rejects an unsupported count_matching operator', function () {
+    $contract = validBehaviorContract();
+    $contract['steps'] = [
+        [
+            'type' => 'aggregate',
+            'source' => 'input.learners',
+            'operation' => 'count_matching',
+            'field' => 'score',
+            'operator' => 'contains',
+            'value' => 10,
+            'assign_to' => 'matching_count',
+        ],
+        [
+            'type' => 'return',
+            'data' => ['count' => '{state.matching_count}'],
+        ],
+    ];
+
+    expect(fn () => $this->validator->validate($contract))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        $this->validator->validate($contract);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())
+            ->toHaveKey('steps.0.operator');
+    }
+});
+
