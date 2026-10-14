@@ -320,6 +320,10 @@ it('rejects invalid source paths in map steps', function ($source) {
     'missing path segment' => 'input.',
     'empty path segment' => 'input..learners',
     'item path outside nested map context' => 'item.learners',
+    'slash in path segment' => 'input.student/score',
+    'brackets in path segment' => 'input.student[score]',
+    'punctuation in path segment' => 'context.student@score',
+    'non-ASCII path segment' => 'state.élément',
 ]);
 
 it('rejects invalid assign_to identifiers in map steps', function ($assignTo) {
