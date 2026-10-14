@@ -991,3 +991,50 @@ it('rejects map evaluate_rule steps missing true_value or false_value', function
     'missing true_value' => 'true_value',
     'missing false_value' => 'false_value',
 ]);
+
+
+it('rejects invalid operand types in nested map calculate steps', function ($operand, $value) {
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'calculate',
+                        'operation' => 'add',
+                        'left' => 'item.score',
+                        'right' => 10,
+                        'assign_to' => 'total',
+                    ],
+                    [
+                        'type' => 'return',
+                        'data' => ['total' => '{state.total}'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    $logic['steps'][0]['steps'][0][$operand] = $value;
+
+    expect(fn () => (new BehaviorContractValidator())->validate($logic))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        (new BehaviorContractValidator())->validate($logic);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())
+            ->toHaveKey("steps.0.steps.0.{$operand}");
+    }
+})->with([
+    'boolean left operand' => ['left', true],
+    'array right operand' => ['right', ['item.score']],
+]);
