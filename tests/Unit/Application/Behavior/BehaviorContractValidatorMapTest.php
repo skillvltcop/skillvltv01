@@ -554,3 +554,47 @@ it('rejects malformed item placeholder paths in map return data', function ($pla
     'empty item path segment' => '{item..name}',
     'trailing item path separator' => '{item.name.}',
 ]);
+
+
+it('rejects malformed item paths in nested calculate operands', function ($operand, $pathValue, $errorKey) {
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'calculate',
+                        'operation' => 'add',
+                        'left' => $operand === 'left' ? $pathValue : 'item.score',
+                        'right' => $operand === 'right' ? $pathValue : 1,
+                        'assign_to' => 'total',
+                    ],
+                    [
+                        'type' => 'return',
+                        'data' => ['total' => '{state.total}'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    expect(fn () => (new BehaviorContractValidator())->validate($logic))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        (new BehaviorContractValidator())->validate($logic);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())->toHaveKey($errorKey);
+    }
+})->with([
+    'empty segment in left operand' => ['left', 'item..score', 'steps.0.steps.0.left'],
+    'missing segment in right operand' => ['right', 'item.', 'steps.0.steps.0.right'],
+]);
