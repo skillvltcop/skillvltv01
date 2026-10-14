@@ -440,6 +440,24 @@ it('uses strict type comparison for equality', function () {
     )['status'])->toBe('fail');
 });
 
+it('treats an integer and numeric string as unequal in a neq condition', function () {
+    $runner = createBehaviorRunner();
+
+    $logic = executableBehavior();
+
+    $logic['steps'][0]['condition']['operator'] = 'neq';
+    $logic['steps'][0]['condition']['value'] = '14';
+
+    expect($runner->run(
+        logic: $logic,
+        input: [
+            'student_name' => 'Ahmed',
+            'score' => 14,
+        ],
+        context: [],
+    )['status'])->toBe('pass');
+});
+
 it('maps learner results and aggregates assessment group statistics', function () {
     $runner = createBehaviorRunner();
 
