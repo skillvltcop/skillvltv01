@@ -694,3 +694,54 @@ it('rejects non-array conditions in nested map rule steps', function ($condition
     'string condition' => 'item.score',
     'integer condition' => 42,
 ]);
+
+
+it('rejects invalid field values in nested map rule conditions', function ($field) {
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'evaluate_rule',
+                        'condition' => [
+                            'field' => $field,
+                            'operator' => 'gte',
+                            'value' => 10,
+                        ],
+                        'assign_to' => 'passed',
+                        'true_value' => true,
+                        'false_value' => false,
+                    ],
+                    [
+                        'type' => 'return',
+                        'data' => ['passed' => '{state.passed}'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    expect(fn () => (new BehaviorContractValidator())->validate($logic))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        (new BehaviorContractValidator())->validate($logic);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())
+            ->toHaveKey('steps.0.steps.0.condition.field');
+    }
+})->with([
+    'missing field' => [null],
+    'integer field' => [42],
+    'array field' => [['item', 'score']],
+    'unknown root' => ['learner.score'],
+]);
