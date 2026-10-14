@@ -745,3 +745,53 @@ it('rejects invalid field values in nested map rule conditions', function ($fiel
     'array field' => [['item', 'score']],
     'unknown root' => ['learner.score'],
 ]);
+
+
+it('rejects invalid operators in nested map rule conditions', function ($operator) {
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'evaluate_rule',
+                        'condition' => [
+                            'field' => 'item.score',
+                            'operator' => $operator,
+                            'value' => 10,
+                        ],
+                        'assign_to' => 'passed',
+                        'true_value' => true,
+                        'false_value' => false,
+                    ],
+                    [
+                        'type' => 'return',
+                        'data' => ['passed' => '{state.passed}'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    expect(fn () => (new BehaviorContractValidator())->validate($logic))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        (new BehaviorContractValidator())->validate($logic);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())
+            ->toHaveKey('steps.0.steps.0.condition.operator');
+    }
+})->with([
+    'missing operator' => [null],
+    'integer operator' => [42],
+    'unsupported operator' => ['contains'],
+]);
