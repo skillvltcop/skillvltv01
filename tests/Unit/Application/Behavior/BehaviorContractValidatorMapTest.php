@@ -475,3 +475,43 @@ it('rejects missing, empty, and non-array nested steps in map contracts', functi
     'string nested steps' => ['not-an-array', true],
     'empty nested steps' => [[], true],
 ]);
+
+it('rejects map steps missing required source or assign_to fields', function ($missingField, $errorKey) {
+    $map = [
+        'type' => 'map',
+        'source' => 'input.learners',
+        'assign_to' => 'results',
+        'steps' => [
+            [
+                'type' => 'return',
+                'data' => ['name' => '{item.name}'],
+            ],
+        ],
+    ];
+
+    unset($map[$missingField]);
+
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            $map,
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    expect(fn () => (new BehaviorContractValidator())->validate($logic))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        (new BehaviorContractValidator())->validate($logic);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())->toHaveKey($errorKey);
+    }
+})->with([
+    'missing source' => ['source', 'steps.0.source'],
+    'missing assign_to' => ['assign_to', 'steps.0.assign_to'],
+]);
