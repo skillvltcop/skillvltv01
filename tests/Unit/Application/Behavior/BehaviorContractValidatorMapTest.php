@@ -849,6 +849,51 @@ it('rejects invalid comparison values in nested map rule conditions', function (
     'non-numeric value for numeric operator' => ['ten', true],
 ]);
 
+it('rejects invalid operations in nested map calculate steps', function ($operation) {
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'calculate',
+                        'operation' => $operation,
+                        'left' => 'item.score',
+                        'right' => 10,
+                        'assign_to' => 'total',
+                    ],
+                    [
+                        'type' => 'return',
+                        'data' => ['total' => '{state.total}'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    expect(fn () => (new BehaviorContractValidator())->validate($logic))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        (new BehaviorContractValidator())->validate($logic);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())
+            ->toHaveKey('steps.0.steps.0.operation');
+    }
+})->with([
+    'missing operation' => [null],
+    'non-string operation' => [42],
+    'unsupported operation' => ['modulo'],
+]);
+
 it('rejects nested map calculate steps missing an operand', function ($missingOperand) {
     $logic = [
         'type' => 'steps',
