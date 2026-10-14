@@ -415,6 +415,16 @@ final class BehaviorContractValidator
                 $errors["{$prefix}.operator"] =
                     'count_matching operator must be eq, neq, gt, gte, lt, or lte.';
             }
+
+            if (
+                in_array($step['operator'] ?? null, ['gt', 'gte', 'lt', 'lte'], true)
+                && array_key_exists('value', $step)
+                && ! is_int($step['value'])
+                && ! is_float($step['value'])
+            ) {
+                $errors["{$prefix}.value"] =
+                    'Numeric count_matching operators require a numeric comparison value.';
+            }
         }
 
         $assignTo = $step['assign_to'] ?? null;
