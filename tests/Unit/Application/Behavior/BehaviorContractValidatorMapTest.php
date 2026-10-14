@@ -360,3 +360,42 @@ it('rejects invalid assign_to identifiers in map steps', function ($assignTo) {
     'identifier starting with a digit' => '1results',
     'identifier containing a hyphen' => 'map-results',
 ]);
+
+
+it('rejects non-string source values in map steps', function ($source) {
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => $source,
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'return',
+                        'data' => ['name' => '{item.name}'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    expect(fn () => (new BehaviorContractValidator())->validate($logic))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        (new BehaviorContractValidator())->validate($logic);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())
+            ->toHaveKey('steps.0.source');
+    }
+})->with([
+    'null source' => null,
+    'integer source' => 42,
+    'array source' => ['input', 'learners'],
+]);
