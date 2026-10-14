@@ -242,3 +242,42 @@ it('rejects a map without a nested return step', function () {
     }
 });
 
+it('rejects unsupported step types inside a map', function () {
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'format_template',
+                        'template' => '{item.name}',
+                        'assign_to' => 'name',
+                    ],
+                    [
+                        'type' => 'return',
+                        'data' => ['name' => '{state.name}'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    expect(fn () => (new BehaviorContractValidator())->validate($logic))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        (new BehaviorContractValidator())->validate($logic);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())
+            ->toHaveKey('steps.0.steps.0.type');
+    }
+});
+
