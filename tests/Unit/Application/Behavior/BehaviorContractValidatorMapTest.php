@@ -1272,3 +1272,50 @@ it('rejects incorrectly cased path roots in nested map calculate operands', func
     'uppercase root in left operand' => ['left', 'Input.score'],
     'uppercase root in right operand' => ['right', 'ITEM.score'],
 ]);
+
+
+it('rejects empty segments in nested map calculate paths', function ($operand, $value) {
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'calculate',
+                        'operation' => 'add',
+                        'left' => 'item.score',
+                        'right' => 1,
+                        'assign_to' => 'total',
+                    ],
+                    [
+                        'type' => 'return',
+                        'data' => ['total' => '{state.total}'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    $logic['steps'][0]['steps'][0][$operand] = $value;
+
+    expect(fn () => (new BehaviorContractValidator())->validate($logic))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        (new BehaviorContractValidator())->validate($logic);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())
+            ->toHaveKey("steps.0.steps.0.{$operand}");
+    }
+})->with([
+    'empty middle segment in left operand' => ['left', 'item..score'],
+    'trailing empty segment in right operand' => ['right', 'input.'],
+]);
