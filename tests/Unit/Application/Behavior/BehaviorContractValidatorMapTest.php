@@ -73,6 +73,10 @@ it('accepts valid source paths in map steps', function ($source) {
     'state root' => 'state.filtered_learners',
     'numeric path segment' => 'input.2026.learners',
     'underscores and digits in nested segments' => 'context.group_2.students_2026',
+    'leading underscore segment' => 'input._learners',
+    'uppercase and mixed-case segments' => 'context.StudentRecords.activeGroups',
+    'deeply nested source path' => 'state.school.year_2026.groups.group_2.learners',
+    'uppercase letters and digits' => 'input.ABC123',
 ]);
 
 
