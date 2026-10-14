@@ -515,3 +515,42 @@ it('rejects map steps missing required source or assign_to fields', function ($m
     'missing source' => ['source', 'steps.0.source'],
     'missing assign_to' => ['assign_to', 'steps.0.assign_to'],
 ]);
+
+
+it('rejects malformed item placeholder paths in map return data', function ($placeholder) {
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'return',
+                        'data' => ['name' => $placeholder],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    expect(fn () => (new BehaviorContractValidator())->validate($logic))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        (new BehaviorContractValidator())->validate($logic);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())
+            ->toHaveKey('steps.0.steps.0.data.name.placeholder');
+    }
+})->with([
+    'missing item path segment' => '{item.}',
+    'empty item path segment' => '{item..name}',
+    'trailing item path separator' => '{item.name.}',
+]);
