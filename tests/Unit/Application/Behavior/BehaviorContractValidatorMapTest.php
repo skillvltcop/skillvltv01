@@ -848,3 +848,55 @@ it('rejects invalid comparison values in nested map rule conditions', function (
     'missing comparison value' => [null, false],
     'non-numeric value for numeric operator' => ['ten', true],
 ]);
+
+it('rejects map evaluate_rule steps missing true_value or false_value', function ($missingField) {
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'evaluate_rule',
+                        'condition' => [
+                            'field' => 'item.score',
+                            'operator' => 'gte',
+                            'value' => 10,
+                        ],
+                        'assign_to' => 'passed',
+                        'true_value' => true,
+                        'false_value' => false,
+                    ],
+                    [
+                        'type' => 'return',
+                        'data' => [
+                            'passed' => '{state.passed}',
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    unset($logic['steps'][0]['steps'][0][$missingField]);
+
+    expect(fn () => (new BehaviorContractValidator())->validate($logic))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        (new BehaviorContractValidator())->validate($logic);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())
+            ->toHaveKey("steps.0.steps.0.{$missingField}");
+    }
+})->with([
+    'missing true_value' => 'true_value',
+    'missing false_value' => 'false_value',
+]);
