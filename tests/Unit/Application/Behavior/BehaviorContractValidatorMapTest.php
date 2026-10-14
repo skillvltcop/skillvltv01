@@ -1177,6 +1177,10 @@ it('accepts allowed path roots in nested map calculate operands', function ($ope
     'context path in right operand' => ['right', 'context.multiplier'],
     'state path in right operand' => ['right', 'state.multiplier'],
     'item path in right operand' => ['right', 'item.multiplier'],
+    'underscore in first segment' => ['left', 'input._bonus'],
+    'digits in path segment' => ['right', 'item.score2'],
+    'leading digit in path segment' => ['left', 'context.2nd_score'],
+    'underscores and digits in nested segments' => ['right', 'state.score_2026.total_2'],
 ]);
 
 
