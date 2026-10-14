@@ -281,3 +281,43 @@ it('rejects unsupported step types inside a map', function () {
     }
 });
 
+
+
+it('rejects invalid source paths in map steps', function ($source) {
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => $source,
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'return',
+                        'data' => ['name' => '{item.name}'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    expect(fn () => (new BehaviorContractValidator())->validate($logic))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        (new BehaviorContractValidator())->validate($logic);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())
+            ->toHaveKey('steps.0.source');
+    }
+})->with([
+    'unknown root' => 'users.learners',
+    'missing path segment' => 'input.',
+    'empty path segment' => 'input..learners',
+    'item path outside nested map context' => 'item.learners',
+]);
