@@ -1232,6 +1232,10 @@ it('rejects invalid characters in nested map calculate path segments', function 
     'brackets in right path segment' => ['right', 'input[bonus]'],
     'colon in left path segment' => ['left', 'context.score:total'],
     'backslash in right path segment' => ['right', 'state.bonus\\amount'],
+    'at sign in left path segment' => ['left', 'item.score@total'],
+    'hash in right path segment' => ['right', 'input.bonus#amount'],
+    'comma in left path segment' => ['left', 'context.score,total'],
+    'non-ASCII character in right path segment' => ['right', 'state.élément'],
 ]);
 
 
