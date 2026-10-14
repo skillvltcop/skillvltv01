@@ -1178,3 +1178,50 @@ it('accepts allowed path roots in nested map calculate operands', function ($ope
     'state path in right operand' => ['right', 'state.multiplier'],
     'item path in right operand' => ['right', 'item.multiplier'],
 ]);
+
+
+it('rejects invalid characters in nested map calculate path segments', function ($operand, $value) {
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'calculate',
+                        'operation' => 'add',
+                        'left' => 'item.score',
+                        'right' => 1,
+                        'assign_to' => 'total',
+                    ],
+                    [
+                        'type' => 'return',
+                        'data' => ['total' => '{state.total}'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    $logic['steps'][0]['steps'][0][$operand] = $value;
+
+    expect(fn () => (new BehaviorContractValidator())->validate($logic))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        (new BehaviorContractValidator())->validate($logic);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())
+            ->toHaveKey("steps.0.steps.0.{$operand}");
+    }
+})->with([
+    'hyphen in left path segment' => ['left', 'item.score-value'],
+    'space in right path segment' => ['right', 'input.bonus amount'],
+]);
