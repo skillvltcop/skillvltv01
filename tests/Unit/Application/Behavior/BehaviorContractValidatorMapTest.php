@@ -41,3 +41,41 @@ it('accepts a valid map step contract', function () {
     expect(fn () => (new BehaviorContractValidator())->validate($logic))
         ->not->toThrow(InvalidBehaviorContractException::class);
 });
+
+it('rejects invalid placeholders in map return data', function () {
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'return',
+                        'data' => [
+                            'name' => '{other.name}',
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => [
+                    'results' => '{state.results}',
+                ],
+            ],
+        ],
+    ];
+
+    expect(fn () => (new BehaviorContractValidator())->validate($logic))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        (new BehaviorContractValidator())->validate($logic);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())
+            ->toHaveKey('steps.0.steps.0.data.name.placeholder');
+    }
+});
