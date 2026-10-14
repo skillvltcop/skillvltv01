@@ -795,3 +795,56 @@ it('rejects invalid operators in nested map rule conditions', function ($operato
     'integer operator' => [42],
     'unsupported operator' => ['contains'],
 ]);
+
+
+it('rejects invalid comparison values in nested map rule conditions', function ($value, $includeValue) {
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'evaluate_rule',
+                        'condition' => [
+                            'field' => 'item.score',
+                            'operator' => 'gte',
+                            'value' => $value,
+                        ],
+                        'assign_to' => 'passed',
+                        'true_value' => true,
+                        'false_value' => false,
+                    ],
+                    [
+                        'type' => 'return',
+                        'data' => ['passed' => '{state.passed}'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    if (! $includeValue) {
+        unset($logic['steps'][0]['steps'][0]['condition']['value']);
+    }
+
+    expect(fn () => (new BehaviorContractValidator())->validate($logic))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        (new BehaviorContractValidator())->validate($logic);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())
+            ->toHaveKey('steps.0.steps.0.condition.value');
+    }
+})->with([
+    'missing comparison value' => [null, false],
+    'non-numeric value for numeric operator' => ['ten', true],
+]);
