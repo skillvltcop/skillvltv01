@@ -1132,3 +1132,49 @@ it('rejects unknown path roots in nested map calculate operands', function ($ope
     'left operand' => 'left',
     'right operand' => 'right',
 ]);
+
+
+it('accepts allowed path roots in nested map calculate operands', function ($operand, $value) {
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'calculate',
+                        'operation' => 'add',
+                        'left' => 'item.score',
+                        'right' => 1,
+                        'assign_to' => 'total',
+                    ],
+                    [
+                        'type' => 'return',
+                        'data' => ['total' => '{state.total}'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    $logic['steps'][0]['steps'][0][$operand] = $value;
+
+    expect(fn () => (new BehaviorContractValidator())->validate($logic))
+        ->not->toThrow(InvalidBehaviorContractException::class);
+})->with([
+    'input path in left operand' => ['left', 'input.bonus'],
+    'context path in left operand' => ['left', 'context.bonus'],
+    'state path in left operand' => ['left', 'state.bonus'],
+    'item path in left operand' => ['left', 'item.bonus'],
+    'input path in right operand' => ['right', 'input.multiplier'],
+    'context path in right operand' => ['right', 'context.multiplier'],
+    'state path in right operand' => ['right', 'state.multiplier'],
+    'item path in right operand' => ['right', 'item.multiplier'],
+]);
