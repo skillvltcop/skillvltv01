@@ -440,7 +440,7 @@ it('uses strict type comparison for equality', function () {
     )['status'])->toBe('fail');
 });
 
-it('uses strict type comparison for inequality', function () {
+it('treats an integer and numeric string as unequal in a neq condition', function () {
     $runner = createBehaviorRunner();
 
     $logic = executableBehavior();
@@ -995,7 +995,7 @@ it('uses strict equality when counting matching entries', function () {
     ))->toBe(['count' => 1]);
 });
 
-it('treats an integer and numeric string as unequal in a neq condition', function () {
+it('uses strict type comparison for inequality', function () {
     $runner = createBehaviorRunner();
 
     $logic = executableBehavior();
