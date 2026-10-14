@@ -42,6 +42,40 @@ it('accepts a valid map step contract', function () {
         ->not->toThrow(InvalidBehaviorContractException::class);
 });
 
+it('accepts valid source paths in map steps', function ($source) {
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => $source,
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'return',
+                        'data' => ['name' => '{item.name}'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    expect(fn () => (new BehaviorContractValidator())->validate($logic))
+        ->not->toThrow(InvalidBehaviorContractException::class);
+})->with([
+    'input root' => 'input.learners',
+    'context root' => 'context.students',
+    'state root' => 'state.filtered_learners',
+    'numeric path segment' => 'input.2026.learners',
+    'underscores and digits in nested segments' => 'context.group_2.students_2026',
+]);
+
+
 it('rejects invalid placeholders in map return data', function () {
     $logic = [
         'type' => 'steps',
