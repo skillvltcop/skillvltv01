@@ -1224,6 +1224,10 @@ it('rejects invalid characters in nested map calculate path segments', function 
 })->with([
     'hyphen in left path segment' => ['left', 'item.score-value'],
     'space in right path segment' => ['right', 'input.bonus amount'],
+    'slash in left path segment' => ['left', 'item.score/total'],
+    'brackets in right path segment' => ['right', 'input[bonus]'],
+    'colon in left path segment' => ['left', 'context.score:total'],
+    'backslash in right path segment' => ['right', 'state.bonus\\amount'],
 ]);
 
 
