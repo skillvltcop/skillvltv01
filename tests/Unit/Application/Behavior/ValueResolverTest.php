@@ -99,3 +99,17 @@ test('it resolves array values', function () {
 
     expect($value)->toBe(['math', 'science']);
 });
+
+test('it resolves nested values from the current map item', function () {
+    expect($this->resolver->resolve(
+        'item.student.name',
+        [],
+        [],
+        [],
+        [
+            'student' => [
+                'name' => 'Sara',
+            ],
+        ],
+    ))->toBe('Sara');
+});
