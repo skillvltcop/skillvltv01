@@ -663,3 +663,16 @@ test('it rejects count_matching without a comparison value', function () {
         expect($exception->getErrors())->toHaveKey('steps.0.value');
     }
 });
+
+
+test('it rejects item paths outside map steps', function ($path) {
+    $contract = validBehaviorContract();
+
+    $contract['steps'][0]['condition']['field'] = $path;
+
+    expect(fn () => $this->validator->validate($contract))
+        ->toThrow(InvalidBehaviorContractException::class);
+})->with([
+    'item.name',
+    'item.student.score',
+]);
