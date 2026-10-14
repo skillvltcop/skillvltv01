@@ -363,6 +363,10 @@ it('rejects invalid source paths in map steps', function ($source) {
     'leading empty path segment' => '.input.learners',
     'whitespace inside a path segment' => 'input.student score',
     'trailing whitespace in a path segment' => 'context.students ',
+    'tab inside a path segment' => "input.student\tscore",
+    'newline inside a path segment' => "state.filtered\nlearners",
+    'multiple trailing empty segments' => 'input.learners..',
+    'dot-only path segment' => 'context.students...group',
 ]);
 
 it('rejects invalid assign_to identifiers in map steps', function ($assignTo) {
