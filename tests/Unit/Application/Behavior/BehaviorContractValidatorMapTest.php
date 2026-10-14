@@ -437,3 +437,41 @@ it('rejects malformed nested steps in map contracts', function ($nestedStep, $er
     'nested step is not an array' => ['not-a-step', 'steps.0.steps.0.structure'],
     'nested step type is not a string' => [['type' => 123], 'steps.0.steps.0.type'],
 ]);
+
+it('rejects missing, empty, and non-array nested steps in map contracts', function ($nestedSteps, $includeSteps) {
+    $map = [
+        'type' => 'map',
+        'source' => 'input.learners',
+        'assign_to' => 'results',
+    ];
+
+    if ($includeSteps) {
+        $map['steps'] = $nestedSteps;
+    }
+
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            $map,
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    expect(fn () => (new BehaviorContractValidator())->validate($logic))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        (new BehaviorContractValidator())->validate($logic);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())->toHaveKey('steps.0.steps');
+    }
+})->with([
+    'missing nested steps' => [null, false],
+    'null nested steps' => [null, true],
+    'string nested steps' => ['not-an-array', true],
+    'empty nested steps' => [[], true],
+]);
