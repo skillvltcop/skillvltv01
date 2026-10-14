@@ -1085,3 +1085,50 @@ it('rejects non-numeric string operands in nested map calculate steps', function
     'left operand with ordinary text' => ['left', 'not-a-number'],
     'right operand with whitespace' => ['right', '   '],
 ]);
+
+
+it('rejects unknown path roots in nested map calculate operands', function ($operand) {
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'calculate',
+                        'operation' => 'add',
+                        'left' => 'item.score',
+                        'right' => 1,
+                        'assign_to' => 'total',
+                    ],
+                    [
+                        'type' => 'return',
+                        'data' => ['total' => '{state.total}'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    $logic['steps'][0]['steps'][0][$operand] = 'learner.score';
+
+    expect(fn () => (new BehaviorContractValidator())->validate($logic))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        (new BehaviorContractValidator())->validate($logic);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())
+            ->toHaveKey("steps.0.steps.0.{$operand}");
+    }
+})->with([
+    'left operand' => 'left',
+    'right operand' => 'right',
+]);
