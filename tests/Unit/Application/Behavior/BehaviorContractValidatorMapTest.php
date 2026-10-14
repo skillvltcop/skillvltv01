@@ -358,6 +358,11 @@ it('rejects invalid source paths in map steps', function ($source) {
     'brackets in path segment' => 'input.student[score]',
     'punctuation in path segment' => 'context.student@score',
     'non-ASCII path segment' => 'state.élément',
+    'root without a path segment' => 'input',
+    'incorrectly cased root' => 'Input.learners',
+    'leading empty path segment' => '.input.learners',
+    'whitespace inside a path segment' => 'input.student score',
+    'trailing whitespace in a path segment' => 'context.students ',
 ]);
 
 it('rejects invalid assign_to identifiers in map steps', function ($assignTo) {
