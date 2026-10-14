@@ -79,3 +79,47 @@ it('rejects invalid placeholders in map return data', function () {
             ->toHaveKey('steps.0.steps.0.data.name.placeholder');
     }
 });
+
+
+it('accepts nested item paths in map rule conditions', function () {
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'evaluate_rule',
+                        'condition' => [
+                            'field' => 'item.student.score',
+                            'operator' => 'gte',
+                            'value' => 10,
+                        ],
+                        'assign_to' => 'passed',
+                        'true_value' => true,
+                        'false_value' => false,
+                    ],
+                    [
+                        'type' => 'return',
+                        'data' => [
+                            'name' => '{item.student.name}',
+                            'passed' => '{state.passed}',
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => [
+                    'results' => '{state.results}',
+                ],
+            ],
+        ],
+    ];
+
+    expect(fn () => (new BehaviorContractValidator())->validate($logic))
+        ->not->toThrow(InvalidBehaviorContractException::class);
+});
