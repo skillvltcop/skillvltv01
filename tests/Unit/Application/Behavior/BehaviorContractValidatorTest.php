@@ -776,6 +776,9 @@ test('it rejects unsupported calculate operations', function ($operation) {
     'unknown operation' => 'modulo',
     'empty operation' => '',
     'wrong case' => 'ADD',
+    'whitespace suffix' => 'add ',
+    'whitespace prefix' => ' add',
+    'embedded whitespace' => 'ad d',
 ]);
 
 test('it rejects malformed calculate operand types', function ($operand) {
