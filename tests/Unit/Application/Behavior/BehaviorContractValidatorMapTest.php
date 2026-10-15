@@ -416,6 +416,10 @@ it('rejects invalid assign_to identifiers in map steps', function ($assignTo) {
     'identifier containing a newline' => "map\nresults",
     'identifier containing punctuation' => 'map@results',
     'identifier containing non-ASCII characters' => 'résultats',
+    'null identifier' => null,
+    'integer identifier' => 123,
+    'boolean identifier' => true,
+    'array identifier' => [['results']],
 ]);
 
 
