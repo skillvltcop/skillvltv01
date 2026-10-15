@@ -691,6 +691,33 @@ test('it rejects non-string calculate operation', function () {
     }
 });
 
+test('it rejects non-string calculate operation', function () {
+    $contract = validBehaviorContract();
+    $contract['steps'] = [
+        [
+            'type' => 'calculate',
+            'operation' => true,
+            'left' => 1,
+            'right' => 2,
+            'assign_to' => 'result',
+        ],
+        [
+            'type' => 'return',
+            'data' => ['result' => '{state.result}'],
+        ],
+    ];
+
+    expect(fn () => $this->validator->validate($contract))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        $this->validator->validate($contract);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())
+            ->toHaveKey('steps.0.operation');
+    }
+});
+
 test('it rejects unsupported calculate operations', function ($operation) {
     $contract = validBehaviorContract();
     $contract['steps'] = [
