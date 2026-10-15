@@ -549,6 +549,33 @@ test('it rejects placeholders wrapped in extra balanced braces', function () {
         ->toThrow(InvalidBehaviorContractException::class);
 });
 
+test('it accepts valid calculate assign_to identifiers', function ($identifier) {
+    $contract = validBehaviorContract();
+    $contract['steps'] = [
+        [
+            'type' => 'calculate',
+            'operation' => 'add',
+            'left' => 1,
+            'right' => 2,
+            'assign_to' => $identifier,
+        ],
+        [
+            'type' => 'return',
+            'data' => ['result' => '{state.result}'],
+        ],
+    ];
+
+    expect(fn () => $this->validator->validate($contract))
+        ->not->toThrow(InvalidBehaviorContractException::class);
+})->with([
+    'single letter' => 'r',
+    'uppercase identifier' => 'Result',
+    'underscore prefix' => '_result',
+    'trailing underscore' => 'result_',
+    'digits after prefix' => 'result123',
+    'mixed case and digits' => 'Result_123',
+]);
+
 test('it rejects invalid calculate assign_to identifiers', function ($identifier) {
     $contract = validBehaviorContract();
     $contract['steps'] = [
