@@ -578,6 +578,10 @@ it('rejects missing, empty, and non-array nested steps in map contracts', functi
     'missing nested steps' => [null, false],
     'null nested steps' => [null, true],
     'string nested steps' => ['not-an-array', true],
+    'integer nested steps' => [42, true],
+    'boolean nested steps' => [false, true],
+    'float nested steps' => [42.5, true],
+    'object nested steps' => [(object) ['step' => 'return'], true],
     'empty nested steps' => [[], true],
 ]);
 
