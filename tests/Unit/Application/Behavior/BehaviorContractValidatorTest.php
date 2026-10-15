@@ -897,6 +897,41 @@ test('it rejects malformed right operand types in calculate steps', function ($o
     'invalid path' => 'invalid.path',
 ]);
 
+test('it rejects a non-string count_matching operator', function ($operator) {
+    $contract = validBehaviorContract();
+    $contract['steps'] = [
+        [
+            'type' => 'aggregate',
+            'source' => 'input.learners',
+            'operation' => 'count_matching',
+            'field' => 'score',
+            'operator' => $operator,
+            'value' => 10,
+            'assign_to' => 'matching_count',
+        ],
+        [
+            'type' => 'return',
+            'data' => ['count' => '{state.matching_count}'],
+        ],
+    ];
+
+    expect(fn () => $this->validator->validate($contract))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        $this->validator->validate($contract);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())
+            ->toHaveKey('steps.0.operator');
+    }
+})->with([
+    'null' => null,
+    'integer' => 42,
+    'boolean' => true,
+    'array' => ['gte'],
+    'object' => (object) ['operator' => 'gte'],
+]);
+
 test('it rejects an unsupported count_matching operator', function () {
     $contract = validBehaviorContract();
     $contract['steps'] = [
