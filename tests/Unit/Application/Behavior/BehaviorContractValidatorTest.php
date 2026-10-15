@@ -549,6 +549,37 @@ test('it rejects placeholders wrapped in extra balanced braces', function () {
         ->toThrow(InvalidBehaviorContractException::class);
 });
 
+test('it rejects unsupported calculate operations', function ($operation) {
+    $contract = validBehaviorContract();
+    $contract['steps'] = [
+        [
+            'type' => 'calculate',
+            'operation' => $operation,
+            'left' => 1,
+            'right' => 2,
+            'assign_to' => 'result',
+        ],
+        [
+            'type' => 'return',
+            'data' => ['result' => '{state.result}'],
+        ],
+    ];
+
+    expect(fn () => $this->validator->validate($contract))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        $this->validator->validate($contract);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())
+            ->toHaveKey('steps.0.operation');
+    }
+})->with([
+    'unknown operation' => 'modulo',
+    'empty operation' => '',
+    'wrong case' => 'ADD',
+]);
+
 test('it rejects malformed calculate operand types', function ($operand) {
     $contract = validBehaviorContract();
     $contract['steps'] = [
