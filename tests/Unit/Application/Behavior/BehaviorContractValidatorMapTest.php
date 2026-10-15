@@ -420,6 +420,8 @@ it('rejects invalid assign_to identifiers in map steps', function ($assignTo) {
     'integer identifier' => 123,
     'boolean identifier' => true,
     'array identifier' => [['results']],
+    'float identifier' => 12.5,
+    'object identifier' => (object) ['name' => 'results'],
 ]);
 
 
@@ -493,6 +495,9 @@ it('rejects non-string source values in map steps', function ($source) {
     'null source' => null,
     'integer source' => 42,
     'array source' => ['input', 'learners'],
+    'boolean source' => false,
+    'float source' => 42.5,
+    'object source' => (object) ['path' => 'input.learners'],
 ]);
 
 
