@@ -410,6 +410,12 @@ it('rejects invalid assign_to identifiers in map steps', function ($assignTo) {
     'dotted identifier' => 'results.items',
     'identifier starting with a digit' => '1results',
     'identifier containing a hyphen' => 'map-results',
+    'identifier containing whitespace' => 'map results',
+    'identifier with trailing whitespace' => 'results ',
+    'identifier containing a tab' => "map\tresults",
+    'identifier containing a newline' => "map\nresults",
+    'identifier containing punctuation' => 'map@results',
+    'identifier containing non-ASCII characters' => 'résultats',
 ]);
 
 
