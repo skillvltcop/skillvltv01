@@ -534,7 +534,12 @@ it('rejects malformed nested steps in map contracts', function ($nestedStep, $er
         expect($exception->getErrors())->toHaveKey($errorKey);
     }
 })->with([
-    'nested step is not an array' => ['not-a-step', 'steps.0.steps.0.structure'],
+    'nested step is a string' => ['not-a-step', 'steps.0.steps.0.structure'],
+    'nested step is null' => [null, 'steps.0.steps.0.structure'],
+    'nested step is an integer' => [42, 'steps.0.steps.0.structure'],
+    'nested step is a boolean' => [false, 'steps.0.steps.0.structure'],
+    'nested step is a float' => [42.5, 'steps.0.steps.0.structure'],
+    'nested step is an object' => [(object) ['type' => 'return'], 'steps.0.steps.0.structure'],
     'nested step type is not a string' => [['type' => 123], 'steps.0.steps.0.type'],
 ]);
 
