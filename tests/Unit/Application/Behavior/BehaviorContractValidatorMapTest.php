@@ -1155,6 +1155,10 @@ it('rejects invalid operand types in nested map calculate steps', function ($ope
 })->with([
     'boolean left operand' => ['left', true],
     'array right operand' => ['right', ['item.score']],
+    'null left operand' => ['left', null],
+    'object right operand' => ['right', (object) ['value' => 10]],
+    'array left operand' => ['left', ['item.score']],
+    'boolean right operand' => ['right', false],
 ]);
 
 
