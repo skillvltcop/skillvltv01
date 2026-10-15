@@ -419,7 +419,7 @@ it('rejects invalid assign_to identifiers in map steps', function ($assignTo) {
     'null identifier' => null,
     'integer identifier' => 123,
     'boolean identifier' => true,
-    'array identifier' => ['results'],
+    'array identifier' => [['results']],
 ]);
 
 
