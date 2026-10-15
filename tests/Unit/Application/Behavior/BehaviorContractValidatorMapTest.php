@@ -540,6 +540,11 @@ it('rejects malformed nested steps in map contracts', function ($nestedStep, $er
     'nested step is a boolean' => [false, 'steps.0.steps.0.structure'],
     'nested step is a float' => [42.5, 'steps.0.steps.0.structure'],
     'nested step is an object' => [(object) ['type' => 'return'], 'steps.0.steps.0.structure'],
+    'nested step type is null' => [['type' => null], 'steps.0.steps.0.type'],
+    'nested step type is boolean' => [['type' => false], 'steps.0.steps.0.type'],
+    'nested step type is float' => [['type' => 42.5], 'steps.0.steps.0.type'],
+    'nested step type is array' => [['type' => ['return']], 'steps.0.steps.0.type'],
+    'nested step type is object' => [['type' => (object) ['name' => 'return']], 'steps.0.steps.0.type'],
     'nested step type is not a string' => [['type' => 123], 'steps.0.steps.0.type'],
 ]);
 
