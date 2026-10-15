@@ -608,6 +608,36 @@ test('it rejects invalid calculate assign_to identifiers', function ($identifier
     'empty identifier' => '',
 ]);
 
+test('it rejects non-string calculate assign_to values', function ($assignTo) {
+    $contract = validBehaviorContract();
+    $contract['steps'] = [
+        [
+            'type' => 'calculate',
+            'operation' => 'add',
+            'left' => 1,
+            'right' => 2,
+            'assign_to' => $assignTo,
+        ],
+        [
+            'type' => 'return',
+            'data' => ['result' => '{state.result}'],
+        ],
+    ];
+
+    expect(fn () => $this->validator->validate($contract))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        $this->validator->validate($contract);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())
+            ->toHaveKey('steps.0.assign_to');
+    }
+})->with([
+    'integer value' => 123,
+    'boolean value' => true,
+]);
+
 test('it rejects calculate steps without assign_to', function () {
     $contract = validBehaviorContract();
     $contract['steps'] = [
