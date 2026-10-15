@@ -1005,6 +1005,10 @@ it('rejects invalid operations in nested map calculate steps', function ($operat
 })->with([
     'missing operation' => [null],
     'non-string operation' => [42],
+    'boolean operation' => [false],
+    'float operation' => [42.5],
+    'array operation' => [['add']],
+    'object operation' => [(object) ['name' => 'add']],
     'unsupported operation' => ['modulo'],
 ]);
 
