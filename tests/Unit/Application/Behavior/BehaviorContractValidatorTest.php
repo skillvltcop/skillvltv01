@@ -577,6 +577,7 @@ test('it rejects malformed calculate operand types', function ($operand) {
     'boolean operand' => true,
     'array operand' => [['value' => 1]],
     'null operand' => null,
+    'object operand' => [(object) ['value' => 1]],
     'invalid path' => 'invalid.path',
 ]);
 
