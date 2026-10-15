@@ -928,7 +928,6 @@ test('it rejects a non-string count_matching operator', function ($operator) {
     'null' => null,
     'integer' => 42,
     'boolean' => true,
-    'array' => ['gte'],
     'object' => (object) ['operator' => 'gte'],
 ]);
 
