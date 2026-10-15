@@ -781,6 +781,32 @@ test('it rejects unsupported calculate operations', function ($operation) {
     'embedded whitespace' => 'ad d',
 ]);
 
+test('it rejects calculate steps without left operand', function () {
+    $contract = validBehaviorContract();
+    $contract['steps'] = [
+        [
+            'type' => 'calculate',
+            'operation' => 'add',
+            'right' => 1,
+            'assign_to' => 'result',
+        ],
+        [
+            'type' => 'return',
+            'data' => ['result' => '{state.result}'],
+        ],
+    ];
+
+    expect(fn () => $this->validator->validate($contract))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        $this->validator->validate($contract);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())
+            ->toHaveKey('steps.0.left');
+    }
+});
+
 test('it rejects malformed calculate operand types', function ($operand) {
     $contract = validBehaviorContract();
     $contract['steps'] = [
