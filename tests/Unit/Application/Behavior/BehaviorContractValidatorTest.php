@@ -839,6 +839,32 @@ test('it rejects malformed calculate operand types', function ($operand) {
     'invalid path' => 'invalid.path',
 ]);
 
+test('it rejects calculate steps without right operand', function () {
+    $contract = validBehaviorContract();
+    $contract['steps'] = [
+        [
+            'type' => 'calculate',
+            'operation' => 'add',
+            'left' => 1,
+            'assign_to' => 'result',
+        ],
+        [
+            'type' => 'return',
+            'data' => ['result' => '{state.result}'],
+        ],
+    ];
+
+    expect(fn () => $this->validator->validate($contract))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        $this->validator->validate($contract);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())
+            ->toHaveKey('steps.0.right');
+    }
+});
+
 test('it rejects malformed right operand types in calculate steps', function ($operand) {
     $contract = validBehaviorContract();
     $contract['steps'] = [
