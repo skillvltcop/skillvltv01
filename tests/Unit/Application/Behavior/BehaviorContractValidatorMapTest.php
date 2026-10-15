@@ -413,6 +413,40 @@ it('rejects invalid assign_to identifiers in map steps', function ($assignTo) {
 ]);
 
 
+it('accepts valid assign_to identifiers in map steps', function ($assignTo) {
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => $assignTo,
+                'steps' => [
+                    [
+                        'type' => 'return',
+                        'data' => ['name' => '{item.name}'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    expect(fn () => (new BehaviorContractValidator())->validate($logic))
+        ->not->toThrow(InvalidBehaviorContractException::class);
+})->with([
+    'single-letter identifier' => 'x',
+    'leading underscore' => '_results',
+    'double underscore' => '__',
+    'trailing digits' => 'results2',
+    'underscores and digits' => 'results_2026',
+    'uppercase letters and digits' => 'ABC123',
+]);
+
 it('rejects non-string source values in map steps', function ($source) {
     $logic = [
         'type' => 'steps',
