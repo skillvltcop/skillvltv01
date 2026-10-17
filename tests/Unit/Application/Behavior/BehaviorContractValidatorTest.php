@@ -987,6 +987,34 @@ test('it rejects count_matching steps without comparison value', function () {
     }
 });
 
+test('it rejects null count_matching comparison values for numeric operators', function () {
+    $contract = validBehaviorContract();
+    $contract['steps'] = [
+        [
+            'type' => 'aggregate',
+            'source' => 'input.learners',
+            'operation' => 'count_matching',
+            'field' => 'score',
+            'operator' => 'gte',
+            'value' => null,
+            'assign_to' => 'matching_count',
+        ],
+        [
+            'type' => 'return',
+            'data' => ['count' => '{state.matching_count}'],
+        ],
+    ];
+
+    expect(fn () => $this->validator->validate($contract))
+        ->toThrow(InvalidBehaviorContractException::class);
+
+    try {
+        $this->validator->validate($contract);
+    } catch (InvalidBehaviorContractException $exception) {
+        expect($exception->getErrors())->toHaveKey('steps.0.value');
+    }
+});
+
 test('it rejects non-numeric values for numeric count_matching operators', function () {
     $contract = validBehaviorContract();
     $contract['steps'] = [
