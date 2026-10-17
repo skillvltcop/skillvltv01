@@ -1042,3 +1042,38 @@ it('rejects a calculation that overflows to a non-finite result', function () {
         context: [],
     ))->toThrow(DomainException::class, 'Calculation result must be finite.');
 });
+
+it('rejects non-finite aggregate sum results', function () {
+    $runner = createBehaviorRunner();
+
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'aggregate',
+                'operation' => 'sum',
+                'source' => 'input.values',
+                'field' => 'amount',
+                'assign_to' => 'total',
+            ],
+            [
+                'type' => 'return',
+                'data' => ['total' => '{state.total}'],
+            ],
+        ],
+    ];
+
+    expect(fn () => $runner->run(
+        logic: $logic,
+        input: [
+            'values' => [
+                ['amount' => 1.0e308],
+                ['amount' => 1.0e308],
+            ],
+        ],
+    ))->toThrow(
+        DomainException::class,
+        'Aggregate result must be finite.'
+    );
+});
