@@ -467,6 +467,13 @@ final class BehaviorContractValidator
 
             $value = $step[$operand];
 
+            if (is_float($value) && ! is_finite($value)) {
+                $errors["{$prefix}.{$operand}"] =
+                    "{$operand} must be a finite numeric value or a valid path.";
+
+                continue;
+            }
+
             if (is_string($value) && ! $this->isValidPath($value, $allowItemPaths)) {
                 $errors["{$prefix}.{$operand}"] =
                     "{$operand} must be a numeric value or a valid input., context., state., or item. path.";
