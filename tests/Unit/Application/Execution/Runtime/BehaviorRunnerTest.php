@@ -1011,3 +1011,34 @@ it('uses strict type comparison for inequality', function () {
         context: [],
     )['status'])->toBe('pass');
 });
+
+
+it('rejects a calculation that overflows to a non-finite result', function () {
+    $runner = createBehaviorRunner();
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'calculate',
+                'operation' => 'multiply',
+                'left' => 'input.left',
+                'right' => 'input.right',
+                'assign_to' => 'result',
+            ],
+            [
+                'type' => 'return',
+                'data' => ['result' => '{state.result}'],
+            ],
+        ],
+    ];
+
+    expect(fn () => $runner->run(
+        logic: $logic,
+        input: [
+            'left' => 1.0e308,
+            'right' => 1.0e308,
+        ],
+        context: [],
+    ))->toThrow(DomainException::class, 'Calculation result must be finite.');
+});
