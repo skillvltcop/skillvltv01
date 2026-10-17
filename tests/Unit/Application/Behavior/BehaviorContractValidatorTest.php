@@ -1117,3 +1117,29 @@ test('it rejects non-finite count_matching comparison values', function () {
             ->toThrow(InvalidBehaviorContractException::class);
     }
 });
+
+
+test('it rejects non-finite numeric calculate operands', function () {
+    foreach (['left', 'right'] as $operand) {
+        foreach ([INF, NAN] as $value) {
+            $contract = validBehaviorContract();
+            $contract['steps'] = [
+                [
+                    'type' => 'calculate',
+                    'operation' => 'add',
+                    'left' => 1,
+                    'right' => 2,
+                    'assign_to' => 'result',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => ['result' => '{state.result}'],
+                ],
+            ];
+            $contract['steps'][0][$operand] = $value;
+
+            expect(fn () => $this->validator->validate($contract))
+                ->toThrow(InvalidBehaviorContractException::class);
+        }
+    }
+});
