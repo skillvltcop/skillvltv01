@@ -174,13 +174,21 @@ final class BehaviorRunner implements BehaviorRunnerContract
                     $values[] = $value;
                 }
 
-                $state[$step['assign_to']] = match ($operation) {
+                $aggregateResult = match ($operation) {
                     'sum' => array_sum($values),
                     'average' => $values === []
                         ? throw new \DomainException('Cannot average an empty collection.')
                         : array_sum($values) / count($values),
                     'count_matching' => count($values),
                 };
+
+                if (is_float($aggregateResult) && ! is_finite($aggregateResult)) {
+                    throw new \DomainException(
+                        'Aggregate result must be finite.'
+                    );
+                }
+
+                $state[$step['assign_to']] = $aggregateResult;
 
                 continue;
             }
