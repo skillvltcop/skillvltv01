@@ -203,7 +203,7 @@ final class BehaviorContractValidator
                 ['gt', 'gte', 'lt', 'lte'],
                 true,
             )
-            && (! is_int($condition['value']) && ! is_float($condition['value']))
+            && ! $this->isFiniteNumber($condition['value'])
         ) {
             $errors["{$prefix}.condition.value"] =
                 'Numeric comparison operators require a numeric comparison value.';
@@ -419,8 +419,7 @@ final class BehaviorContractValidator
             if (
                 in_array($step['operator'] ?? null, ['gt', 'gte', 'lt', 'lte'], true)
                 && array_key_exists('value', $step)
-                && ! is_int($step['value'])
-                && ! is_float($step['value'])
+                && ! $this->isFiniteNumber($step['value'])
             ) {
                 $errors["{$prefix}.value"] =
                     'Numeric count_matching operators require a numeric comparison value.';
@@ -620,5 +619,11 @@ final class BehaviorContractValidator
                 : self::ALLOWED_PATH_ROOTS,
             true,
         );
+    }
+
+    private function isFiniteNumber(mixed $value): bool
+    {
+        return is_int($value)
+            || (is_float($value) && is_finite($value));
     }
 }

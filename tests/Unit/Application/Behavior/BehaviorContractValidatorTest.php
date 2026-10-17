@@ -1082,3 +1082,38 @@ test('it rejects item paths outside map steps', function ($path) {
     'item.name',
     'item.student.score',
 ]);
+
+
+test('it rejects non-finite numeric comparison values', function () {
+    foreach ([INF, NAN] as $value) {
+        $contract = validBehaviorContract();
+        $contract['steps'][0]['condition']['value'] = $value;
+
+        expect(fn () => $this->validator->validate($contract))
+            ->toThrow(InvalidBehaviorContractException::class);
+    }
+});
+
+test('it rejects non-finite count_matching comparison values', function () {
+    foreach ([INF, NAN] as $value) {
+        $contract = validBehaviorContract();
+        $contract['steps'] = [
+            [
+                'type' => 'aggregate',
+                'source' => 'input.learners',
+                'operation' => 'count_matching',
+                'field' => 'score',
+                'operator' => 'gte',
+                'value' => $value,
+                'assign_to' => 'matching_count',
+            ],
+            [
+                'type' => 'return',
+                'data' => ['count' => '{state.matching_count}'],
+            ],
+        ];
+
+        expect(fn () => $this->validator->validate($contract))
+            ->toThrow(InvalidBehaviorContractException::class);
+    }
+});
