@@ -724,6 +724,41 @@ it('counts matching entries in an aggregate source', function () {
     ))->toBe(['count' => 2]);
 });
 
+it('rejects non-finite values in numeric count_matching comparisons', function () {
+    $runner = createBehaviorRunner();
+
+    expect(fn () => $runner->run(
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'aggregate',
+                    'source' => 'input.learners',
+                    'operation' => 'count_matching',
+                    'field' => 'score',
+                    'operator' => 'gt',
+                    'value' => 100,
+                    'assign_to' => 'matching_count',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => ['count' => '{state.matching_count}'],
+                ],
+            ],
+        ],
+        input: [
+            'learners' => [
+                ['score' => INF],
+            ],
+        ],
+        context: [],
+    ))->toThrow(
+        DomainException::class,
+        'Aggregate comparison value must be finite.'
+    );
+});
+
 it('counts matching entries with a greater-than comparison', function () {
     $runner = createBehaviorRunner();
 
