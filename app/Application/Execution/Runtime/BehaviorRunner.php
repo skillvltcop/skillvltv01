@@ -153,7 +153,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
                             && is_float($value)
                             && ! is_finite($value)
                         ) {
-                            throw new \\DomainException(
+                            throw new \DomainException(
                                 'Aggregate comparison value must be finite.'
                             );
                         }
