@@ -294,12 +294,20 @@ final class BehaviorRunner implements BehaviorRunnerContract
             );
         }
 
-        $state[$step['assign_to']] = match ($step['operation']) {
+        $result = match ($step['operation']) {
             'add' => $left + $right,
             'subtract' => $left - $right,
             'multiply' => $left * $right,
             'divide' => $left / $right,
         };
+
+        if (is_float($result) && ! is_finite($result)) {
+            throw new \\DomainException(
+                'Calculation result must be finite.'
+            );
+        }
+
+        $state[$step['assign_to']] = $result;
     }
 
     private function resolveCalculateOperand(
