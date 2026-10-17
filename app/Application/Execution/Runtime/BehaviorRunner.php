@@ -302,7 +302,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
         };
 
         if (is_float($result) && ! is_finite($result)) {
-            throw new \\DomainException(
+            throw new \DomainException(
                 'Calculation result must be finite.'
             );
         }
