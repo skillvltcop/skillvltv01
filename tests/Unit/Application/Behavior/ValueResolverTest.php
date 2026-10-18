@@ -647,3 +647,43 @@ test('it resolves consecutive numeric indexes in nested arrays across all path s
         40,
     ],
 ]);
+
+
+test('it resolves null values at terminal numeric indexes across all path sources', function ($path, $input, $context, $state, $item) {
+    expect($this->resolver->resolve(
+        $path,
+        $input,
+        $context,
+        $state,
+        $item,
+    ))->toBeNull();
+})->with([
+    'input null list element' => [
+        'input.items.0',
+        ['items' => [null, 'present']],
+        [],
+        [],
+        null,
+    ],
+    'context null list element' => [
+        'context.items.1',
+        [],
+        ['items' => ['present', null]],
+        [],
+        null,
+    ],
+    'state null list element' => [
+        'state.items.0',
+        [],
+        [],
+        ['items' => [null]],
+        null,
+    ],
+    'item null list element' => [
+        'item.items.1',
+        [],
+        [],
+        [],
+        ['items' => ['present', null]],
+    ],
+]);
