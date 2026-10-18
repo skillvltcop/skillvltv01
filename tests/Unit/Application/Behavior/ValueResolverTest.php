@@ -311,3 +311,43 @@ test('it rejects paths traversing scalar intermediate values', function ($path, 
         ['student' => 3.14],
     ],
 ]);
+
+
+test('it rejects paths with missing intermediate values', function ($path, $input, $context, $state, $item) {
+    expect(fn () => $this->resolver->resolve(
+        $path,
+        $input,
+        $context,
+        $state,
+        $item,
+    ))->toThrow(UnresolvablePathException::class);
+})->with([
+    'input missing parent' => [
+        'input.student.name',
+        [],
+        [],
+        [],
+        null,
+    ],
+    'context missing parent' => [
+        'context.profile.name',
+        [],
+        [],
+        [],
+        null,
+    ],
+    'state missing parent' => [
+        'state.result.status',
+        [],
+        [],
+        [],
+        null,
+    ],
+    'item missing parent' => [
+        'item.student.name',
+        [],
+        [],
+        [],
+        [],
+    ],
+]);
