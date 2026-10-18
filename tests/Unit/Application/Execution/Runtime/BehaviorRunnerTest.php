@@ -1156,3 +1156,38 @@ it('rejects a non-finite calculation result inside a map step', function () {
         context: [],
     ))->toThrow(DomainException::class, 'Calculation result must be finite.');
 });
+
+
+it('rejects a non-finite average aggregate result', function () {
+    $runner = createBehaviorRunner();
+
+    expect(fn () => $runner->run(
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'aggregate',
+                    'source' => 'input.learners',
+                    'operation' => 'average',
+                    'field' => 'score',
+                    'assign_to' => 'average_score',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => ['average' => '{state.average_score}'],
+                ],
+            ],
+        ],
+        input: [
+            'learners' => [
+                ['score' => 1.0e308],
+                ['score' => 1.0e308],
+            ],
+        ],
+        context: [],
+    ))->toThrow(
+        DomainException::class,
+        'Aggregate result must be finite.'
+    );
+});
