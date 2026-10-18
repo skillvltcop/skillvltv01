@@ -1191,3 +1191,39 @@ it('rejects a non-finite average aggregate result', function () {
         'Aggregate result must be finite.'
     );
 });
+
+
+it('rejects NAN values in numeric count_matching comparisons', function () {
+    $runner = createBehaviorRunner();
+
+    expect(fn () => $runner->run(
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'aggregate',
+                    'source' => 'input.learners',
+                    'operation' => 'count_matching',
+                    'field' => 'score',
+                    'operator' => 'gt',
+                    'value' => 100,
+                    'assign_to' => 'matching_count',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => ['count' => '{state.matching_count}'],
+                ],
+            ],
+        ],
+        input: [
+            'learners' => [
+                ['score' => NAN],
+            ],
+        ],
+        context: [],
+    ))->toThrow(
+        DomainException::class,
+        'Aggregate comparison value must be finite.'
+    );
+});
