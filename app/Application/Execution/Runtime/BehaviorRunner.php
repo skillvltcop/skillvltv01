@@ -310,7 +310,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
             (is_float($left) && ! is_finite($left))
             || (is_float($right) && ! is_finite($right))
         ) {
-            throw new \\DomainException(
+            throw new \DomainException(
                 'Calculation operands must be finite.'
             );
         }
