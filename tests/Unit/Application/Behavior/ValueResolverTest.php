@@ -603,3 +603,47 @@ test('it resolves terminal numeric indexes across all path sources', function ($
         ['name' => 'Youssef'],
     ],
 ]);
+
+
+test('it resolves consecutive numeric indexes in nested arrays across all path sources', function ($path, $input, $context, $state, $item, $expected) {
+    expect($this->resolver->resolve(
+        $path,
+        $input,
+        $context,
+        $state,
+        $item,
+    ))->toBe($expected);
+})->with([
+    'input consecutive indexes' => [
+        'input.matrix.0.1',
+        ['matrix' => [[10, 20], [30, 40]]],
+        [],
+        [],
+        null,
+        20,
+    ],
+    'context consecutive indexes' => [
+        'context.matrix.1.0',
+        [],
+        ['matrix' => [[10, 20], [30, 40]]],
+        [],
+        null,
+        30,
+    ],
+    'state consecutive indexes' => [
+        'state.matrix.0.0',
+        [],
+        [],
+        ['matrix' => [[10, 20], [30, 40]]],
+        null,
+        10,
+    ],
+    'item consecutive indexes' => [
+        'item.matrix.1.1',
+        [],
+        [],
+        [],
+        ['matrix' => [[10, 20], [30, 40]]],
+        40,
+    ],
+]);
