@@ -212,3 +212,27 @@ test('it rejects paths traversing null intermediate values', function ($path, $i
         ['student' => null],
     ],
 ]);
+
+test('it resolves nested paths instead of treating dotted keys as literal keys', function ($target, $expected) {
+    expect($this->resolver->resolve(
+        'input.profile.name',
+        $target,
+        [],
+        [],
+    ))->toBe($expected);
+})->with([
+    'nested structure takes precedence over dotted key' => [
+        [
+            'profile' => ['name' => 'Nested'],
+            'profile.name' => 'Literal',
+        ],
+        'Nested',
+    ],
+    'nested structure resolves when dotted key also exists' => [
+        [
+            'profile' => ['name' => 'Correct'],
+            'profile.name' => 'Wrong',
+        ],
+        'Correct',
+    ],
+]);
