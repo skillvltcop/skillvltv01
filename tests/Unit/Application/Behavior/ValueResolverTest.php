@@ -271,3 +271,43 @@ test('it rejects unsupported path syntax', function ($path) {
     'space in key' => 'input.student name',
     'special character in key' => 'input.$name',
 ]);
+
+
+test('it rejects paths traversing scalar intermediate values', function ($path, $input, $context, $state, $item) {
+    expect(fn () => $this->resolver->resolve(
+        $path,
+        $input,
+        $context,
+        $state,
+        $item,
+    ))->toThrow(UnresolvablePathException::class);
+})->with([
+    'input string parent' => [
+        'input.student.name',
+        ['student' => 'Sara'],
+        [],
+        [],
+        null,
+    ],
+    'context integer parent' => [
+        'context.profile.name',
+        [],
+        ['profile' => 42],
+        [],
+        null,
+    ],
+    'state boolean parent' => [
+        'state.result.status',
+        [],
+        [],
+        ['result' => false],
+        null,
+    ],
+    'item float parent' => [
+        'item.student.name',
+        [],
+        [],
+        [],
+        ['student' => 3.14],
+    ],
+]);
