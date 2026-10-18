@@ -1085,7 +1085,7 @@ test('it rejects item paths outside map steps', function ($path) {
 
 
 test('it rejects non-finite numeric comparison values', function () {
-    foreach ([INF, NAN] as $value) {
+    foreach ([INF, -INF, NAN] as $value) {
         $contract = validBehaviorContract();
         $contract['steps'][0]['condition']['value'] = $value;
 
@@ -1095,7 +1095,7 @@ test('it rejects non-finite numeric comparison values', function () {
 });
 
 test('it rejects non-finite count_matching comparison values', function () {
-    foreach ([INF, NAN] as $value) {
+    foreach ([INF, -INF, NAN] as $value) {
         $contract = validBehaviorContract();
         $contract['steps'] = [
             [
@@ -1121,7 +1121,7 @@ test('it rejects non-finite count_matching comparison values', function () {
 
 test('it rejects non-finite numeric calculate operands', function () {
     foreach (['left', 'right'] as $operand) {
-        foreach ([INF, NAN] as $value) {
+        foreach ([INF, -INF, NAN] as $value) {
             $contract = validBehaviorContract();
             $contract['steps'] = [
                 [
