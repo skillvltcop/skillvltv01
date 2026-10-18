@@ -1257,8 +1257,6 @@ it('rejects non-finite thresholds in numeric count_matching comparisons', functi
             ],
         ],
         context: [],
-    ))->toThrow(
-        DomainException::class,
-        'Aggregate comparison value must be finite.'
+    ))->toThrow(InvalidBehaviorContractException::class
     );
 });
