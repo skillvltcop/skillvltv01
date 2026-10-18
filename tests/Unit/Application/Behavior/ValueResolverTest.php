@@ -767,3 +767,43 @@ test('it rejects traversal beyond null values reached by numeric indexes', funct
         ['items' => [null]],
     ],
 ]);
+
+
+test('it rejects numeric indexes into scalar values', function ($path, $input, $context, $state, $item) {
+    expect(fn () => $this->resolver->resolve(
+        $path,
+        $input,
+        $context,
+        $state,
+        $item,
+    ))->toThrow(UnresolvablePathException::class);
+})->with([
+    'input string value' => [
+        'input.items.0',
+        ['items' => 'Sara'],
+        [],
+        [],
+        null,
+    ],
+    'context integer value' => [
+        'context.items.0',
+        [],
+        ['items' => 42],
+        [],
+        null,
+    ],
+    'state boolean value' => [
+        'state.items.0',
+        [],
+        [],
+        ['items' => false],
+        null,
+    ],
+    'item float value' => [
+        'item.items.0',
+        [],
+        [],
+        [],
+        ['items' => 3.14],
+    ],
+]);
