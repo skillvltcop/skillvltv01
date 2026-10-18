@@ -392,7 +392,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
                     item: $item,
                 );
 
-                if (is_array($value) || is_object($value)) {
+                if (! is_scalar($value) && $value !== null) {
                     throw new \DomainException(
                         sprintf(
                             'Interpolation value for "%s" must be scalar.',
