@@ -401,6 +401,15 @@ final class BehaviorRunner implements BehaviorRunnerContract
                     );
                 }
 
+                if (is_float($value) && ! is_finite($value)) {
+                    throw new \\DomainException(
+                        sprintf(
+                            'Interpolation value for "%s" must be finite.',
+                            $matches[1],
+                        )
+                    );
+                }
+
                 return (string) $value;
             },
             $template,
