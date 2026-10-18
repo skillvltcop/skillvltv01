@@ -459,13 +459,24 @@ final class BehaviorRunner implements BehaviorRunnerContract
     ): mixed {
         if (is_string($value)) {
             if (preg_match('/^\\{([^{}\\s]+)\\}$/', $value, $matches) === 1) {
-                return $this->valueResolver->resolve(
+                $resolved = $this->valueResolver->resolve(
                     path: $matches[1],
                     input: $input,
                     context: $context,
                     state: $state,
                     item: $item,
                 );
+
+                if (is_float($resolved) && ! is_finite($resolved)) {
+                    throw new \DomainException(
+                        sprintf(
+                            'Return value for "%s" must be finite.',
+                            $matches[1],
+                        )
+                    );
+                }
+
+                return $resolved;
             }
 
             return preg_replace_callback(
