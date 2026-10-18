@@ -391,3 +391,43 @@ test('it resolves null leaf values across all path sources', function ($path, $i
         ['student' => ['score' => null]],
     ],
 ]);
+
+
+test('it rejects paths traversing empty intermediate arrays', function ($path, $input, $context, $state, $item) {
+    expect(fn () => $this->resolver->resolve(
+        $path,
+        $input,
+        $context,
+        $state,
+        $item,
+    ))->toThrow(UnresolvablePathException::class);
+})->with([
+    'input empty parent' => [
+        'input.student.name',
+        ['student' => []],
+        [],
+        [],
+        null,
+    ],
+    'context empty parent' => [
+        'context.profile.locale',
+        [],
+        ['profile' => []],
+        [],
+        null,
+    ],
+    'state empty parent' => [
+        'state.result.status',
+        [],
+        [],
+        ['result' => []],
+        null,
+    ],
+    'item empty parent' => [
+        'item.student.score',
+        [],
+        [],
+        [],
+        ['student' => []],
+    ],
+]);
