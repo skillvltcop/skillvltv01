@@ -445,3 +445,39 @@ test('it rejects item paths when no current item exists', function ($path) {
     'top-level item value' => 'item.student',
     'nested item value' => 'item.student.name',
 ]);
+
+
+test('it resolves numeric indexes across all path sources', function ($path, $input, $context, $state, $item, $expected) {
+    expect($this->resolver->resolve(
+        $path,
+        $input,
+        $context,
+        $state,
+        $item,
+    ))->toBe($expected);
+})->with([
+    'context list index' => [
+        'context.learners.0.name',
+        [],
+        ['learners' => [['name' => 'Sara']]],
+        [],
+        null,
+        'Sara',
+    ],
+    'state list index' => [
+        'state.results.1.score',
+        [],
+        [],
+        ['results' => [['score' => 12], ['score' => 18]]],
+        null,
+        18,
+    ],
+    'item list index' => [
+        'item.learners.0.name',
+        [],
+        [],
+        [],
+        ['learners' => [['name' => 'Youssef']]],
+        'Youssef',
+    ],
+]);
