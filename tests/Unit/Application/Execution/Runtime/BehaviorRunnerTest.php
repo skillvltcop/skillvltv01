@@ -1602,3 +1602,108 @@ it('rejects non-finite literal values in nested return data', function ($value) 
     -INF,
     NAN,
 ]);
+
+
+it('propagates unresolved paths from runtime resolver call sites', function (array $logic) {
+    expect(fn () => createBehaviorRunner()->run(
+        logic: $logic,
+        input: [],
+        context: [],
+    ))->toThrow(UnresolvablePathException::class);
+})->with([
+    'evaluate_rule field' => [[
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'evaluate_rule',
+                'condition' => [
+                    'field' => 'input.missing',
+                    'operator' => 'eq',
+                    'value' => 1,
+                ],
+                'assign_to' => 'matched',
+                'true_value' => true,
+                'false_value' => false,
+            ],
+            [
+                'type' => 'return',
+                'data' => ['matched' => '{state.matched}'],
+            ],
+        ],
+    ]],
+    'calculate operand' => [[
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'calculate',
+                'operation' => 'add',
+                'left' => 'input.missing',
+                'right' => 1,
+                'assign_to' => 'result',
+            ],
+            [
+                'type' => 'return',
+                'data' => ['result' => '{state.result}'],
+            ],
+        ],
+    ]],
+    'map source' => [[
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.missing',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'return',
+                        'data' => ['value' => '{item.value}'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ]],
+    'aggregate source' => [[
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'aggregate',
+                'source' => 'input.missing',
+                'operation' => 'count',
+                'assign_to' => 'count',
+            ],
+            [
+                'type' => 'return',
+                'data' => ['count' => '{state.count}'],
+            ],
+        ],
+    ]],
+    'exact return placeholder' => [[
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'return',
+                'data' => ['value' => '{input.missing}'],
+            ],
+        ],
+    ]],
+    'return string interpolation' => [[
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'return',
+                'data' => ['message' => 'Value: {input.missing}'],
+            ],
+        ],
+    ]],
+]);
