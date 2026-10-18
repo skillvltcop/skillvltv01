@@ -1543,3 +1543,30 @@ it('rejects non-finite float values in format_template interpolation', function 
     -INF,
     NAN,
 ]);
+
+
+it('rejects non-finite values in exact return placeholders', function ($value) {
+    $runner = createBehaviorRunner();
+
+    expect(fn () => $runner->run(
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => ['value' => '{input.value}'],
+                ],
+            ],
+        ],
+        input: ['value' => $value],
+        context: [],
+    ))->toThrow(
+        DomainException::class,
+        'Return value for "input.value" must be finite.'
+    );
+})->with([
+    INF,
+    -INF,
+    NAN,
+]);
