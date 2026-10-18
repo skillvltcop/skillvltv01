@@ -847,3 +847,43 @@ test('it rejects numeric indexes into null values', function ($path, $input, $co
         ['items' => null],
     ],
 ]);
+
+
+test('it rejects numeric indexes after missing parent values', function ($path, $input, $context, $state, $item) {
+    expect(fn () => $this->resolver->resolve(
+        $path,
+        $input,
+        $context,
+        $state,
+        $item,
+    ))->toThrow(UnresolvablePathException::class);
+})->with([
+    'input missing parent' => [
+        'input.items.0',
+        [],
+        [],
+        [],
+        null,
+    ],
+    'context missing parent' => [
+        'context.items.0',
+        [],
+        [],
+        [],
+        null,
+    ],
+    'state missing parent' => [
+        'state.items.0',
+        [],
+        [],
+        [],
+        null,
+    ],
+    'item missing parent' => [
+        'item.items.0',
+        [],
+        [],
+        [],
+        [],
+    ],
+]);
