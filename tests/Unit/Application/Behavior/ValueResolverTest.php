@@ -256,3 +256,18 @@ test('it resolves numeric-looking array keys using path segments', function ($pa
         'ten',
     ],
 ]);
+
+test('it rejects unsupported path syntax', function ($path) {
+    expect(fn () => $this->resolver->resolve(
+        $path,
+        ['tags' => ['math'], 'student-name' => 'Sara', 'student name' => 'Mina'],
+        [],
+        [],
+    ))->toThrow(UnresolvablePathException::class);
+})->with([
+    'wildcard segment' => 'input.tags.*',
+    'bracket index syntax' => 'input.tags[0]',
+    'hyphen in key' => 'input.student-name',
+    'space in key' => 'input.student name',
+    'special character in key' => 'input.$name',
+]);
