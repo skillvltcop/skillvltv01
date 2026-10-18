@@ -270,6 +270,8 @@ test('it rejects unsupported path syntax', function ($path) {
     'hyphen in key' => 'input.student-name',
     'space in key' => 'input.student name',
     'special character in key' => 'input.$name',
+    'negative numeric index' => 'input.learners.-1.name',
+    'explicit positive numeric index' => 'input.learners.+1.name',
 ]);
 
 
