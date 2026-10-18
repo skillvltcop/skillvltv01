@@ -1112,3 +1112,47 @@ it('rejects non-finite aggregate sum results', function () {
         'Aggregate result must be finite.'
     );
 });
+
+
+it('rejects a non-finite calculation result inside a map step', function () {
+    $runner = createBehaviorRunner();
+
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'map',
+                'source' => 'input.learners',
+                'assign_to' => 'results',
+                'steps' => [
+                    [
+                        'type' => 'calculate',
+                        'operation' => 'multiply',
+                        'left' => 'item.score',
+                        'right' => 'item.multiplier',
+                        'assign_to' => 'result',
+                    ],
+                    [
+                        'type' => 'return',
+                        'data' => ['result' => '{state.result}'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'return',
+                'data' => ['results' => '{state.results}'],
+            ],
+        ],
+    ];
+
+    expect(fn () => $runner->run(
+        logic: $logic,
+        input: [
+            'learners' => [
+                ['score' => 1.0e308, 'multiplier' => 1.0e308],
+            ],
+        ],
+        context: [],
+    ))->toThrow(DomainException::class, 'Calculation result must be finite.');
+});
