@@ -113,3 +113,47 @@ test('it resolves nested values from the current map item', function () {
         ],
     ))->toBe('Sara');
 });
+
+
+test('it resolves numeric indexes in nested array paths', function ($path, $target, $expected) {
+    expect($this->resolver->resolve(
+        $path,
+        $target,
+        [],
+        [],
+    ))->toBe($expected);
+})->with([
+    'first list item' => [
+        'input.learners.0.name',
+        ['learners' => [['name' => 'Sara'], ['name' => 'Youssef']]],
+        'Sara',
+    ],
+    'later list item' => [
+        'input.learners.1.score',
+        ['learners' => [['score' => 12], ['score' => 18]]],
+        18,
+    ],
+    'nested list item' => [
+        'input.groups.0.learners.1.name',
+        ['groups' => [['learners' => [['name' => 'Ali'], ['name' => 'Mina']]]]],
+        'Mina',
+    ],
+]);
+
+test('it rejects missing numeric indexes in nested array paths', function ($path, $target) {
+    expect(fn () => $this->resolver->resolve(
+        $path,
+        $target,
+        [],
+        [],
+    ))->toThrow(UnresolvablePathException::class);
+})->with([
+    'out of range index' => [
+        'input.learners.2.name',
+        ['learners' => [['name' => 'Sara']]],
+    ],
+    'index into empty list' => [
+        'input.learners.0.name',
+        ['learners' => []],
+    ],
+]);
