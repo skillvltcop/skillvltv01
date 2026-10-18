@@ -306,6 +306,15 @@ final class BehaviorRunner implements BehaviorRunnerContract
             );
         }
 
+        if (
+            (is_float($left) && ! is_finite($left))
+            || (is_float($right) && ! is_finite($right))
+        ) {
+            throw new \\DomainException(
+                'Calculation operands must be finite.'
+            );
+        }
+
         if ($step['operation'] === 'divide' && $right == 0) {
             throw new \DomainException(
                 'Division by zero is not allowed.'
