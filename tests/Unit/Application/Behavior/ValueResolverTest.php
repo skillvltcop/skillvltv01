@@ -173,3 +173,42 @@ test('it resolves falsy values without treating them as missing', function ($key
     'empty string' => ['label', ''],
     'empty array' => ['items', []],
 ]);
+
+test('it rejects paths traversing null intermediate values', function ($path, $input, $context, $state, $item) {
+    expect(fn () => $this->resolver->resolve(
+        $path,
+        $input,
+        $context,
+        $state,
+        $item,
+    ))->toThrow(UnresolvablePathException::class);
+})->with([
+    'input null parent' => [
+        'input.student.name',
+        ['student' => null],
+        [],
+        [],
+        null,
+    ],
+    'context null parent' => [
+        'context.profile.name',
+        [],
+        ['profile' => null],
+        [],
+        null,
+    ],
+    'state null parent' => [
+        'state.result.status',
+        [],
+        [],
+        ['result' => null],
+        null,
+    ],
+    'item null parent' => [
+        'item.student.name',
+        [],
+        [],
+        [],
+        ['student' => null],
+    ],
+]);
