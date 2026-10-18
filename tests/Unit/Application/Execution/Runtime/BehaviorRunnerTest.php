@@ -1388,3 +1388,38 @@ it('rejects non-finite thresholds in numeric count_matching comparisons', functi
     ))->toThrow(InvalidBehaviorContractException::class
     );
 });
+
+
+it('rejects division by zero during calculation', function () {
+    $runner = createBehaviorRunner();
+
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'calculate',
+                'operation' => 'divide',
+                'left' => 'input.numerator',
+                'right' => 'input.denominator',
+                'assign_to' => 'result',
+            ],
+            [
+                'type' => 'return',
+                'data' => ['result' => '{state.result}'],
+            ],
+        ],
+    ];
+
+    expect(fn () => $runner->run(
+        logic: $logic,
+        input: [
+            'numerator' => 10,
+            'denominator' => 0,
+        ],
+        context: [],
+    ))->toThrow(
+        DomainException::class,
+        'Division by zero is not allowed.'
+    );
+});
