@@ -504,6 +504,15 @@ final class BehaviorRunner implements BehaviorRunnerContract
             );
         }
 
+        if (
+            (is_float($actual) && ! is_finite($actual))
+            || (is_float($expected) && ! is_finite($expected))
+        ) {
+            throw new \DomainException(
+                'Numeric comparison values must be finite.'
+            );
+        }
+
         return match ($operator) {
             '>' => $actual > $expected,
             '>=' => $actual >= $expected,

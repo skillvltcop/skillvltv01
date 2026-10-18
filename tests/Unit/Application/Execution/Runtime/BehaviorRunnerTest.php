@@ -228,6 +228,30 @@ it('supports all numeric comparison operators', function ($operator, $expected) 
     ['lte', 'yes'],
 ]);
 
+it('rejects non-finite values in numeric evaluate_rule comparisons', function ($actual) {
+    $runner = createBehaviorRunner();
+
+    $logic = executableBehavior();
+    $logic['steps'][0]['condition']['operator'] = 'gt';
+    $logic['steps'][0]['condition']['value'] = 10;
+
+    expect(fn () => $runner->run(
+        logic: $logic,
+        input: [
+            'student_name' => 'Ahmed',
+            'score' => $actual,
+        ],
+        context: [],
+    ))->toThrow(
+        DomainException::class,
+        'Numeric comparison values must be finite.'
+    );
+})->with([
+    INF,
+    -INF,
+    NAN,
+]);
+
 it('supports strict equality comparisons', function () {
     $runner = createBehaviorRunner();
 
