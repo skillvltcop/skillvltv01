@@ -351,3 +351,43 @@ test('it rejects paths with missing intermediate values', function ($path, $inpu
         [],
     ],
 ]);
+
+
+test('it resolves null leaf values across all path sources', function ($path, $input, $context, $state, $item) {
+    expect($this->resolver->resolve(
+        $path,
+        $input,
+        $context,
+        $state,
+        $item,
+    ))->toBeNull();
+})->with([
+    'input null leaf' => [
+        'input.student.name',
+        ['student' => ['name' => null]],
+        [],
+        [],
+        null,
+    ],
+    'context null leaf' => [
+        'context.profile.locale',
+        [],
+        ['profile' => ['locale' => null]],
+        [],
+        null,
+    ],
+    'state null leaf' => [
+        'state.result.status',
+        [],
+        [],
+        ['result' => ['status' => null]],
+        null,
+    ],
+    'item null leaf' => [
+        'item.student.score',
+        [],
+        [],
+        [],
+        ['student' => ['score' => null]],
+    ],
+]);
