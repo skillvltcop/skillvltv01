@@ -687,3 +687,43 @@ test('it resolves null values at terminal numeric indexes across all path source
         ['items' => ['present', null]],
     ],
 ]);
+
+
+test('it rejects traversal beyond scalar values reached by numeric indexes', function ($path, $input, $context, $state, $item) {
+    expect(fn () => $this->resolver->resolve(
+        $path,
+        $input,
+        $context,
+        $state,
+        $item,
+    ))->toThrow(UnresolvablePathException::class);
+})->with([
+    'input scalar list element' => [
+        'input.items.0.name',
+        ['items' => ['Sara']],
+        [],
+        [],
+        null,
+    ],
+    'context scalar list element' => [
+        'context.items.0.name',
+        [],
+        ['items' => [42]],
+        [],
+        null,
+    ],
+    'state scalar list element' => [
+        'state.items.0.name',
+        [],
+        [],
+        ['items' => [false]],
+        null,
+    ],
+    'item scalar list element' => [
+        'item.items.0.name',
+        [],
+        [],
+        [],
+        ['items' => [3.14]],
+    ],
+]);
