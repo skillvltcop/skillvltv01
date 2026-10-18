@@ -458,7 +458,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
         ?array $item = null,
     ): mixed {
         if (is_float($value) && ! is_finite($value)) {
-            throw new \\DomainException(
+            throw new \DomainException(
                 'Return values must be finite.'
             );
         }
