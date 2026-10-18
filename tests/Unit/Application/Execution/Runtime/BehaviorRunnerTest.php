@@ -1423,3 +1423,36 @@ it('rejects division by zero during calculation', function () {
         'Division by zero is not allowed.'
     );
 });
+
+
+it('rejects resource values in format template interpolation', function () {
+    $runner = createBehaviorRunner();
+    $resource = fopen('php://memory', 'r');
+
+    try {
+        expect(fn () => $runner->run(
+            logic: [
+                'type' => 'steps',
+                'version' => 1,
+                'steps' => [
+                    [
+                        'type' => 'format_template',
+                        'template' => 'Value: {input.value}',
+                        'assign_to' => 'message',
+                    ],
+                    [
+                        'type' => 'return',
+                        'data' => ['message' => '{state.message}'],
+                    ],
+                ],
+            ],
+            input: ['value' => $resource],
+            context: [],
+        ))->toThrow(
+            DomainException::class,
+            'Interpolation value for "input.value" must be scalar.'
+        );
+    } finally {
+        fclose($resource);
+    }
+});
