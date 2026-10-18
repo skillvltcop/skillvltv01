@@ -457,6 +457,12 @@ final class BehaviorRunner implements BehaviorRunnerContract
         array $state,
         ?array $item = null,
     ): mixed {
+        if (is_float($value) && ! is_finite($value)) {
+            throw new \\DomainException(
+                'Return values must be finite.'
+            );
+        }
+
         if (is_string($value)) {
             if (preg_match('/^\\{([^{}\\s]+)\\}$/', $value, $matches) === 1) {
                 $resolved = $this->valueResolver->resolve(
