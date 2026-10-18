@@ -1570,3 +1570,35 @@ it('rejects non-finite values in exact return placeholders', function ($value) {
     -INF,
     NAN,
 ]);
+
+
+
+it('rejects non-finite literal values in nested return data', function ($value) {
+    $runner = createBehaviorRunner();
+
+    expect(fn () => $runner->run(
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => [
+                            'value' => $value,
+                        ],
+                    ],
+                ],
+            ],
+        ],
+        input: [],
+        context: [],
+    ))->toThrow(
+        DomainException::class,
+        'Return values must be finite.'
+    );
+})->with([
+    INF,
+    -INF,
+    NAN,
+]);
