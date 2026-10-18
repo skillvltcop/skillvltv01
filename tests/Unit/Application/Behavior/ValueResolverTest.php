@@ -157,3 +157,19 @@ test('it rejects missing numeric indexes in nested array paths', function ($path
         ['learners' => []],
     ],
 ]);
+
+
+test('it resolves falsy values without treating them as missing', function ($key, $value) {
+    expect($this->resolver->resolve(
+        "input.{$key}",
+        [$key => $value],
+        [],
+        [],
+    ))->toBe($value);
+})->with([
+    'false' => ['enabled', false],
+    'zero integer' => ['count', 0],
+    'zero float' => ['ratio', 0.0],
+    'empty string' => ['label', ''],
+    'empty array' => ['items', []],
+]);
