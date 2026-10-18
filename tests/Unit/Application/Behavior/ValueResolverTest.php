@@ -431,3 +431,17 @@ test('it rejects paths traversing empty intermediate arrays', function ($path, $
         ['student' => []],
     ],
 ]);
+
+
+test('it rejects item paths when no current item exists', function ($path) {
+    expect(fn () => $this->resolver->resolve(
+        $path,
+        [],
+        [],
+        [],
+        null,
+    ))->toThrow(UnresolvablePathException::class);
+})->with([
+    'top-level item value' => 'item.student',
+    'nested item value' => 'item.student.name',
+]);
