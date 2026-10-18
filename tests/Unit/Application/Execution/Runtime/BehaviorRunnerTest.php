@@ -1456,3 +1456,31 @@ it('rejects resource values in format template interpolation', function () {
         fclose($resource);
     }
 });
+
+
+it('rejects resource values in return template interpolation', function () {
+    $runner = createBehaviorRunner();
+    $resource = fopen('php://memory', 'r');
+
+    try {
+        expect(fn () => $runner->run(
+            logic: [
+                'type' => 'steps',
+                'version' => 1,
+                'steps' => [
+                    [
+                        'type' => 'return',
+                        'data' => ['message' => 'Value: {input.value}'],
+                    ],
+                ],
+            ],
+            input: ['value' => $resource],
+            context: [],
+        ))->toThrow(
+            DomainException::class,
+            'Interpolation value for "input.value" must be scalar.'
+        );
+    } finally {
+        fclose($resource);
+    }
+});
