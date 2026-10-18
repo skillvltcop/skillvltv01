@@ -807,3 +807,43 @@ test('it rejects numeric indexes into scalar values', function ($path, $input, $
         ['items' => 3.14],
     ],
 ]);
+
+
+test('it rejects numeric indexes into null values', function ($path, $input, $context, $state, $item) {
+    expect(fn () => $this->resolver->resolve(
+        $path,
+        $input,
+        $context,
+        $state,
+        $item,
+    ))->toThrow(UnresolvablePathException::class);
+})->with([
+    'input null parent' => [
+        'input.items.0',
+        ['items' => null],
+        [],
+        [],
+        null,
+    ],
+    'context null parent' => [
+        'context.items.0',
+        [],
+        ['items' => null],
+        [],
+        null,
+    ],
+    'state null parent' => [
+        'state.items.0',
+        [],
+        [],
+        ['items' => null],
+        null,
+    ],
+    'item null parent' => [
+        'item.items.0',
+        [],
+        [],
+        [],
+        ['items' => null],
+    ],
+]);
