@@ -150,8 +150,8 @@ final class BehaviorRunner implements BehaviorRunnerContract
                     if ($operation === 'count_matching') {
                         if (
                             in_array($step['operator'], ['gt', 'gte', 'lt', 'lte'], true)
-                            && is_float($value)
-                            && ! is_finite($value)
+                            && is_numeric($value)
+                            && ! is_finite((float) $value)
                         ) {
                             throw new \DomainException(
                                 'Aggregate comparison value must be finite.'

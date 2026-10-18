@@ -1286,6 +1286,41 @@ it('rejects NAN values in numeric count_matching comparisons', function () {
     );
 });
 
+it('rejects numeric strings that overflow to non-finite values in count_matching comparisons', function () {
+    $runner = createBehaviorRunner();
+
+    expect(fn () => $runner->run(
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'aggregate',
+                    'source' => 'input.learners',
+                    'operation' => 'count_matching',
+                    'field' => 'score',
+                    'operator' => 'gt',
+                    'value' => 100,
+                    'assign_to' => 'matching_count',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => ['count' => '{state.matching_count}'],
+                ],
+            ],
+        ],
+        input: [
+            'learners' => [
+                ['score' => '1e309'],
+            ],
+        ],
+        context: [],
+    ))->toThrow(
+        DomainException::class,
+        'Aggregate comparison value must be finite.'
+    );
+});
+
 it('rejects non-finite thresholds in numeric count_matching comparisons', function () {
     $runner = createBehaviorRunner();
 
