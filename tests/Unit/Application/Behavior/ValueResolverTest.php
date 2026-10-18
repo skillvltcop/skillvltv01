@@ -516,6 +516,51 @@ test('it rejects missing numeric indexes across all path sources', function ($pa
     ],
 ]);
 
+
+
+test('it resolves numeric indexes immediately after each path source', function ($path, $input, $context, $state, $item, $expected) {
+    expect($this->resolver->resolve(
+        $path,
+        $input,
+        $context,
+        $state,
+        $item,
+    ))->toBe($expected);
+})->with([
+    'input root list index returns complete element' => [
+        'input.0',
+        [['name' => 'Sara'], ['name' => 'Youssef']],
+        [],
+        [],
+        null,
+        ['name' => 'Sara'],
+    ],
+    'context root list index continues into nested value' => [
+        'context.1.name',
+        [],
+        [['name' => 'Sara'], ['name' => 'Youssef']],
+        [],
+        null,
+        'Youssef',
+    ],
+    'state root list index returns scalar' => [
+        'state.0',
+        [],
+        [],
+        [18, 20],
+        null,
+        18,
+    ],
+    'item root list index continues into nested value' => [
+        'item.0.name',
+        [],
+        [],
+        [],
+        [['name' => 'Mina'], ['name' => 'Ali']],
+        'Mina',
+    ],
+]);
+
 test('it resolves terminal numeric indexes across all path sources', function ($path, $input, $context, $state, $item, $expected) {
     expect($this->resolver->resolve(
         $path,
