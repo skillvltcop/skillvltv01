@@ -515,3 +515,46 @@ test('it rejects missing numeric indexes across all path sources', function ($pa
         ['learners' => [['name' => 'Youssef']]],
     ],
 ]);
+
+test('it resolves terminal numeric indexes across all path sources', function ($path, $input, $context, $state, $item, $expected) {
+    expect($this->resolver->resolve(
+        $path,
+        $input,
+        $context,
+        $state,
+        $item,
+    ))->toBe($expected);
+})->with([
+    'input returns complete list element' => [
+        'input.learners.0',
+        ['learners' => [['name' => 'Sara']]],
+        [],
+        [],
+        null,
+        ['name' => 'Sara'],
+    ],
+    'context returns scalar list element' => [
+        'context.scores.1',
+        [],
+        ['scores' => [12, 18]],
+        [],
+        null,
+        18,
+    ],
+    'state returns complete list element' => [
+        'state.results.0',
+        [],
+        [],
+        ['results' => [['score' => 12]]],
+        null,
+        ['score' => 12],
+    ],
+    'item returns complete list element' => [
+        'item.learners.1',
+        [],
+        [],
+        [],
+        ['learners' => [['name' => 'Sara'], ['name' => 'Youssef']]],
+        ['name' => 'Youssef'],
+    ],
+]);
