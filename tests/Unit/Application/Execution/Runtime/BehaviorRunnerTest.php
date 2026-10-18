@@ -1511,3 +1511,35 @@ it('rejects non-finite float values in return template interpolation', function 
     -INF,
     NAN,
 ]);
+
+
+it('rejects non-finite float values in format_template interpolation', function ($value) {
+    $runner = createBehaviorRunner();
+
+    expect(fn () => $runner->run(
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'format_template',
+                    'template' => 'Value: {input.value}',
+                    'assign_to' => 'message',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => ['message' => '{state.message}'],
+                ],
+            ],
+        ],
+        input: ['value' => $value],
+        context: [],
+    ))->toThrow(
+        DomainException::class,
+        'Interpolation value for "input.value" must be finite.'
+    );
+})->with([
+    INF,
+    -INF,
+    NAN,
+]);
