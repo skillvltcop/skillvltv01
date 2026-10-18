@@ -236,3 +236,23 @@ test('it resolves nested paths instead of treating dotted keys as literal keys',
         'Correct',
     ],
 ]);
+
+test('it resolves numeric-looking array keys using path segments', function ($path, $target, $expected) {
+    expect($this->resolver->resolve(
+        $path,
+        $target,
+        [],
+        [],
+    ))->toBe($expected);
+})->with([
+    'zero-padded numeric key' => [
+        'input.codes.01',
+        ['codes' => ['01' => 'leading-zero', 1 => 'integer-one']],
+        'leading-zero',
+    ],
+    'numeric key after a nested segment' => [
+        'input.codes.10.label',
+        ['codes' => ['10' => ['label' => 'ten']]],
+        'ten',
+    ],
+]);
