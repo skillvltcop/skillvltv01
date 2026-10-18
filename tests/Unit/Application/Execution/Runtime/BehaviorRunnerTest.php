@@ -1484,3 +1484,30 @@ it('rejects resource values in return template interpolation', function () {
         fclose($resource);
     }
 });
+
+
+it('rejects non-finite float values in return template interpolation', function ($value) {
+    $runner = createBehaviorRunner();
+
+    expect(fn () => $runner->run(
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => ['message' => 'Value: {input.value}'],
+                ],
+            ],
+        ],
+        input: ['value' => $value],
+        context: [],
+    ))->toThrow(
+        DomainException::class,
+        'Interpolation value for "input.value" must be finite.'
+    );
+})->with([
+    INF,
+    -INF,
+    NAN,
+]);
