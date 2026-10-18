@@ -483,3 +483,35 @@ test('it resolves numeric indexes across all path sources', function ($path, $in
         'Youssef',
     ],
 ]);
+
+test('it rejects missing numeric indexes across all path sources', function ($path, $input, $context, $state, $item) {
+    expect(fn () => $this->resolver->resolve(
+        $path,
+        $input,
+        $context,
+        $state,
+        $item,
+    ))->toThrow(UnresolvablePathException::class);
+})->with([
+    'context index out of range' => [
+        'context.learners.1.name',
+        [],
+        ['learners' => [['name' => 'Sara']]],
+        [],
+        null,
+    ],
+    'state index into empty list' => [
+        'state.results.0.score',
+        [],
+        [],
+        ['results' => []],
+        null,
+    ],
+    'item index missing from list' => [
+        'item.learners.2.name',
+        [],
+        [],
+        [],
+        ['learners' => [['name' => 'Youssef']]],
+    ],
+]);
