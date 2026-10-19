@@ -1521,3 +1521,54 @@ it('does not expose mutable metadata state', function () {
     expect($blueprint->metadata())
         ->toBe($originalMetadata);
 });
+
+it('rejects invalid lifecycle transitions without changing the Blueprint status', function () {
+    $makeBlueprintInStatus = function (LifecycleStatus $status): Blueprint {
+        $blueprint = makeBlueprint();
+
+        if ($status === LifecycleStatus::DRAFT) {
+            return $blueprint;
+        }
+
+        $revision = $blueprint->addRevision(
+            number: new RevisionNumber('1.0.0'),
+            behaviorDigest: makeDigest(),
+            contracts: makeContracts(),
+            logic: makeLogic(),
+            outputs: makeOutputs(),
+            policies: makePolicies(),
+        );
+
+        $revision->freeze();
+        $blueprint->promoteRevision($revision->id());
+        $blueprint->activate();
+
+        if ($status === LifecycleStatus::DEPRECATED) {
+            $blueprint->deprecate();
+        } elseif ($status === LifecycleStatus::SUNSET) {
+            $blueprint->sunset();
+        }
+
+        return $blueprint;
+    };
+
+    $invalidTransitions = [
+        [LifecycleStatus::DRAFT, 'deprecate'],
+        [LifecycleStatus::DRAFT, 'sunset'],
+        [LifecycleStatus::ACTIVE, 'activate'],
+        [LifecycleStatus::DEPRECATED, 'activate'],
+        [LifecycleStatus::DEPRECATED, 'deprecate'],
+        [LifecycleStatus::SUNSET, 'activate'],
+        [LifecycleStatus::SUNSET, 'deprecate'],
+        [LifecycleStatus::SUNSET, 'sunset'],
+    ];
+
+    foreach ($invalidTransitions as [$initialStatus, $operation]) {
+        $blueprint = $makeBlueprintInStatus($initialStatus);
+
+        expect(fn () => $blueprint->{$operation}())
+            ->toThrow(DomainException::class)
+            ->and($blueprint->lifecycleStatus())
+            ->toBe($initialStatus);
+    }
+});
