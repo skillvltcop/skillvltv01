@@ -358,8 +358,8 @@ it('only lets the execution owner read a system blueprint execution', function (
 it('forbids reading an execution without an owner', function () {
     $user = User::factory()->create();
 
-    $blueprint = \\App\\Models\\Blueprint::query()->create([
-        'id' => (string) \\Illuminate\\Support\\Str::ulid(),
+    $blueprint = \App\Models\Blueprint::query()->create([
+        'id' => (string) \Illuminate\Support\Str::ulid(),
         'canonical_name' => 'ownerless-execution-read-protected',
         'namespace' => 'skillvlt.edu.execution',
         'owner_type' => 'system',
@@ -367,8 +367,8 @@ it('forbids reading an execution without an owner', function () {
         'lifecycle_status' => 'draft',
     ]);
 
-    $revision = \\App\\Models\\BlueprintRevision::query()->create([
-        'id' => (string) \\Illuminate\\Support\\Str::ulid(),
+    $revision = \App\Models\BlueprintRevision::query()->create([
+        'id' => (string) \Illuminate\Support\Str::ulid(),
         'blueprint_id' => (string) $blueprint->id,
         'revision_number' => '1.0.0',
         'parent_revision_id' => null,
@@ -380,11 +380,11 @@ it('forbids reading an execution without an owner', function () {
         'frozen' => false,
     ]);
 
-    $execution = \\App\\Domain\\Execution\\Entities\\Execution::create(
-        blueprintId: new \\App\\Domain\\Blueprint\\ValueObjects\\BlueprintId(
+    $execution = \App\Domain\Execution\Entities\Execution::create(
+        blueprintId: new \App\Domain\Blueprint\ValueObjects\BlueprintId(
             (string) $blueprint->id,
         ),
-        revisionId: new \\App\\Domain\\Blueprint\\ValueObjects\\RevisionId(
+        revisionId: new \App\Domain\Blueprint\ValueObjects\RevisionId(
             (string) $revision->id,
         ),
         input: ['secret' => 'not-readable'],
