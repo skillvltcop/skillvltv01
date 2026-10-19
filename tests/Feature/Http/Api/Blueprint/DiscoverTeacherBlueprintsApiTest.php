@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Blueprint as BlueprintModel;
 use App\Models\User;
 use Database\Seeders\AssessmentPositioningBlueprintSeeder;
 use Database\Seeders\AssessmentScoreCalculatorBlueprintSeeder;
@@ -131,4 +132,54 @@ it('falls back to the session locale when the requested query locale is unsuppor
 
     $response->assertSuccessful();
     $response->assertJsonPath('data.0.title', 'Positionnement évaluatif');
+});
+
+it('falls back to Arabic when the requested translation is missing', function () {
+    $user = User::factory()->create();
+
+    (new AssessmentPositioningBlueprintSeeder())->run();
+
+    $blueprint = BlueprintModel::query()
+        ->where('canonical_name', 'assessment-positioning')
+        ->firstOrFail();
+
+    $metadata = $blueprint->metadata()->firstOrFail();
+    $payload = $metadata->payload;
+    $payload['title'] = [
+        'ar' => 'عنوان احتياطي',
+        'en' => 'Fallback title',
+    ];
+    $metadata->update(['payload' => $payload]);
+
+    $response = $this
+        ->actingAs($user)
+        ->getJson('/api/teacher/blueprints/discover?locale=fr');
+
+    $response->assertSuccessful();
+    $response->assertJsonPath('data.0.title', 'عنوان احتياطي');
+});
+
+it('uses the first available translation when Arabic is also missing', function () {
+    $user = User::factory()->create();
+
+    (new AssessmentPositioningBlueprintSeeder())->run();
+
+    $blueprint = BlueprintModel::query()
+        ->where('canonical_name', 'assessment-positioning')
+        ->firstOrFail();
+
+    $metadata = $blueprint->metadata()->firstOrFail();
+    $payload = $metadata->payload;
+    $payload['title'] = [
+        'en' => 'First available title',
+        'es' => 'Título alternativo',
+    ];
+    $metadata->update(['payload' => $payload]);
+
+    $response = $this
+        ->actingAs($user)
+        ->getJson('/api/teacher/blueprints/discover?locale=fr');
+
+    $response->assertSuccessful();
+    $response->assertJsonPath('data.0.title', 'First available title');
 });
