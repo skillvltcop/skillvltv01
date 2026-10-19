@@ -783,3 +783,78 @@ it('continues an already-started execution if the blueprint lifecycle changes du
         ->toBe((string) $revision->id());
 });
 
+it('preserves the owner, input, and context on the created execution', function () {
+    $blueprint = Blueprint::create(
+        canonicalName: new CanonicalName('execution-snapshot'),
+        namespace: new BlueprintNamespace('skillvlt.edu.execution'),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+    );
+
+    $revision = $blueprint->addRevision(
+        number: new RevisionNumber('1.0.0'),
+        behaviorDigest: new BehaviorDigest(
+            'sha256:' . str_repeat('a', 64),
+        ),
+        contracts: [
+            'input' => [
+                'type' => 'object',
+            ],
+        ],
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'return',
+                    'data' => [
+                        'result' => 'completed',
+                    ],
+                ],
+            ],
+        ],
+        outputs: [],
+        policies: [],
+    );
+
+    $revision->freeze();
+    $blueprint->promoteRevision($revision->id());
+    $blueprint->activate();
+
+    $input = [
+        'student' => [
+            'name' => 'Ahmed',
+            'scores' => [12, 18],
+        ],
+    ];
+    $context = [
+        'locale' => 'ar',
+        'school' => [
+            'code' => 'SCH-01',
+        ],
+    ];
+
+    $engine = new \App\Application\Execution\Engine\ExecutionEngine(
+        runner: new BehaviorRunner(
+            new ValueResolver(),
+            new BehaviorContractValidator(),
+        ),
+    );
+
+    $execution = $engine->execute(
+        blueprint: $blueprint,
+        revisionId: $revision->id(),
+        input: $input,
+        context: $context,
+        ownerId: 'teacher-42',
+    );
+
+    expect($execution->ownerId())->toBe('teacher-42')
+        ->and($execution->input())->toBe($input)
+        ->and($execution->context())->toBe($context)
+        ->and($execution->status())->toBe(ExecutionStatus::COMPLETED);
+});
+
