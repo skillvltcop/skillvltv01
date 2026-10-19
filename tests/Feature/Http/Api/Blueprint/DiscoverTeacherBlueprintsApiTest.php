@@ -102,3 +102,33 @@ it('rejects unauthenticated teacher blueprint discovery', function () {
 
     $response->assertUnauthorized();
 });
+
+it('prioritizes the requested query locale over the Accept-Language header', function () {
+    $user = User::factory()->create();
+
+    (new AssessmentPositioningBlueprintSeeder())->run();
+
+    $response = $this
+        ->actingAs($user)
+        ->withHeader('Accept-Language', 'en')
+        ->getJson('/api/teacher/blueprints/discover?locale=fr');
+
+    $response->assertSuccessful();
+    $response->assertJsonPath('data.0.title', 'Positionnement évaluatif');
+});
+
+it('falls back to the session locale when the requested query locale is unsupported', function () {
+    $user = User::factory()->create();
+
+    (new AssessmentPositioningBlueprintSeeder())->run();
+
+    $response = $this
+        ->actingAs($user)
+        ->withSession(['locale' => 'fr'])
+        ->withHeader('Origin', 'http://localhost')
+        ->withHeader('Accept-Language', 'en')
+        ->getJson('/api/teacher/blueprints/discover?locale=de');
+
+    $response->assertSuccessful();
+    $response->assertJsonPath('data.0.title', 'Positionnement évaluatif');
+});
