@@ -837,7 +837,7 @@ it('preserves the owner, input, and context on the created execution', function 
         ],
     ];
 
-    $engine = new \\App\\Application\\Execution\\Engine\\ExecutionEngine(
+    $engine = new \App\Application\Execution\Engine\ExecutionEngine(
         runner: new BehaviorRunner(
             new ValueResolver(),
             new BehaviorContractValidator(),
