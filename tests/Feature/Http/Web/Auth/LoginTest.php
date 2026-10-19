@@ -96,3 +96,35 @@ it('uses the browser session to execute the teacher blueprint', function () {
     $response->assertJsonMissingPath('blueprint_id');
     $response->assertJsonMissingPath('revision_id');
 });
+
+it('validates required browser login fields', function () {
+    $response = $this
+        ->from('/login')
+        ->post('/login', []);
+
+    $response->assertRedirect('/login');
+    $response->assertSessionHasErrors(['email', 'password']);
+    $this->assertGuest();
+});
+
+it('logs out the browser session and clears its session data', function () {
+    $user = User::factory()->create();
+
+    $response = $this
+        ->actingAs($user)
+        ->withSession(['locale' => 'fr'])
+        ->post('/logout');
+
+    $response->assertRedirect('/login');
+    $response->assertSessionMissing('locale');
+    $this->assertGuest();
+});
+
+it('requires browser authentication to log out', function () {
+    $response = $this
+        ->from('/teacher/tools')
+        ->post('/logout');
+
+    $response->assertRedirect('/login');
+    $this->assertGuest();
+});
