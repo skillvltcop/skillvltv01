@@ -1539,3 +1539,54 @@ it('rejects switching a persisted completed execution to failed', function () {
     expect($persisted->output())->toBe(['result' => 'persisted']);
     expect($persisted->error())->toBeNull();
 });
+
+
+it('clears the execution owner when the owning user is deleted', function () {
+    $blueprintId = BlueprintId::generate();
+    $revisionId = RevisionId::generate();
+
+    Blueprint::query()->create([
+        'id' => (string) $blueprintId,
+        'canonical_name' => 'execution-owner-null-on-delete',
+        'namespace' => 'skillvlt.edu.test',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'draft',
+    ]);
+
+    BlueprintRevision::query()->create([
+        'id' => (string) $revisionId,
+        'blueprint_id' => (string) $blueprintId,
+        'revision_number' => '1.0.0',
+        'parent_revision_id' => null,
+        'behavior_digest' =>
+            'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        'contracts' => [],
+        'logic' => [],
+        'outputs' => [],
+        'policies' => [],
+        'frozen' => true,
+    ]);
+
+    $execution = Execution::create(
+        blueprintId: $blueprintId,
+        revisionId: $revisionId,
+        ownerId: $this->ownerId,
+        input: [],
+        context: [],
+    );
+
+    $repository = new EloquentExecutionRepository();
+    $repository->save($execution);
+
+    User::query()->findOrFail($this->ownerId)->delete();
+
+    $persisted = $repository->find($execution->id());
+
+    expect($persisted)->not->toBeNull();
+    expect($persisted->ownerId())->toBeNull();
+
+    expect(\App\Models\Execution::query()
+        ->findOrFail((string) $execution->id())
+        ->owner_id)->toBeNull();
+});
