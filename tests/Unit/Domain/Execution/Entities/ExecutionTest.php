@@ -26,6 +26,9 @@ it('creates an execution with a generated identity', function () {
     expect($execution->status())
         ->toBe(ExecutionStatus::PENDING);
 
+    expect($execution->ownerId())
+        ->toBeNull();
+
     expect($execution->output())
         ->toBeNull();
 
