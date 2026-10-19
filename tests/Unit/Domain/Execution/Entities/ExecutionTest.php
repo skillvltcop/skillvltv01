@@ -256,7 +256,11 @@ it('reconstitutes an execution without changing its identity', function () {
             'score' => 18,
         ],
         error: null,
+        ownerId: 'teacher-42',
     );
+
+    expect($execution->ownerId())
+        ->toBe('teacher-42');
 
     expect((string) $execution->id())
         ->toBe((string) $id);
