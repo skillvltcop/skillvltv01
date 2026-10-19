@@ -20,7 +20,7 @@ jobs:
         with:
           php-version: '8.2'
           extensions: mbstring, dom, fileinfo, sqlite3, pdo_sqlite, xml, curl
-          coverage: xdebug
+          coverage: pcov
           tools: composer:v2
 
       - name: Cache Composer dependencies
@@ -40,7 +40,7 @@ jobs:
           php artisan key:generate
 
       - name: Run test suite with coverage
-        run: vendor/bin/pest --coverage-clover=coverage.xml --coverage-text --path-coverage
+        run: vendor/bin/pest --coverage-clover=coverage.xml --coverage-text
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
