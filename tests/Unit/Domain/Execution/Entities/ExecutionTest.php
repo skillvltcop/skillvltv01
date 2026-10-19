@@ -575,3 +575,46 @@ it('rejects a pending or running execution state with output or error', function
         'A pending or running execution cannot have output or error.'
     );
 });
+
+it('rejects repeated execution transitions without changing the existing state', function () {
+    $running = Execution::create(
+        blueprintId: BlueprintId::generate(),
+        revisionId: RevisionId::generate(),
+        input: [],
+        context: [],
+    );
+
+    $running->start();
+
+    expect(fn () => $running->start())
+        ->toThrow(
+            DomainException::class,
+            'Only a pending execution can be started.',
+        );
+
+    expect($running->status())
+        ->toBe(ExecutionStatus::RUNNING);
+
+    $failed = Execution::create(
+        blueprintId: BlueprintId::generate(),
+        revisionId: RevisionId::generate(),
+        input: [],
+        context: [],
+    );
+
+    $failed->start();
+    $failed->fail('Original failure.');
+
+    expect(fn () => $failed->fail('Replacement failure.'))
+        ->toThrow(
+            DomainException::class,
+            'Only a running execution can fail.',
+        );
+
+    expect($failed->status())
+        ->toBe(ExecutionStatus::FAILED)
+        ->and($failed->error())
+        ->toBe('Original failure.')
+        ->and($failed->output())
+        ->toBeNull();
+});
