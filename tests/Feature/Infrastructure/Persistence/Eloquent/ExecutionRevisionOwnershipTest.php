@@ -7,7 +7,6 @@ use App\Infrastructure\Persistence\Eloquent\EloquentExecutionRepository;
 use App\Models\Blueprint;
 use App\Models\BlueprintRevision;
 use App\Models\Execution as ExecutionModel;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -55,7 +54,7 @@ it('rejects persisting an execution whose revision belongs to another blueprint'
 
     expect(fn () => $repository->save($execution))
         ->toThrow(
-            \\DomainException::class,
+            \DomainException::class,
             'Execution revision does not belong to the Blueprint.',
         );
 
