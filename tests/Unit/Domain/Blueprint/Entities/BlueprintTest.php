@@ -1572,3 +1572,43 @@ it('rejects invalid lifecycle transitions without changing the Blueprint status'
             ->toBe($initialStatus);
     }
 });
+
+
+it('rejects revision maps whose keys do not match revision identities', function () {
+    $revisionId = RevisionId::generate();
+
+    $revision = BlueprintRevision::reconstitute(
+        id: $revisionId,
+        number: new RevisionNumber('1.0.0'),
+        parentRevisionId: null,
+        behaviorDigest: makeDigest(),
+        contracts: makeContracts(),
+        logic: makeLogic(),
+        outputs: makeOutputs(),
+        policies: makePolicies(),
+        frozen: false,
+    );
+
+    expect(fn () => Blueprint::reconstitute(
+        id: BlueprintId::generate(),
+        canonicalName: new CanonicalName(
+            'assessment-rubric-invalid-revision-map-key',
+        ),
+        namespace: new BlueprintNamespace(
+            'skillvlt.edu.assessment',
+        ),
+        ownership: [
+            'type' => 'system',
+            'id' => 'skillvlt',
+        ],
+        metadata: [],
+        lifecycleStatus: LifecycleStatus::DRAFT,
+        currentRevisionId: null,
+        revisions: [
+            'incorrect-revision-key' => $revision,
+        ],
+    ))->toThrow(
+        DomainException::class,
+        'Revision map key must match the Revision ID.',
+    );
+});
