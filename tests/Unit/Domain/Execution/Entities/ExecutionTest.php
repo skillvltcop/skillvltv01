@@ -618,3 +618,40 @@ it('rejects repeated execution transitions without changing the existing state',
         ->and($failed->output())
         ->toBeNull();
 });
+
+
+it('rejects inconsistent output and error combinations for reconstituted executions', function () {
+    $invalidStates = [
+        [
+            ExecutionStatus::COMPLETED,
+            ['result' => 'ok'],
+            'Stale error.',
+            'A completed execution must have output and no error.',
+        ],
+        [
+            ExecutionStatus::FAILED,
+            ['result' => 'unexpected'],
+            'Failure recorded.',
+            'A failed execution must have an error and no output.',
+        ],
+        [
+            ExecutionStatus::RUNNING,
+            null,
+            'Unexpected error.',
+            'A pending or running execution cannot have output or error.',
+        ],
+    ];
+
+    foreach ($invalidStates as [$status, $output, $error, $message]) {
+        expect(fn () => Execution::reconstitute(
+            id: ExecutionId::generate(),
+            blueprintId: BlueprintId::generate(),
+            revisionId: RevisionId::generate(),
+            input: [],
+            context: [],
+            status: $status,
+            output: $output,
+            error: $error,
+        ))->toThrow(DomainException::class, $message);
+    }
+});
