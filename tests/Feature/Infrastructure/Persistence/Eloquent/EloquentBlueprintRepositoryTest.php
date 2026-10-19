@@ -1203,8 +1203,6 @@ it('loads the blueprint and current revision graph for execution', function () {
         ->and($loaded->revision($revision->id()))->not->toBeNull();
 });
 
-
-
 it('preserves legacy metadata when saving a blueprint with no payload column value', function () {
     $id = (string) Str::ulid();
 
