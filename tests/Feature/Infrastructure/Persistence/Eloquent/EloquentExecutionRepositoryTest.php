@@ -1586,7 +1586,7 @@ it('clears the execution owner when the owning user is deleted', function () {
     expect($persisted)->not->toBeNull();
     expect($persisted->ownerId())->toBeNull();
 
-    expect(\\App\\Models\\Execution::query()
+    expect(\App\Models\Execution::query()
         ->findOrFail((string) $execution->id())
         ->owner_id)->toBeNull();
 });
