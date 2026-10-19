@@ -125,6 +125,7 @@ it('falls back to the session locale when the requested query locale is unsuppor
     $response = $this
         ->actingAs($user)
         ->withSession(['locale' => 'fr'])
+        ->withHeader('Origin', 'http://localhost')
         ->withHeader('Accept-Language', 'en')
         ->getJson('/api/teacher/blueprints/discover?locale=de');
 
