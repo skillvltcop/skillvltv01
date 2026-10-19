@@ -86,6 +86,9 @@ it('persists and retrieves an execution through the repository', function () {
     expect((string) $found->revisionId())
         ->toBe((string) $revisionId);
 
+    expect($found->ownerId())
+        ->toBe($this->ownerId);
+
     expect($found->input())
         ->toBe([
             'student' => [
