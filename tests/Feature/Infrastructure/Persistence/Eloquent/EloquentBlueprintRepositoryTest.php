@@ -1203,3 +1203,53 @@ it('loads the blueprint and current revision graph for execution', function () {
         ->and($loaded->revision($revision->id()))->not->toBeNull();
 });
 
+
+
+it('preserves legacy metadata when saving a blueprint with no payload column value', function () {
+    $id = (string) Str::ulid();
+
+    $model = BlueprintModel::query()->create([
+        'id' => $id,
+        'canonical_name' => 'legacy-metadata-payload',
+        'namespace' => 'skillvlt.edu.compatibility',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'draft',
+    ]);
+
+    $metadata = [
+        'taxonomy' => [
+            'domain' => 'education',
+            'type' => 'assessment',
+        ],
+        'documentation' => [
+            'summary' => 'Legacy metadata record',
+        ],
+        'discovery' => [
+            'keywords' => ['legacy', 'compatibility'],
+        ],
+        'lifecycle_metadata' => [
+            'created_by' => 'skillvlt',
+        ],
+    ];
+
+    $model->metadata()->create([
+        'blueprint_id' => $id,
+        'taxonomy' => $metadata['taxonomy'],
+        'documentation' => $metadata['documentation'],
+        'discovery' => $metadata['discovery'],
+        'lifecycle_metadata' => $metadata['lifecycle_metadata'],
+        'payload' => null,
+    ]);
+
+    $repository = new EloquentBlueprintRepository();
+
+    $blueprint = $repository->find(new BlueprintId($id));
+
+    expect($blueprint->metadata())->toEqual($metadata);
+
+    $repository->save($blueprint);
+
+    expect(BlueprintModel::query()->findOrFail($id)->metadata->payload)
+        ->toEqual($metadata);
+});
