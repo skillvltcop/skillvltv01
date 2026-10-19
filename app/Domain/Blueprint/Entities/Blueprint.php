@@ -382,7 +382,7 @@ final class Blueprint
     ): self {
         foreach ($revisions as $key => $revision) {
             if ((string) $key !== (string) $revision->id()) {
-                throw new \\DomainException(
+                throw new \DomainException(
                     'Revision map key must match the Revision ID.'
                 );
             }
