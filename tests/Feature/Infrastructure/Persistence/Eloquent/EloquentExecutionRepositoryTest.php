@@ -9,6 +9,7 @@ use App\Infrastructure\Persistence\Eloquent\EloquentExecutionRepository;
 use App\Models\Blueprint;
 use App\Models\BlueprintRevision;
 use App\Models\User;
+use App\Models\Execution as ExecutionModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -1589,4 +1590,50 @@ it('clears the execution owner when the owning user is deleted', function () {
     expect(\App\Models\Execution::query()
         ->findOrFail((string) $execution->id())
         ->owner_id)->toBeNull();
+});
+
+it('persists and retrieves an execution without an owner', function () {
+    $blueprintId = BlueprintId::generate();
+    $revisionId = RevisionId::generate();
+
+    Blueprint::query()->create([
+        'id' => (string) $blueprintId,
+        'canonical_name' => 'ownerless-execution-test',
+        'namespace' => 'skillvlt.edu.test',
+        'owner_type' => 'system',
+        'owner_id' => 'skillvlt',
+        'lifecycle_status' => 'draft',
+    ]);
+
+    BlueprintRevision::query()->create([
+        'id' => (string) $revisionId,
+        'blueprint_id' => (string) $blueprintId,
+        'revision_number' => '1.0.0',
+        'parent_revision_id' => null,
+        'behavior_digest' =>
+            'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        'contracts' => [],
+        'logic' => [],
+        'outputs' => [],
+        'policies' => [],
+        'frozen' => true,
+    ]);
+
+    $execution = Execution::create(
+        blueprintId: $blueprintId,
+        revisionId: $revisionId,
+        input: [],
+        context: [],
+    );
+
+    $repository = new EloquentExecutionRepository();
+    $repository->save($execution);
+
+    $persisted = $repository->find($execution->id());
+
+    expect($persisted)->not->toBeNull()
+        ->and($persisted->ownerId())->toBeNull()
+        ->and(ExecutionModel::query()
+            ->findOrFail((string) $execution->id())
+            ->owner_id)->toBeNull();
 });
