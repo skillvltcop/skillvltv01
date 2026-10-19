@@ -43,3 +43,18 @@ it('changes the browser locale', function () {
 
     $response->assertSessionHas('locale', 'fr');
 });
+
+it('preserves the current locale when an unsupported locale is submitted', function () {
+    $user = User::factory()->create();
+
+    $response = $this
+        ->actingAs($user)
+        ->withSession(['locale' => 'fr'])
+        ->from('/teacher/tools')
+        ->post('/locale', [
+            'locale' => 'de',
+        ]);
+
+    $response->assertRedirect('/teacher/tools');
+    $response->assertSessionHas('locale', 'fr');
+});
