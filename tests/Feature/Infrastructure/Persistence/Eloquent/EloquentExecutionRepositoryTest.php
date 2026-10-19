@@ -9,6 +9,7 @@ use App\Infrastructure\Persistence\Eloquent\EloquentExecutionRepository;
 use App\Models\Blueprint;
 use App\Models\BlueprintRevision;
 use App\Models\User;
+use App\Models\Execution as ExecutionModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -1632,7 +1633,7 @@ it('persists and retrieves an execution without an owner', function () {
 
     expect($persisted)->not->toBeNull()
         ->and($persisted->ownerId())->toBeNull()
-        ->and(\\App\\Models\\Execution::query()
+        ->and(ExecutionModel::query()
             ->findOrFail((string) $execution->id())
             ->owner_id)->toBeNull();
 });
