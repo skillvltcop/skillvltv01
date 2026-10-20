@@ -562,11 +562,20 @@ final class BehaviorRunner implements BehaviorRunnerContract
             );
         }
 
+        $actualValue = is_float($actual)
+            ? json_encode($actual, JSON_PRESERVE_ZERO_FRACTION | JSON_THROW_ON_ERROR)
+            : (string) $actual;
+        $expectedValue = is_float($expected)
+            ? json_encode($expected, JSON_PRESERVE_ZERO_FRACTION | JSON_THROW_ON_ERROR)
+            : (string) $expected;
+
+        $comparison = NumericValueComparator::compare($actualValue, $expectedValue);
+
         return match ($operator) {
-            '>' => $actual > $expected,
-            '>=' => $actual >= $expected,
-            '<' => $actual < $expected,
-            '<=' => $actual <= $expected,
+            '>' => $comparison > 0,
+            '>=' => $comparison >= 0,
+            '<' => $comparison < 0,
+            '<=' => $comparison <= 0,
         };
     }
 }
