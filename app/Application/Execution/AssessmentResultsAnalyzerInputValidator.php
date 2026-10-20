@@ -36,12 +36,12 @@ final class AssessmentResultsAnalyzerInputValidator
             }
 
             $score = $learner['score'] ?? null;
-            if (! is_numeric($score) || (float) $score < 0) {
+            if (! is_numeric($score) || ! is_finite((float) $score) || (float) $score < 0) {
                 throw new \DomainException("Input {$prefix}.score must be a non-negative number.");
             }
 
             $maxScore = $learner['max_score'] ?? null;
-            if (! is_numeric($maxScore) || (float) $maxScore <= 0) {
+            if (! is_numeric($maxScore) || ! is_finite((float) $maxScore) || (float) $maxScore <= 0) {
                 throw new \DomainException("Input {$prefix}.max_score must be greater than zero.");
             }
 
