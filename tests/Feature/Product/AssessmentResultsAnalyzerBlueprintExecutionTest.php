@@ -97,3 +97,31 @@ it('rejects non-positive maximum scores through the teacher API', function () {
     $response->assertUnprocessable();
     $response->assertJsonValidationErrors(['input.learners.0.max_score']);
 });
+
+
+it('rejects non-finite analyzer scores and maximum scores through the teacher API', function () {
+    $user = User::factory()->create();
+
+    (new AssessmentResultsAnalyzerBlueprintSeeder())->run();
+
+    foreach ([
+        [
+            'learner' => ['name' => 'Infinite Score', 'score' => '1e309', 'max_score' => '1e309'],
+            'error' => 'input.learners.0.score',
+        ],
+        [
+            'learner' => ['name' => 'Infinite Maximum', 'score' => 0, 'max_score' => '1e309'],
+            'error' => 'input.learners.0.max_score',
+        ],
+    ] as $case) {
+        $response = $this
+            ->actingAs($user)
+            ->postJson('/api/teacher/tools/assessment-results-analyzer/execute', [
+                'input' => ['learners' => [$case['learner']]],
+                'context' => [],
+            ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors([$case['error']]);
+    }
+});
