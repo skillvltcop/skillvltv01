@@ -295,11 +295,27 @@ final class BehaviorRunner implements BehaviorRunnerContract
 
         // Input validation accepts numeric strings, so normalize them before arithmetic.
         if (is_string($left) && is_numeric($left)) {
-            $left = (float) $left;
+            $normalizedLeft = (float) $left;
+
+            if ($normalizedLeft === 0.0 && NumericValueComparator::compare($left, '0') !== 0) {
+                throw new \DomainException(
+                    'Calculation operands must be representable as finite numbers.'
+                );
+            }
+
+            $left = $normalizedLeft;
         }
 
         if (is_string($right) && is_numeric($right)) {
-            $right = (float) $right;
+            $normalizedRight = (float) $right;
+
+            if ($normalizedRight === 0.0 && NumericValueComparator::compare($right, '0') !== 0) {
+                throw new \DomainException(
+                    'Calculation operands must be representable as finite numbers.'
+                );
+            }
+
+            $right = $normalizedRight;
         }
 
         if (

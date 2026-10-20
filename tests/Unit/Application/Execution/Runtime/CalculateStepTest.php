@@ -126,6 +126,32 @@ it('rejects non-numeric calculate operands at runtime', function () {
     );
 });
 
+
+it('rejects non-zero numeric strings that underflow to zero before arithmetic', function ($operation, $left, $right, $input) {
+    $runner = calculateStepRunner();
+
+    expect(fn () => $runner->run(
+        logic: calculateBehavior($operation, $left, $right),
+        input: $input,
+    ))->toThrow(
+        DomainException::class,
+        'Calculation operands must be representable as finite numbers.'
+    );
+})->with([
+    'underflowing divisor' => [
+        'divide',
+        'input.left',
+        'input.right',
+        ['left' => '1', 'right' => '1e-99999999999999999999'],
+    ],
+    'underflowing dividend' => [
+        'multiply',
+        'input.left',
+        'input.right',
+        ['left' => '1e-99999999999999999999', 'right' => '100'],
+    ],
+]);
+
 it('rejects division by zero', function () {
     $runner = calculateStepRunner();
 
