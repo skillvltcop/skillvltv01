@@ -13,7 +13,10 @@ final class AssessmentResultsAnalyzerInputValidator
      */
     public function validate(Blueprint $blueprint, array $input): void
     {
-        if ((string) $blueprint->canonicalName() !== 'assessment-results-analyzer') {
+        if (
+            (string) $blueprint->namespace() !== 'skillvlt.edu.assessment'
+            || (string) $blueprint->canonicalName() !== 'assessment-results-analyzer'
+        ) {
             return;
         }
 
