@@ -98,6 +98,10 @@ it('rejects invalid learner field values through the generic blueprint execution
             'message' => 'Input learners.0.score must be a non-negative number.',
         ],
         [
+            'learner' => ['name' => 'Tiny Negative Score', 'score' => '-1e-99999999999999999999', 'max_score' => 20],
+            'message' => 'Input learners.0.score must be a non-negative number.',
+        ],
+        [
             'learner' => ['name' => 'Learner', 'score' => 0, 'max_score' => 0],
             'message' => 'Input learners.0.max_score must be greater than zero.',
         ],
