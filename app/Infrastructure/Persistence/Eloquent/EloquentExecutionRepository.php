@@ -149,6 +149,22 @@ final class EloquentExecutionRepository implements ExecutionRepository
 
         $candidate = $execution->status();
 
+        $persistedIsTerminal = in_array($persisted, [
+            ExecutionStatus::COMPLETED,
+            ExecutionStatus::FAILED,
+        ], true);
+
+        if (
+            $persistedIsTerminal
+            && (
+                $candidate !== $persisted
+                || $execution->output() !== $model->output
+                || $execution->error() !== $model->error
+            )
+        ) {
+            throw new ConcurrentExecutionException();
+        }
+
         $allowedTransitions = match ($persisted) {
             ExecutionStatus::PENDING => [
                 ExecutionStatus::PENDING,
@@ -168,19 +184,6 @@ final class EloquentExecutionRepository implements ExecutionRepository
         };
 
         if (! in_array($candidate, $allowedTransitions, true)) {
-            throw new ConcurrentExecutionException();
-        }
-
-        if (
-            in_array($persisted, [
-                ExecutionStatus::COMPLETED,
-                ExecutionStatus::FAILED,
-            ], true)
-            && (
-                $execution->output() !== $model->output
-                || $execution->error() !== $model->error
-            )
-        ) {
             throw new ConcurrentExecutionException();
         }
     }
