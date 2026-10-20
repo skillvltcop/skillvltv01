@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api;
 
+use App\Application\Execution\NumericValueComparator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -81,7 +82,7 @@ final class TeacherExecuteBlueprintRequest extends FormRequest
                     && is_finite((float) $score)
                     && is_numeric($maxScore)
                     && is_finite((float) $maxScore)
-                    && (float) $score > (float) $maxScore
+                    && NumericValueComparator::compare($score, $maxScore) > 0
                 ) {
                     $validator->errors()->add(
                         "input.learners.{$index}.score",

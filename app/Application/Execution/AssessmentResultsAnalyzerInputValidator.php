@@ -45,7 +45,7 @@ final class AssessmentResultsAnalyzerInputValidator
                 throw new \DomainException("Input {$prefix}.max_score must be greater than zero.");
             }
 
-            if ((float) $score > (float) $maxScore) {
+            if (NumericValueComparator::compare($score, $maxScore) > 0) {
                 throw new \DomainException("Input {$prefix}.score may not exceed max_score.");
             }
         }
