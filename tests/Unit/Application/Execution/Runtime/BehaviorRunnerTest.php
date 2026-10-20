@@ -1742,3 +1742,35 @@ it('compares numeric strings exactly in count_matching beyond the integer bounda
         ],
     ))->toBe(['matched_count' => 1]);
 });
+
+
+it('compares integer and float evaluate_rule values without losing integer precision', function () {
+    $runner = createBehaviorRunner();
+
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'evaluate_rule',
+                'condition' => [
+                    'field' => 'input.score',
+                    'operator' => 'gt',
+                    'value' => 9007199254740992.0,
+                ],
+                'assign_to' => 'result',
+                'true_value' => 'greater',
+                'false_value' => 'not_greater',
+            ],
+            [
+                'type' => 'return',
+                'data' => ['result' => '{state.result}'],
+            ],
+        ],
+    ];
+
+    expect($runner->run(
+        logic: $logic,
+        input: ['score' => 9007199254740993],
+    ))->toBe(['result' => 'greater']);
+});
