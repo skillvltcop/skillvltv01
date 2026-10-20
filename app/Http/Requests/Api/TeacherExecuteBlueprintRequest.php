@@ -62,9 +62,25 @@ final class TeacherExecuteBlueprintRequest extends FormRequest
                 $score = $learner['score'] ?? null;
                 $maxScore = $learner['max_score'] ?? null;
 
+                if (is_numeric($score) && ! is_finite((float) $score)) {
+                    $validator->errors()->add(
+                        "input.learners.{$index}.score",
+                        'The score must be finite.',
+                    );
+                }
+
+                if (is_numeric($maxScore) && ! is_finite((float) $maxScore)) {
+                    $validator->errors()->add(
+                        "input.learners.{$index}.max_score",
+                        'The maximum score must be finite.',
+                    );
+                }
+
                 if (
                     is_numeric($score)
+                    && is_finite((float) $score)
                     && is_numeric($maxScore)
+                    && is_finite((float) $maxScore)
                     && (float) $score > (float) $maxScore
                 ) {
                     $validator->errors()->add(
