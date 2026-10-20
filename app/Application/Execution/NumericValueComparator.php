@@ -51,7 +51,7 @@ final class NumericValueComparator
     {
         if (is_float($value)) {
             if (! is_finite($value)) {
-                throw new \\InvalidArgumentException('Value must be finite.');
+                throw new \InvalidArgumentException('Value must be finite.');
             }
 
             return json_encode(
@@ -61,7 +61,7 @@ final class NumericValueComparator
         }
 
         if (! is_int($value) && ! is_string($value)) {
-            throw new \\InvalidArgumentException('Value must be numeric.');
+            throw new \InvalidArgumentException('Value must be numeric.');
         }
 
         return (string) $value;
