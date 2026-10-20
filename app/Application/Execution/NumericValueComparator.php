@@ -13,8 +13,8 @@ final class NumericValueComparator
      */
     public static function compare(mixed $left, mixed $right): int
     {
-        $leftParts = self::parts((string) $left);
-        $rightParts = self::parts((string) $right);
+        $leftParts = self::parts(self::toNumericString($left));
+        $rightParts = self::parts(self::toNumericString($right));
 
         if ($leftParts['sign'] !== $rightParts['sign']) {
             return $leftParts['sign'] <=> $rightParts['sign'];
@@ -44,6 +44,27 @@ final class NumericValueComparator
         }
 
         return $leftParts['sign'] * $magnitude;
+    }
+
+
+    private static function toNumericString(mixed $value): string
+    {
+        if (is_float($value)) {
+            if (! is_finite($value)) {
+                throw new \\InvalidArgumentException('Value must be finite.');
+            }
+
+            return json_encode(
+                $value,
+                JSON_PRESERVE_ZERO_FRACTION | JSON_THROW_ON_ERROR,
+            );
+        }
+
+        if (! is_int($value) && ! is_string($value)) {
+            throw new \\InvalidArgumentException('Value must be numeric.');
+        }
+
+        return (string) $value;
     }
 
     /**
