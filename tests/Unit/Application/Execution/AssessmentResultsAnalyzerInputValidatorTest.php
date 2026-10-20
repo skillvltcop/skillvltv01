@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use App\\Application\\Execution\\AssessmentResultsAnalyzerInputValidator;
-use App\\Domain\\Blueprint\\Entities\\Blueprint;
-use App\\Domain\\Blueprint\\ValueObjects\\BlueprintNamespace;
-use App\\Domain\\Blueprint\\ValueObjects\\CanonicalName;
+use App\Application\Execution\AssessmentResultsAnalyzerInputValidator;
+use App\Domain\Blueprint\Entities\Blueprint;
+use App\Domain\Blueprint\ValueObjects\BlueprintNamespace;
+use App\Domain\Blueprint\ValueObjects\CanonicalName;
 
 it('does not apply analyzer-specific validation to the same canonical name in another namespace', function () {
     $blueprint = Blueprint::create(
