@@ -48,3 +48,11 @@ it('compares decimal and scientific numeric strings exactly', function () {
         ->and(\App\Application\Execution\NumericValueComparator::compare('1.2e2', '119.99'))->toBe(1)
         ->and(\App\Application\Execution\NumericValueComparator::compare('0.009', '9e-3'))->toBe(0);
 });
+
+it('orders numeric values with scientific exponents larger than native integers', function () {
+    $lower = '1e-99999999999999999999';
+    $higher = '1e-99999999999999999998';
+
+    expect(\App\Application\Execution\NumericValueComparator::compare($lower, $higher))->toBe(-1)
+        ->and(\App\Application\Execution\NumericValueComparator::compare($higher, $lower))->toBe(1);
+});
