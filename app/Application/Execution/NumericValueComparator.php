@@ -24,7 +24,10 @@ final class NumericValueComparator
             return 0;
         }
 
-        $magnitude = $leftParts['order'] <=> $rightParts['order'];
+        $magnitude = self::compareSignedIntegers(
+            $leftParts['order'],
+            $rightParts['order'],
+        );
 
         if ($magnitude === 0) {
             $length = max(strlen($leftParts['digits']), strlen($rightParts['digits']));
@@ -44,7 +47,7 @@ final class NumericValueComparator
     }
 
     /**
-     * @return array{sign: int, order: int, digits: string}
+     * @return array{sign: int, order: string, digits: string}
      */
     private static function parts(string $value): array
     {
@@ -58,20 +61,146 @@ final class NumericValueComparator
         $integer = $matches[2] ?? '';
         $fraction = $matches[3] ?? '';
         $digits = $integer.$fraction;
-        $exponent = (int) ($matches[4] ?? '0');
         $digits = ltrim($digits, '0');
 
         if ($digits === '') {
-            return ['sign' => 0, 'order' => 0, 'digits' => '0'];
+            return ['sign' => 0, 'order' => '0', 'digits' => '0'];
         }
 
         $leadingZeroCount = strlen($integer.$fraction) - strlen(ltrim($integer.$fraction, '0'));
-        $order = strlen($integer) + $exponent - $leadingZeroCount;
+        $order = self::addIntegerOffset(
+            $matches[4] ?? '0',
+            strlen($integer) - $leadingZeroCount,
+        );
 
         return [
             'sign' => ($matches[1] ?? '') === '-' ? -1 : 1,
             'order' => $order,
             'digits' => $digits,
         ];
+    }
+
+    private static function addIntegerOffset(string $value, int $offset): string
+    {
+        $value = self::normalizeSignedInteger($value);
+
+        if ($offset === 0) {
+            return $value;
+        }
+
+        $valueSign = $value[0] === '-' ? -1 : ($value === '0' ? 0 : 1);
+        $valueDigits = ltrim($value, '-');
+        $offsetSign = $offset < 0 ? -1 : 1;
+        $offsetDigits = (string) abs($offset);
+
+        if ($valueSign === 0) {
+            return ($offsetSign < 0 ? '-' : '').$offsetDigits;
+        }
+
+        if ($valueSign === $offsetSign) {
+            return ($valueSign < 0 ? '-' : '')
+                .self::addMagnitudes($valueDigits, $offsetDigits);
+        }
+
+        $comparison = self::compareMagnitudes($valueDigits, $offsetDigits);
+
+        if ($comparison === 0) {
+            return '0';
+        }
+
+        if ($comparison > 0) {
+            return ($valueSign < 0 ? '-' : '')
+                .self::subtractMagnitudes($valueDigits, $offsetDigits);
+        }
+
+        return ($offsetSign < 0 ? '-' : '')
+            .self::subtractMagnitudes($offsetDigits, $valueDigits);
+    }
+
+    private static function normalizeSignedInteger(string $value): string
+    {
+        $negative = str_starts_with($value, '-');
+        $digits = ltrim($value, '+-');
+        $digits = ltrim($digits, '0');
+
+        if ($digits === '') {
+            return '0';
+        }
+
+        return ($negative ? '-' : '').$digits;
+    }
+
+    private static function compareSignedIntegers(string $left, string $right): int
+    {
+        $leftSign = $left[0] === '-' ? -1 : ($left === '0' ? 0 : 1);
+        $rightSign = $right[0] === '-' ? -1 : ($right === '0' ? 0 : 1);
+
+        if ($leftSign !== $rightSign) {
+            return $leftSign <=> $rightSign;
+        }
+
+        if ($leftSign === 0) {
+            return 0;
+        }
+
+        return $leftSign * self::compareMagnitudes(
+            ltrim($left, '-'),
+            ltrim($right, '-'),
+        );
+    }
+
+    private static function compareMagnitudes(string $left, string $right): int
+    {
+        $lengthComparison = strlen($left) <=> strlen($right);
+
+        return $lengthComparison !== 0
+            ? $lengthComparison
+            : (strcmp($left, $right) <=> 0);
+    }
+
+    private static function addMagnitudes(string $left, string $right): string
+    {
+        $leftIndex = strlen($left) - 1;
+        $rightIndex = strlen($right) - 1;
+        $carry = 0;
+        $result = '';
+
+        while ($leftIndex >= 0 || $rightIndex >= 0 || $carry > 0) {
+            $sum = ($leftIndex >= 0 ? (int) $left[$leftIndex--] : 0)
+                + ($rightIndex >= 0 ? (int) $right[$rightIndex--] : 0)
+                + $carry;
+
+            $result = (string) ($sum % 10).$result;
+            $carry = intdiv($sum, 10);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Subtract the smaller non-negative integer magnitude from the larger one.
+     */
+    private static function subtractMagnitudes(string $larger, string $smaller): string
+    {
+        $largerIndex = strlen($larger) - 1;
+        $smallerIndex = strlen($smaller) - 1;
+        $borrow = 0;
+        $result = '';
+
+        while ($largerIndex >= 0) {
+            $digit = (int) $larger[$largerIndex--] - $borrow;
+            $subtract = $smallerIndex >= 0 ? (int) $smaller[$smallerIndex--] : 0;
+
+            if ($digit < $subtract) {
+                $digit += 10;
+                $borrow = 1;
+            } else {
+                $borrow = 0;
+            }
+
+            $result = (string) ($digit - $subtract).$result;
+        }
+
+        return ltrim($result, '0') ?: '0';
     }
 }
