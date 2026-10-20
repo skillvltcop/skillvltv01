@@ -1575,10 +1575,10 @@ it('rejects invalid lifecycle transitions without changing the Blueprint status'
 
 
 
-it('rejects a revision history component that forms a cycle apart from the root', function () {
+it('rejects a revision history graph with a disconnected component', function () {
     $rootRevisionId = RevisionId::generate();
-    $firstCycleRevisionId = RevisionId::generate();
-    $secondCycleRevisionId = RevisionId::generate();
+    $childRevisionId = RevisionId::generate();
+    $disconnectedRevisionId = RevisionId::generate();
 
     $rootRevision = BlueprintRevision::reconstitute(
         id: $rootRevisionId,
@@ -1592,11 +1592,10 @@ it('rejects a revision history component that forms a cycle apart from the root'
         frozen: true,
     );
 
-    // Neither cycle node is reachable from the root, but all parent IDs exist.
-    $firstCycleRevision = BlueprintRevision::reconstitute(
-        id: $firstCycleRevisionId,
+    $childRevision = BlueprintRevision::reconstitute(
+        id: $childRevisionId,
         number: new RevisionNumber('1.1.0'),
-        parentRevisionId: $secondCycleRevisionId,
+        parentRevisionId: $rootRevisionId,
         behaviorDigest: new BehaviorDigest(
             'sha256:' . str_repeat('b', 64),
         ),
@@ -1607,10 +1606,12 @@ it('rejects a revision history component that forms a cycle apart from the root'
         frozen: true,
     );
 
-    $secondCycleRevision = BlueprintRevision::reconstitute(
-        id: $secondCycleRevisionId,
+    // This revision points to an existing node in the main chain, but the
+    // only child check does not make it reachable from the root.
+    $disconnectedRevision = BlueprintRevision::reconstitute(
+        id: $disconnectedRevisionId,
         number: new RevisionNumber('1.2.0'),
-        parentRevisionId: $firstCycleRevisionId,
+        parentRevisionId: $childRevisionId,
         behaviorDigest: new BehaviorDigest(
             'sha256:' . str_repeat('c', 64),
         ),
@@ -1638,8 +1639,8 @@ it('rejects a revision history component that forms a cycle apart from the root'
         currentRevisionId: null,
         revisions: [
             (string) $rootRevisionId => $rootRevision,
-            (string) $firstCycleRevisionId => $firstCycleRevision,
-            (string) $secondCycleRevisionId => $secondCycleRevision,
+            (string) $childRevisionId => $childRevision,
+            (string) $disconnectedRevisionId => $disconnectedRevision,
         ],
     ))->toThrow(
         DomainException::class,
