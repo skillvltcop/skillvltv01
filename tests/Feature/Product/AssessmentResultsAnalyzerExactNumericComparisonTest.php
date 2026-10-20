@@ -50,15 +50,15 @@ it('compares decimal and scientific numeric strings exactly', function () {
 });
 
 it('preserves round-trip float precision when comparing mixed numeric values', function () {
-    expect(\\App\\Application\\Execution\\NumericValueComparator::compare(
+    expect(\App\Application\Execution\NumericValueComparator::compare(
         9007199254740992.0,
         '9007199254740992',
     ))->toBe(0)
-        ->and(\\App\\Application\\Execution\\NumericValueComparator::compare(
+        ->and(\App\Application\Execution\NumericValueComparator::compare(
             9007199254740992.0,
             '9007199254740993',
         ))->toBe(-1)
-        ->and(\\App\\Application\\Execution\\NumericValueComparator::compare(
+        ->and(\App\Application\Execution\NumericValueComparator::compare(
             0.1 + 0.2,
             '0.30000000000000004',
         ))->toBe(0);
