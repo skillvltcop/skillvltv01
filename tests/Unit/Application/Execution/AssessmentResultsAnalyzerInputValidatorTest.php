@@ -37,3 +37,28 @@ it('applies analyzer-specific validation within its designated namespace', funct
         'Input learners must be a non-empty array.'
     );
 });
+
+it('rejects positive scores that underflow to zero when cast to float', function () {
+    $blueprint = Blueprint::create(
+        canonicalName: new CanonicalName('assessment-results-analyzer'),
+        namespace: new BlueprintNamespace('skillvlt.edu.assessment'),
+        ownership: ['type' => 'system', 'id' => 'skillvlt'],
+        metadata: [],
+    );
+
+    expect(fn () => (new AssessmentResultsAnalyzerInputValidator())->validate(
+        $blueprint,
+        [
+            'learners' => [
+                [
+                    'name' => 'Tiny Positive Score',
+                    'score' => '1e-99999999999999999999',
+                    'max_score' => 20,
+                ],
+            ],
+        ],
+    ))->toThrow(
+        DomainException::class,
+        'Input learners.0.score must be a non-negative number.'
+    );
+});
