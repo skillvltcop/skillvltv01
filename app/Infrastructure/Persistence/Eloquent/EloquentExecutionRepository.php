@@ -149,26 +149,33 @@ final class EloquentExecutionRepository implements ExecutionRepository
 
         $candidate = $execution->status();
 
-        $rank = static fn (ExecutionStatus $status): int => match ($status) {
-            ExecutionStatus::PENDING => 0,
-            ExecutionStatus::RUNNING => 1,
-            ExecutionStatus::COMPLETED,
-            ExecutionStatus::FAILED => 2,
+        $allowedTransitions = match ($persisted) {
+            ExecutionStatus::PENDING => [
+                ExecutionStatus::PENDING,
+                ExecutionStatus::RUNNING,
+            ],
+            ExecutionStatus::RUNNING => [
+                ExecutionStatus::RUNNING,
+                ExecutionStatus::COMPLETED,
+                ExecutionStatus::FAILED,
+            ],
+            ExecutionStatus::COMPLETED => [
+                ExecutionStatus::COMPLETED,
+            ],
+            ExecutionStatus::FAILED => [
+                ExecutionStatus::FAILED,
+            ],
         };
 
-        if ($rank($candidate) < $rank($persisted)) {
+        if (! in_array($candidate, $allowedTransitions, true)) {
             throw new ConcurrentExecutionException();
         }
 
         if (
-            $rank($candidate) === $rank($persisted)
-            && $candidate !== $persisted
-        ) {
-            throw new ConcurrentExecutionException();
-        }
-
-        if (
-            $rank($persisted) === 2
+            in_array($persisted, [
+                ExecutionStatus::COMPLETED,
+                ExecutionStatus::FAILED,
+            ], true)
             && (
                 $execution->output() !== $model->output
                 || $execution->error() !== $model->error
