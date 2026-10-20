@@ -39,7 +39,12 @@ final class AssessmentResultsAnalyzerInputValidator
             }
 
             $score = $learner['score'] ?? null;
-            if (! is_numeric($score) || ! is_finite((float) $score) || NumericValueComparator::compare($score, '0') < 0) {
+            if (
+                ! is_numeric($score)
+                || ! is_finite((float) $score)
+                || ((float) $score === 0.0 && NumericValueComparator::compare($score, '0') !== 0)
+                || NumericValueComparator::compare($score, '0') < 0
+            ) {
                 throw new \DomainException("Input {$prefix}.score must be a non-negative number.");
             }
 
