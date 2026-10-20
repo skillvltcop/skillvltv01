@@ -105,3 +105,15 @@ it('rejects equal and lower revision numbers', function () {
     expect($current->isGreaterThan(new RevisionNumber('1.3.0')))
         ->toBeFalse();
 });
+
+it('compares equally long revision components beyond floating point precision', function () {
+    $lower = new RevisionNumber(
+        '999999999999999999999999999998.0.0'
+    );
+    $higher = new RevisionNumber(
+        '999999999999999999999999999999.0.0'
+    );
+
+    expect($higher->isGreaterThan($lower))->toBeTrue()
+        ->and($lower->isGreaterThan($higher))->toBeFalse();
+});
