@@ -1575,7 +1575,7 @@ it('rejects invalid lifecycle transitions without changing the Blueprint status'
 
 
 
-it('rejects revision history cycles disconnected from the single root', function () {
+it('rejects cyclic revision history disconnected from the single root', function () {
     $rootRevisionId = RevisionId::generate();
     $childRevisionId = RevisionId::generate();
     $grandchildRevisionId = RevisionId::generate();
