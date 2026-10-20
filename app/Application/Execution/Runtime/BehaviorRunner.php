@@ -271,6 +271,103 @@ final class BehaviorRunner implements BehaviorRunnerContract
      * @param array<string, mixed> $context
      * @param array<string, mixed> $state
      */
+    private function executeCalculate(
+        array $step,
+        array $input,
+        array $context,
+        array &$state,
+        ?array $item = null,
+    ): void {
+        $left = $this->resolveCalculateOperand(
+            $step['left'],
+            $input,
+            $context,
+            $state,
+            $item,
+        );
+        $right = $this->resolveCalculateOperand(
+            $step['right'],
+            $input,
+            $context,
+            $state,
+            $item,
+        );
+
+        // Input validation accepts numeric strings, so normalize them before arithmetic.
+        if (is_string($left) && is_numeric($left)) {
+            $left = (float) $left;
+        }
+
+        if (is_string($right) && is_numeric($right)) {
+            $right = (float) $right;
+        }
+
+        if (
+            (! is_int($left) && ! is_float($left))
+            || (! is_int($right) && ! is_float($right))
+        ) {
+            throw new \DomainException(
+                'Calculation requires numeric operands.'
+            );
+        }
+
+        if (
+            (is_float($left) && ! is_finite($left))
+            || (is_float($right) && ! is_finite($right))
+        ) {
+            throw new \DomainException(
+                'Calculation operands must be finite.'
+            );
+        }
+
+        if ($step['operation'] === 'divide' && $right == 0) {
+            throw new \DomainException(
+                'Division by zero is not allowed.'
+            );
+        }
+
+        $result = match ($step['operation']) {
+            'add' => $left + $right,
+            'subtract' => $left - $right,
+            'multiply' => $left * $right,
+            'divide' => $left / $right,
+        };
+
+        if (is_float($result) && ! is_finite($result)) {
+            throw new \DomainException(
+                'Calculation result must be finite.'
+            );
+        }
+
+        $state[$step['assign_to']] = $result;
+    }
+
+    private function resolveCalculateOperand(
+        mixed $operand,
+        array $input,
+        array $context,
+        array $state,
+        ?array $item = null,
+    ): mixed {
+        if (is_string($operand)) {
+            return $this->valueResolver->resolve(
+                path: $operand,
+                input: $input,
+                context: $context,
+                state: $state,
+                item: $item,
+            );
+        }
+
+        return $operand;
+    }
+
+    /**
+     * @param array<string, mixed> $step
+     * @param array<string, mixed> $input
+     * @param array<string, mixed> $context
+     * @param array<string, mixed> $state
+     */
     private function executeFormatTemplate(
         array $step,
         array $input,
@@ -278,13 +375,168 @@ final class BehaviorRunner implements BehaviorRunnerContract
         array &$state,
         ?array $item = null,
     ): void {
-        $state[$step['assign_to']] = $this->formatTemplate(
-            template: $step['template'],
-            input: $input,
-            context: $context,
-            state: $state,
-            item: $item,
+        $template = $step['template'];
+
+        $state[$step['assign_to']] = preg_replace_callback(
+            '/{([^{}\s]+)}/',
+            function (array $matches) use (
+                $input,
+                $context,
+                $state,
+                $item,
+            ): string {
+                $value = $this->valueResolver->resolve(
+                    path: $matches[1],
+                    input: $input,
+                    context: $context,
+                    state: $state,
+                    item: $item,
+                );
+
+                if (! is_scalar($value) && $value !== null) {
+                    throw new \DomainException(
+                        sprintf(
+                            'Interpolation value for "%s" must be scalar.',
+                            $matches[1],
+                        )
+                    );
+                }
+
+                if (is_float($value) && ! is_finite($value)) {
+                    throw new \DomainException(
+                        sprintf(
+                            'Interpolation value for "%s" must be finite.',
+                            $matches[1],
+                        )
+                    );
+                }
+
+                return (string) $value;
+            },
+            $template,
         );
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @param array<string, mixed> $input
+     * @param array<string, mixed> $context
+     * @param array<string, mixed> $state
+     * @return array<string, mixed>
+     */
+    private function resolveData(
+        array $data,
+        array $input,
+        array $context,
+        array $state,
+        ?array $item = null,
+    ): array {
+        $resolved = [];
+
+        foreach ($data as $key => $value) {
+            $resolved[$key] = $this->resolveDataValue(
+                value: $value,
+                input: $input,
+                context: $context,
+                state: $state,
+                item: $item,
+            );
+        }
+
+        return $resolved;
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @param array<string, mixed> $context
+     * @param array<string, mixed> $state
+     */
+    private function resolveDataValue(
+        mixed $value,
+        array $input,
+        array $context,
+        array $state,
+        ?array $item = null,
+    ): mixed {
+        if (is_float($value) && ! is_finite($value)) {
+            throw new \DomainException(
+                'Return values must be finite.'
+            );
+        }
+
+        if (is_string($value)) {
+            if (preg_match('/^\\{([^{}\\s]+)\\}$/', $value, $matches) === 1) {
+                $resolved = $this->valueResolver->resolve(
+                    path: $matches[1],
+                    input: $input,
+                    context: $context,
+                    state: $state,
+                    item: $item,
+                );
+
+                if (is_float($resolved) && ! is_finite($resolved)) {
+                    throw new \DomainException(
+                        sprintf(
+                            'Return value for "%s" must be finite.',
+                            $matches[1],
+                        )
+                    );
+                }
+
+                return $resolved;
+            }
+
+            return preg_replace_callback(
+                '/{([^{}\s]+)}/',
+                function (array $matches) use (
+                    $input,
+                    $context,
+                    $state,
+                    $item,
+                ): string {
+                    $resolved = $this->valueResolver->resolve(
+                        path: $matches[1],
+                        input: $input,
+                        context: $context,
+                        state: $state,
+                        item: $item,
+                    );
+
+                    if (! is_scalar($resolved) && $resolved !== null) {
+                        throw new \DomainException(
+                            sprintf(
+                                'Interpolation value for "%s" must be scalar.',
+                                $matches[1],
+                            )
+                        );
+                    }
+
+                    if (is_float($resolved) && ! is_finite($resolved)) {
+                        throw new \DomainException(
+                            sprintf(
+                                'Interpolation value for "%s" must be finite.',
+                                $matches[1],
+                            )
+                        );
+                    }
+
+                    return (string) $resolved;
+                },
+                $value,
+            );
+        }
+
+        if (is_array($value)) {
+            return $this->resolveData(
+                data: $value,
+                input: $input,
+                context: $context,
+                state: $state,
+                item: $item,
+            );
+        }
+
+        return $value;
     }
 
     private function compareNumeric(
