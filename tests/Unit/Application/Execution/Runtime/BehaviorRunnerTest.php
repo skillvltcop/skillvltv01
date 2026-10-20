@@ -1707,3 +1707,38 @@ it('propagates unresolved paths from runtime resolver call sites', function (arr
         ],
     ]],
 ]);
+
+
+it('compares numeric strings exactly in count_matching beyond the integer boundary', function () {
+    $runner = createBehaviorRunner();
+
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'aggregate',
+                'source' => 'input.records',
+                'operation' => 'count_matching',
+                'field' => 'score',
+                'operator' => 'gt',
+                'value' => 9223372036854775807,
+                'assign_to' => 'matched_count',
+            ],
+            [
+                'type' => 'return',
+                'data' => ['matched_count' => '{state.matched_count}'],
+            ],
+        ],
+    ];
+
+    expect($runner->run(
+        logic: $logic,
+        input: [
+            'records' => [
+                ['score' => '9223372036854775808'],
+                ['score' => '9223372036854775807'],
+            ],
+        ],
+    ))->toBe(['matched_count' => 1]);
+});

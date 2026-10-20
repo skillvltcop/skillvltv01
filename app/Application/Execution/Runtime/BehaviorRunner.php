@@ -6,6 +6,7 @@ namespace App\Application\Execution\Runtime;
 
 use App\Application\Behavior\BehaviorContractValidator;
 use App\Application\Behavior\ValueResolver;
+use App\Application\Execution\NumericValueComparator;
 use App\Application\Execution\Runtime\Contracts\BehaviorRunner as BehaviorRunnerContract;
 
 final class BehaviorRunner implements BehaviorRunnerContract
@@ -166,10 +167,10 @@ final class BehaviorRunner implements BehaviorRunnerContract
                         $matches = match ($step['operator']) {
                             'eq' => $value === $expected,
                             'neq' => $value !== $expected,
-                            'gt' => is_numeric($value) && is_numeric($expected) && $value > $expected,
-                            'gte' => is_numeric($value) && is_numeric($expected) && $value >= $expected,
-                            'lt' => is_numeric($value) && is_numeric($expected) && $value < $expected,
-                            'lte' => is_numeric($value) && is_numeric($expected) && $value <= $expected,
+                            'gt' => is_numeric($value) && is_numeric($expected) && NumericValueComparator::compare($value, $expected) > 0,
+                            'gte' => is_numeric($value) && is_numeric($expected) && NumericValueComparator::compare($value, $expected) >= 0,
+                            'lt' => is_numeric($value) && is_numeric($expected) && NumericValueComparator::compare($value, $expected) < 0,
+                            'lte' => is_numeric($value) && is_numeric($expected) && NumericValueComparator::compare($value, $expected) <= 0,
                         };
 
                         if ($matches) {
