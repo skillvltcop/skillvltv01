@@ -414,3 +414,32 @@ it('accepts numeric-string scores and calculates percentages through the generic
     $response->assertJsonPath('output.needs_support_count', 0);
     $response->assertJsonPath('output.success_rate', 100);
 });
+
+
+it('rejects non-finite analyzer score and maximum values before generic execution', function () {
+    $user = User::factory()->create();
+    [$blueprint, $revisionId] = analyzerBlueprintForGenericExecution();
+
+    foreach ([
+        [
+            'learner' => ['name' => 'Infinite Score', 'score' => '1e309', 'max_score' => '1e309'],
+            'message' => 'Input learners.0.score must be a non-negative number.',
+        ],
+        [
+            'learner' => ['name' => 'Infinite Maximum', 'score' => 0, 'max_score' => '1e309'],
+            'message' => 'Input learners.0.max_score must be greater than zero.',
+        ],
+    ] as $case) {
+        $response = $this->actingAs($user)->postJson(
+            "/api/blueprints/{$blueprint->id()}/execute",
+            [
+                'revision_id' => $revisionId,
+                'input' => ['learners' => [$case['learner']]],
+                'context' => [],
+            ],
+        );
+
+        $response->assertUnprocessable();
+        $response->assertJson(['message' => $case['message']]);
+    }
+});
