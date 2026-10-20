@@ -149,41 +149,31 @@ final class EloquentExecutionRepository implements ExecutionRepository
 
         $candidate = $execution->status();
 
-        $persistedIsTerminal = in_array($persisted, [
+        $rank = static fn (ExecutionStatus $status): int => match ($status) {
+            ExecutionStatus::PENDING => 0,
+            ExecutionStatus::RUNNING => 1,
             ExecutionStatus::COMPLETED,
-            ExecutionStatus::FAILED,
-        ], true);
+            ExecutionStatus::FAILED => 2,
+        };
+
+        if ($rank($candidate) < $rank($persisted)) {
+            throw new ConcurrentExecutionException();
+        }
 
         if (
-            $persistedIsTerminal
-            && (
-                $candidate !== $persisted
-                || $execution->output() !== $model->output
-                || $execution->error() !== $model->error
-            )
+            $rank($candidate) === $rank($persisted)
+            && $candidate !== $persisted
         ) {
             throw new ConcurrentExecutionException();
         }
 
-        $allowedTransitions = match ($persisted) {
-            ExecutionStatus::PENDING => [
-                ExecutionStatus::PENDING,
-                ExecutionStatus::RUNNING,
-            ],
-            ExecutionStatus::RUNNING => [
-                ExecutionStatus::RUNNING,
-                ExecutionStatus::COMPLETED,
-                ExecutionStatus::FAILED,
-            ],
-            ExecutionStatus::COMPLETED => [
-                ExecutionStatus::COMPLETED,
-            ],
-            ExecutionStatus::FAILED => [
-                ExecutionStatus::FAILED,
-            ],
-        };
-
-        if (! in_array($candidate, $allowedTransitions, true)) {
+        if (
+            $rank($persisted) === 2
+            && (
+                $execution->output() !== $model->output
+                || $execution->error() !== $model->error
+            )
+        ) {
             throw new ConcurrentExecutionException();
         }
     }
