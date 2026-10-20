@@ -298,7 +298,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
             $normalizedLeft = (float) $left;
 
             if ($normalizedLeft === 0.0 && NumericValueComparator::compare($left, '0') !== 0) {
-                throw new \\DomainException(
+                throw new \DomainException(
                     'Calculation operands must be representable as finite numbers.'
                 );
             }
@@ -310,7 +310,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
             $normalizedRight = (float) $right;
 
             if ($normalizedRight === 0.0 && NumericValueComparator::compare($right, '0') !== 0) {
-                throw new \\DomainException(
+                throw new \DomainException(
                     'Calculation operands must be representable as finite numbers.'
                 );
             }
