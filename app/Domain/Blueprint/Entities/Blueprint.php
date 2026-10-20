@@ -380,6 +380,14 @@ final class Blueprint
         ?RevisionId $currentRevisionId,
         array $revisions = [],
     ): self {
+        foreach ($revisions as $key => $revision) {
+            if ((string) $key !== (string) $revision->id()) {
+                throw new \DomainException(
+                    'Revision map key must match the Revision ID.'
+                );
+            }
+        }
+
         if ($currentRevisionId !== null) {
             if (! array_key_exists((string) $currentRevisionId, $revisions)) {
                 throw new \DomainException(
