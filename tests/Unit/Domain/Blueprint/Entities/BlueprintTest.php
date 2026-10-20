@@ -1575,10 +1575,10 @@ it('rejects invalid lifecycle transitions without changing the Blueprint status'
 
 
 
-it('rejects cyclic revision history disconnected from the single root', function () {
+it('rejects a revision history component that forms a cycle apart from the root', function () {
     $rootRevisionId = RevisionId::generate();
-    $childRevisionId = RevisionId::generate();
-    $grandchildRevisionId = RevisionId::generate();
+    $firstCycleRevisionId = RevisionId::generate();
+    $secondCycleRevisionId = RevisionId::generate();
 
     $rootRevision = BlueprintRevision::reconstitute(
         id: $rootRevisionId,
@@ -1592,10 +1592,11 @@ it('rejects cyclic revision history disconnected from the single root', function
         frozen: true,
     );
 
-    $childRevision = BlueprintRevision::reconstitute(
-        id: $childRevisionId,
+    // Neither cycle node is reachable from the root, but all parent IDs exist.
+    $firstCycleRevision = BlueprintRevision::reconstitute(
+        id: $firstCycleRevisionId,
         number: new RevisionNumber('1.1.0'),
-        parentRevisionId: $grandchildRevisionId,
+        parentRevisionId: $secondCycleRevisionId,
         behaviorDigest: new BehaviorDigest(
             'sha256:' . str_repeat('b', 64),
         ),
@@ -1606,10 +1607,10 @@ it('rejects cyclic revision history disconnected from the single root', function
         frozen: true,
     );
 
-    $grandchildRevision = BlueprintRevision::reconstitute(
-        id: $grandchildRevisionId,
+    $secondCycleRevision = BlueprintRevision::reconstitute(
+        id: $secondCycleRevisionId,
         number: new RevisionNumber('1.2.0'),
-        parentRevisionId: $childRevisionId,
+        parentRevisionId: $firstCycleRevisionId,
         behaviorDigest: new BehaviorDigest(
             'sha256:' . str_repeat('c', 64),
         ),
@@ -1637,8 +1638,8 @@ it('rejects cyclic revision history disconnected from the single root', function
         currentRevisionId: null,
         revisions: [
             (string) $rootRevisionId => $rootRevision,
-            (string) $childRevisionId => $childRevision,
-            (string) $grandchildRevisionId => $grandchildRevision,
+            (string) $firstCycleRevisionId => $firstCycleRevision,
+            (string) $secondCycleRevisionId => $secondCycleRevision,
         ],
     ))->toThrow(
         DomainException::class,
