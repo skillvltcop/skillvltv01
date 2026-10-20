@@ -1575,10 +1575,10 @@ it('rejects invalid lifecycle transitions without changing the Blueprint status'
 
 
 
-it('rejects disconnected revision history components even when there is only one root', function () {
+it('rejects revision history cycles disconnected from the single root', function () {
     $rootRevisionId = RevisionId::generate();
     $childRevisionId = RevisionId::generate();
-    $disconnectedRootId = RevisionId::generate();
+    $grandchildRevisionId = RevisionId::generate();
 
     $rootRevision = BlueprintRevision::reconstitute(
         id: $rootRevisionId,
@@ -1595,7 +1595,7 @@ it('rejects disconnected revision history components even when there is only one
     $childRevision = BlueprintRevision::reconstitute(
         id: $childRevisionId,
         number: new RevisionNumber('1.1.0'),
-        parentRevisionId: $rootRevisionId,
+        parentRevisionId: $grandchildRevisionId,
         behaviorDigest: new BehaviorDigest(
             'sha256:' . str_repeat('b', 64),
         ),
@@ -1606,31 +1606,12 @@ it('rejects disconnected revision history components even when there is only one
         frozen: true,
     );
 
-    // This node points into the main chain but is not reachable from the declared root.
-    // It creates an invalid cycle-with-tail that passes the current one-root,
-    // parent-exists, increasing-number, and single-child checks.
-    $disconnectedRoot = BlueprintRevision::reconstitute(
-        id: $disconnectedRootId,
+    $grandchildRevision = BlueprintRevision::reconstitute(
+        id: $grandchildRevisionId,
         number: new RevisionNumber('1.2.0'),
         parentRevisionId: $childRevisionId,
         behaviorDigest: new BehaviorDigest(
             'sha256:' . str_repeat('c', 64),
-        ),
-        contracts: makeContracts(),
-        logic: makeLogic(),
-        outputs: makeOutputs(),
-        policies: makePolicies(),
-        frozen: true,
-    );
-
-    // Make the child point back to the disconnected node so the graph contains
-    // exactly one null-parent root, but one component is cyclic and unreachable.
-    $cyclicChild = BlueprintRevision::reconstitute(
-        id: $childRevisionId,
-        number: new RevisionNumber('1.1.0'),
-        parentRevisionId: $disconnectedRootId,
-        behaviorDigest: new BehaviorDigest(
-            'sha256:' . str_repeat('d', 64),
         ),
         contracts: makeContracts(),
         logic: makeLogic(),
@@ -1656,15 +1637,14 @@ it('rejects disconnected revision history components even when there is only one
         currentRevisionId: null,
         revisions: [
             (string) $rootRevisionId => $rootRevision,
-            (string) $childRevisionId => $cyclicChild,
-            (string) $disconnectedRootId => $disconnectedRoot,
+            (string) $childRevisionId => $childRevision,
+            (string) $grandchildRevisionId => $grandchildRevision,
         ],
     ))->toThrow(
         DomainException::class,
         'Revision history must be linear.',
     );
 });
-
 it('rejects revision maps whose keys do not match revision identities', function () {
     $revisionId = RevisionId::generate();
 
