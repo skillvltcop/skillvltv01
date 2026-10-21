@@ -1251,6 +1251,41 @@ it('rejects a non-finite average aggregate result', function () {
 });
 
 
+it('rejects an average that underflows to zero from non-zero values', function () {
+    $runner = createBehaviorRunner();
+
+    expect(fn () => $runner->run(
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'aggregate',
+                    'source' => 'input.learners',
+                    'operation' => 'average',
+                    'field' => 'score',
+                    'assign_to' => 'average_score',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => ['average' => '{state.average_score}'],
+                ],
+            ],
+        ],
+        input: [
+            'learners' => [
+                ['score' => 5.0e-324],
+                ['score' => 0.0],
+            ],
+        ],
+        context: [],
+    ))->toThrow(
+        DomainException::class,
+        'Aggregate result must be representable as a finite number.'
+    );
+});
+
+
 it('rejects NAN values in numeric count_matching comparisons', function () {
     $runner = createBehaviorRunner();
 
