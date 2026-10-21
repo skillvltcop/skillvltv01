@@ -26,6 +26,8 @@ it('renders the assessment score calculator teacher page through the generic too
     $response->assertSee('const toolSlug =', false);
     $response->assertSee('executionEndpoint', false);
     $this->assertSame(2, substr_count($response->getContent(), 'response.json().catch(() => ({}))'));
+    $response->assertSee('Array.isArray(payload.data)', false);
+    $response->assertSee('item && item.slug === toolSlug', false);
     $response->assertSee("payload.status !== 'completed'", false);
     $response->assertSee('!payload.result', false);
     $response->assertSee('Calculate result');
