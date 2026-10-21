@@ -1984,3 +1984,36 @@ it('sums finite floating-point values when an intermediate partial sum overflows
         expect($result['total'])->toBe($values[0] > 0 ? 1.0e308 : -1.0e308);
     }
 });
+
+
+it('sums large floating-point values when alternating signs avoid intermediate overflow', function () {
+    $runner = createBehaviorRunner();
+
+    $result = $runner->run(
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'aggregate',
+                    'source' => 'input.values',
+                    'operation' => 'sum',
+                    'field' => 'value',
+                    'assign_to' => 'total',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => ['total' => '{state.total}'],
+                ],
+            ],
+        ],
+        input: [
+            'values' => array_map(
+                static fn (float $value): array => ['value' => $value],
+                [1.0e308, 1.0e308, -1.0e308, -1.0e308],
+            ),
+        ],
+    );
+
+    expect($result['total'])->toBe(0.0);
+});
