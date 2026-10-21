@@ -366,6 +366,17 @@ final class BehaviorRunner implements BehaviorRunnerContract
             );
         }
 
+        if (
+            in_array($step['operation'], ['multiply', 'divide'], true)
+            && $left != 0
+            && $right != 0
+            && $result === 0.0
+        ) {
+            throw new \DomainException(
+                'Calculation result must be representable as a finite number.'
+            );
+        }
+
         $state[$step['assign_to']] = $result;
     }
 
