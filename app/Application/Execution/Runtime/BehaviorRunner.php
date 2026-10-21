@@ -207,7 +207,9 @@ final class BehaviorRunner implements BehaviorRunnerContract
                         throw new \DomainException('Cannot average an empty collection.');
                     }
 
-                    $aggregateSum = $this->compensatedSum($values);
+                    $aggregateSum = count(array_filter($values, 'is_float')) > 0
+                        ? $this->compensatedSum($values)
+                        : array_sum($values);
                 }
 
                 $aggregateResult = match ($operation) {
