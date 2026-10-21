@@ -182,7 +182,7 @@
 
                 const payload = await response.json();
 
-                if (!response.ok) {
+                if (!response.ok || payload.status !== 'completed' || !payload.result) {
                     throw new Error(payload.message ?? translations.execute_error);
                 }
 
