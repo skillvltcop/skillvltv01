@@ -204,7 +204,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
 
                 if ($operation === 'average') {
                     if ($values === []) {
-                        throw new \\DomainException('Cannot average an empty collection.');
+                        throw new \DomainException('Cannot average an empty collection.');
                     }
 
                     $aggregateSum = $this->compensatedSum($values);
