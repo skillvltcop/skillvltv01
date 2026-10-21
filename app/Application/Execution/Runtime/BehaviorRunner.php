@@ -214,6 +214,16 @@ final class BehaviorRunner implements BehaviorRunnerContract
                     );
                 }
 
+                if (
+                    $operation === 'average'
+                    && $aggregateResult === 0.0
+                    && array_sum($values) != 0
+                ) {
+                    throw new \DomainException(
+                        'Aggregate result must be representable as a finite number.'
+                    );
+                }
+
                 $state[$step['assign_to']] = $aggregateResult;
 
                 continue;
