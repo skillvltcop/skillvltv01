@@ -154,7 +154,7 @@ form.addEventListener('submit', async event => {
             headers: {'Accept':'application/json','Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content},
             body: JSON.stringify({input:{learners},context:{locale:document.documentElement.lang}})
         });
-        const payload = await response.json();
+        const payload = await response.json().catch(() => ({}));
         if (!response.ok || payload.status !== 'completed' || !payload.result) throw new Error(payload.message || labels.error);
         const summary = payload.result;
         document.getElementById('count').textContent = summary.count;
