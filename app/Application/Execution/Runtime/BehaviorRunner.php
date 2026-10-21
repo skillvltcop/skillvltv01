@@ -644,8 +644,30 @@ final class BehaviorRunner implements BehaviorRunnerContract
 
         $descending = $values;
         rsort($descending, SORT_NUMERIC);
+        $result = $sumValues($descending);
 
-        return $sumValues($descending);
+        if (is_finite($result)) {
+            return $result;
+        }
+
+        // If every ordering still overflows, scale the operands before summing.
+        // This avoids overflowing intermediate partial sums when large positive
+        // and negative values cancel in the final result.
+        $maxAbs = max(array_map(
+            static fn (int|float $value): float => abs((float) $value),
+            $values,
+        ));
+
+        if ($maxAbs === 0.0) {
+            return 0.0;
+        }
+
+        $scaledValues = array_map(
+            static fn (int|float $value): float => (float) $value / $maxAbs,
+            $values,
+        );
+
+        return $sumValues($scaledValues) * $maxAbs;
     }
 
     private function compareNumeric(
