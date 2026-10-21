@@ -22,7 +22,7 @@ it('renders the teacher tools page', function () {
 
     $response->assertSuccessful();
     $response->assertSee('Teacher Tools');
-    $response->assertSee('/api/teacher/blueprints/discover', false);
+    $response->assertSee('/js/teacher-tools.js', false);
 });
 
 it('loads the dedicated teacher tools discovery module', function () {
