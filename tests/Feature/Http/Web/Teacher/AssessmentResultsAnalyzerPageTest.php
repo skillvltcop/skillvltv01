@@ -28,6 +28,8 @@ it('renders the assessment results analyzer teacher page through the generic too
     $response->assertSee('Maximum score');
     $response->assertSee('Average percentage');
     $response->assertSee('Need support');
+    $response->assertSee('Object.values(payload.errors).flat()', false);
+    $response->assertSee('validationMessages[0] || payload.message || labels.error', false);
 });
 
 it('renders the localized shell for supported locales', function () {
