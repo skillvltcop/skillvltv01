@@ -211,7 +211,9 @@ final class BehaviorRunner implements BehaviorRunnerContract
                 }
 
                 $aggregateResult = match ($operation) {
-                    'sum' => array_sum($values),
+                    'sum' => count(array_filter($values, 'is_float')) > 0
+                        ? $this->compensatedSum($values)
+                        : array_sum($values),
                     'average' => $aggregateSum / count($values),
                     'count_matching' => count($values),
                 };
