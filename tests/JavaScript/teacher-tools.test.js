@@ -22,8 +22,8 @@ function makeElement(tag = 'div') {
 function makeDocument(locale = 'en') {
     const elements = {
         loading: makeElement(),
-        tools: makeElement(),
-        error: makeElement(),
+        tools: Object.assign(makeElement(), { hidden: true }),
+        error: Object.assign(makeElement(), { hidden: true }),
     };
 
     return {
