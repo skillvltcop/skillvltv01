@@ -155,7 +155,12 @@ form.addEventListener('submit', async event => {
             body: JSON.stringify({input:{learners},context:{locale:document.documentElement.lang}})
         });
         const payload = await response.json().catch(() => ({}));
-        if (!response.ok || payload.status !== 'completed' || !payload.result) throw new Error(payload.message || labels.error);
+        if (!response.ok || payload.status !== 'completed' || !payload.result) {
+            const validationMessages = payload.errors && typeof payload.errors === 'object'
+                ? Object.values(payload.errors).flat().filter(message => typeof message === 'string' && message.trim() !== '')
+                : [];
+            throw new Error(validationMessages[0] || payload.message || labels.error);
+        }
         const summary = payload.result;
         document.getElementById('count').textContent = summary.count;
         document.getElementById('average').textContent = Number(summary.average_percentage).toFixed(2) + '%';
