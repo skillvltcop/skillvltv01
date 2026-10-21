@@ -44,77 +44,18 @@
     <div id="error" role="alert" hidden></div>
 </main>
 
-<script>
-(async () => {
-    const loading = document.getElementById('loading');
-    const tools = document.getElementById('tools');
-    const error = document.getElementById('error');
+<script type="module">
+import { loadTeacherTools } from '/js/teacher-tools.js';
 
-    try {
-        const response = await fetch(`/api/teacher/blueprints/discover?locale=${encodeURIComponent(document.documentElement.lang)}`, {
-            credentials: 'same-origin',
-            headers: {
-                'Accept': 'application/json',
-                'Accept-Language': document.documentElement.lang,
-            },
-        });
-
-        if (!response.ok) {
-            throw new Error(@json(['ar' => 'تعذر تحميل الأدوات التعليمية.', 'fr' => 'Impossible de charger les outils pédagogiques.', 'en' => 'Unable to load educational tools.'][app()->getLocale()] ?? 'Unable to load educational tools.'));
-        }
-
-        const payload = await response.json().catch(() => ({}));
-        const blueprints = Array.isArray(payload.data) ? payload.data : [];
-
-        for (const blueprint of blueprints) {
-            if (!blueprint || typeof blueprint !== 'object' || typeof blueprint.slug !== 'string' || blueprint.slug.trim() === '') {
-                continue;
-            }
-
-            const link = document.createElement('a');
-            link.className = 'card';
-            link.href = '/teacher/tools/' + encodeURIComponent(blueprint.slug);
-
-            const eyebrow = document.createElement('div');
-            eyebrow.className = 'eyebrow';
-            eyebrow.textContent = @json(['ar' => 'أداة تعليمية', 'fr' => 'Outil pédagogique', 'en' => 'Educational tool'][app()->getLocale()] ?? 'Educational tool');
-
-            const title = document.createElement('h2');
-            title.textContent = blueprint.title;
-
-            const purpose = document.createElement('p');
-            purpose.className = 'purpose';
-            purpose.textContent = blueprint.purpose ?? '';
-
-            const meta = document.createElement('div');
-            meta.className = 'meta';
-
-            if (blueprint.target_level) {
-                const level = document.createElement('span');
-                level.className = 'badge';
-                level.textContent = @json(['ar' => 'المستوى: ', 'fr' => 'Niveau : ', 'en' => 'Level: '][app()->getLocale()] ?? 'Level: ') + blueprint.target_level;
-                meta.appendChild(level);
-            }
-
-            if (blueprint.version) {
-                const version = document.createElement('span');
-                version.className = 'badge';
-                version.textContent = blueprint.version;
-                meta.appendChild(version);
-            }
-
-            link.append(eyebrow, title, purpose, meta);
-            tools.appendChild(link);
-        }
-
-        loading.hidden = true;
-        tools.hidden = false;
-    } catch (exception) {
-        loading.hidden = true;
-        error.textContent = exception.message;
-        error.hidden = false;
-    }
-})();
+loadTeacherTools({
+    messages: {
+        loadError: @json(['ar' => 'تعذر تحميل الأدوات التعليمية.', 'fr' => 'Impossible de charger les outils pédagogiques.', 'en' => 'Unable to load educational tools.'][app()->getLocale()] ?? 'Unable to load educational tools.'),
+    },
+    labels: {
+        eyebrow: @json(['ar' => 'أداة تعليمية', 'fr' => 'Outil pédagogique', 'en' => 'Educational tool'][app()->getLocale()] ?? 'Educational tool'),
+        level: @json(['ar' => 'المستوى: ', 'fr' => 'Niveau : ', 'en' => 'Level: '][app()->getLocale()] ?? 'Level: '),
+    },
+});
 </script>
 </body>
 </html>
