@@ -1844,3 +1844,37 @@ it('compares integer and float evaluate_rule values without losing integer preci
         input: ['score' => 9007199254740993],
     ))->toBe(['result' => 'greater']);
 });
+
+
+it('preserves small contributions when averaging large cancelling values', function () {
+    $runner = createBehaviorRunner();
+
+    $result = $runner->run(
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'aggregate',
+                    'source' => 'input.values',
+                    'operation' => 'average',
+                    'field' => 'value',
+                    'assign_to' => 'average',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => ['average' => '{state.average}'],
+                ],
+            ],
+        ],
+        input: [
+            'values' => [
+                ['value' => 1.0e16],
+                ['value' => 1.0],
+                ['value' => -1.0e16],
+            ],
+        ],
+    );
+
+    expect($result['average'])->toBe(1 / 3);
+});

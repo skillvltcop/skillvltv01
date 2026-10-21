@@ -200,11 +200,19 @@ final class BehaviorRunner implements BehaviorRunnerContract
                     $values[] = $value;
                 }
 
+                $aggregateSum = null;
+
+                if ($operation === 'average') {
+                    if ($values === []) {
+                        throw new \DomainException('Cannot average an empty collection.');
+                    }
+
+                    $aggregateSum = $this->compensatedSum($values);
+                }
+
                 $aggregateResult = match ($operation) {
                     'sum' => array_sum($values),
-                    'average' => $values === []
-                        ? throw new \DomainException('Cannot average an empty collection.')
-                        : array_sum($values) / count($values),
+                    'average' => $aggregateSum / count($values),
                     'count_matching' => count($values),
                 };
 
@@ -217,7 +225,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
                 if (
                     $operation === 'average'
                     && $aggregateResult === 0.0
-                    && array_sum($values) != 0
+                    && $aggregateSum != 0
                 ) {
                     throw new \DomainException(
                         'Aggregate result must be representable as a finite number.'
@@ -585,6 +593,32 @@ final class BehaviorRunner implements BehaviorRunnerContract
         }
 
         return $value;
+    }
+
+    /**
+     * Sum numeric values while compensating for floating-point cancellation.
+     *
+     * @param array<int, int|float> $values
+     */
+    private function compensatedSum(array $values): float
+    {
+        $sum = 0.0;
+        $compensation = 0.0;
+
+        foreach ($values as $value) {
+            $number = (float) $value;
+            $next = $sum + $number;
+
+            if (abs($sum) >= abs($number)) {
+                $compensation += ($sum - $next) + $number;
+            } else {
+                $compensation += ($number - $next) + $sum;
+            }
+
+            $sum = $next;
+        }
+
+        return $sum + $compensation;
     }
 
     private function compareNumeric(
