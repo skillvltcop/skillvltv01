@@ -158,9 +158,15 @@ final class BehaviorRunner implements BehaviorRunnerContract
 
                             $numericValue = (float) $value;
 
+                            if (! is_finite($numericValue)) {
+                                throw new \DomainException(
+                                    'Aggregate comparison value must be finite.'
+                                );
+                            }
+
                             if (
-                                ! is_finite($numericValue)
-                                || ($numericValue === 0.0 && NumericValueComparator::compare($value, '0') !== 0)
+                                $numericValue === 0.0
+                                && NumericValueComparator::compare($value, '0') !== 0
                             ) {
                                 throw new \DomainException(
                                     'Aggregate comparison value must be finite and representable.'
