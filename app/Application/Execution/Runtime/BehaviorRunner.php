@@ -606,23 +606,46 @@ final class BehaviorRunner implements BehaviorRunnerContract
      */
     private function compensatedSum(array $values): float
     {
-        $sum = 0.0;
-        $compensation = 0.0;
+        $sumValues = static function (array $numbers): float {
+            $sum = 0.0;
+            $compensation = 0.0;
 
-        foreach ($values as $value) {
-            $number = (float) $value;
-            $next = $sum + $number;
+            foreach ($numbers as $value) {
+                $number = (float) $value;
+                $next = $sum + $number;
 
-            if (abs($sum) >= abs($number)) {
-                $compensation += ($sum - $next) + $number;
-            } else {
-                $compensation += ($number - $next) + $sum;
+                if (abs($sum) >= abs($number)) {
+                    $compensation += ($sum - $next) + $number;
+                } else {
+                    $compensation += ($number - $next) + $sum;
+                }
+
+                $sum = $next;
             }
 
-            $sum = $next;
+            return $sum + $compensation;
+        };
+
+        $result = $sumValues($values);
+
+        if (is_finite($result)) {
+            return $result;
         }
 
-        return $sum + $compensation;
+        // A different order can avoid overflowing an intermediate partial sum
+        // when the final mathematical result is still representable.
+        $ascending = $values;
+        sort($ascending, SORT_NUMERIC);
+        $result = $sumValues($ascending);
+
+        if (is_finite($result)) {
+            return $result;
+        }
+
+        $descending = $values;
+        rsort($descending, SORT_NUMERIC);
+
+        return $sumValues($descending);
     }
 
     private function compareNumeric(

@@ -1946,3 +1946,41 @@ it('preserves integer precision when averaging large integer values', function (
 
     expect($result['average'])->toBe(3002399751580331);
 });
+
+
+it('sums finite floating-point values when an intermediate partial sum overflows', function () {
+    $runner = createBehaviorRunner();
+
+    $logic = [
+        'type' => 'steps',
+        'version' => 1,
+        'steps' => [
+            [
+                'type' => 'aggregate',
+                'source' => 'input.values',
+                'operation' => 'sum',
+                'field' => 'value',
+                'assign_to' => 'total',
+            ],
+            [
+                'type' => 'return',
+                'data' => ['total' => '{state.total}'],
+            ],
+        ],
+    ];
+
+    foreach ([
+        [1.0e308, 1.0e308, -1.0e308],
+        [-1.0e308, -1.0e308, 1.0e308],
+    ] as $values) {
+        $result = $runner->run(
+            logic: $logic,
+            input: ['values' => array_map(
+                static fn (float $value): array => ['value' => $value],
+                $values,
+            )],
+        );
+
+        expect($result['total'])->toBe($values[0] > 0 ? 1.0e308 : -1.0e308);
+    }
+});
