@@ -11,7 +11,10 @@
             'learner_score' => 'نقطة المتعلم',
             'max_score' => 'النقطة القصوى',
             'execute' => 'تحديد التموضع',
-            'empty_score' => 'يرجى إدخال نقطة المتعلم.',
+            'empty_score' => 'يرجى إدخال نقطة المتعلم والنقطة القصوى.',
+            'invalid_score' => 'يجب أن تكون نقطة المتعلم عددًا غير سالب.',
+            'invalid_max_score' => 'يجب أن تكون النقطة القصوى أكبر من صفر.',
+            'score_exceeds_max' => 'لا يمكن أن تتجاوز نقطة المتعلم النقطة القصوى.',
             'load_error' => 'تعذر تحميل الأدوات التعليمية.',
             'tool_unavailable' => 'أداة التموضع التقويمي غير متاحة.',
             'execute_error' => 'تعذر تنفيذ أداة التموضع التقويمي.',
@@ -26,7 +29,10 @@
             'learner_score' => 'Score de l’apprenant',
             'max_score' => 'Score maximal',
             'execute' => 'Déterminer le positionnement',
-            'empty_score' => 'Veuillez saisir le score de l’apprenant.',
+            'empty_score' => 'Veuillez saisir le score de l’apprenant et le score maximal.',
+            'invalid_score' => 'Le score de l’apprenant doit être un nombre positif ou nul.',
+            'invalid_max_score' => 'Le score maximal doit être supérieur à zéro.',
+            'score_exceeds_max' => 'Le score de l’apprenant ne peut pas dépasser le score maximal.',
             'load_error' => 'Impossible de charger les outils pédagogiques.',
             'tool_unavailable' => 'L’outil de positionnement évaluatif n’est pas disponible.',
             'execute_error' => 'Impossible d’exécuter l’outil de positionnement évaluatif.',
@@ -41,7 +47,10 @@
             'learner_score' => 'Learner score',
             'max_score' => 'Maximum score',
             'execute' => 'Determine positioning',
-            'empty_score' => 'Please enter the learner score.',
+            'empty_score' => 'Please enter the learner score and maximum score.',
+            'invalid_score' => 'The learner score must be a non-negative number.',
+            'invalid_max_score' => 'The maximum score must be greater than zero.',
+            'score_exceeds_max' => 'The learner score cannot exceed the maximum score.',
             'load_error' => 'Unable to load educational tools.',
             'tool_unavailable' => 'The assessment positioning tool is not available.',
             'execute_error' => 'Unable to execute the assessment positioning tool.',
@@ -163,6 +172,27 @@
                 return;
             }
 
+            const scoreNumber = Number(value);
+            const maxScoreNumber = Number(maxValue);
+
+            if (!Number.isFinite(scoreNumber) || scoreNumber < 0) {
+                error.textContent = translations.invalid_score;
+                error.hidden = false;
+                return;
+            }
+
+            if (!Number.isFinite(maxScoreNumber) || maxScoreNumber <= 0) {
+                error.textContent = translations.invalid_max_score;
+                error.hidden = false;
+                return;
+            }
+
+            if (scoreNumber > maxScoreNumber) {
+                error.textContent = translations.score_exceeds_max;
+                error.hidden = false;
+                return;
+            }
+
             execute.disabled = true;
 
             try {
@@ -178,8 +208,8 @@
                         },
                         body: JSON.stringify({
                             input: {
-                                score: Number(value),
-                                max_score: Number(maxValue),
+                                score: scoreNumber,
+                                max_score: maxScoreNumber,
                             },
                             context: {},
                         }),

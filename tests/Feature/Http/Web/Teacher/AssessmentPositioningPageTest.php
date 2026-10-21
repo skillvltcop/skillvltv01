@@ -34,6 +34,9 @@ it('renders the assessment positioning teacher page through the generic tool rou
     $response->assertSee('max_score', false);
     $response->assertSee('Learner score');
     $response->assertSee('Maximum score');
+    $response->assertSee('Number.isFinite(scoreNumber)', false);
+    $response->assertSee('scoreNumber > maxScoreNumber', false);
+    $response->assertSee('score_exceeds_max', false);
 });
 
 
