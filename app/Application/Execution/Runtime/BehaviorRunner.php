@@ -650,12 +650,67 @@ final class BehaviorRunner implements BehaviorRunnerContract
             return $result;
         }
 
-        // If every ordering still overflows, scale the operands before summing.
-        // This avoids overflowing intermediate partial sums when large positive
-        // and negative values cancel in the final result.
+        // Cancel exactly opposite operands before scaling so tiny residuals
+        // are not lost when divided by a much larger magnitude.
+        $positive = [];
+        $negative = [];
+
+        foreach ($values as $value) {
+            $number = (float) $value;
+
+            if ($number === 0.0) {
+                continue;
+            }
+
+            $key = bin2hex(pack('d', abs($number)));
+
+            if ($number > 0) {
+                if (! empty($negative[$key])) {
+                    array_pop($negative[$key]);
+
+                    if ($negative[$key] === []) {
+                        unset($negative[$key]);
+                    }
+
+                    continue;
+                }
+
+                $positive[$key][] = $value;
+                continue;
+            }
+
+            if (! empty($positive[$key])) {
+                array_pop($positive[$key]);
+
+                if ($positive[$key] === []) {
+                    unset($positive[$key]);
+                }
+
+                continue;
+            }
+
+            $negative[$key][] = $value;
+        }
+
+        $remaining = [];
+
+        foreach ([$positive, $negative] as $groups) {
+            foreach ($groups as $group) {
+                array_push($remaining, ...$group);
+            }
+        }
+
+        $result = $sumValues($remaining);
+
+        if (is_finite($result)) {
+            return $result;
+        }
+
+        // Scale only the uncancelled operands if their remaining partial sums
+        // still overflow.
         $maxAbs = max(array_map(
             static fn (int|float $value): float => abs((float) $value),
-            $values,
+            $remaining,
         ));
 
         if ($maxAbs === 0.0) {
@@ -664,7 +719,7 @@ final class BehaviorRunner implements BehaviorRunnerContract
 
         $scaledValues = array_map(
             static fn (int|float $value): float => (float) $value / $maxAbs,
-            $values,
+            $remaining,
         );
 
         return $sumValues($scaledValues) * $maxAbs;
