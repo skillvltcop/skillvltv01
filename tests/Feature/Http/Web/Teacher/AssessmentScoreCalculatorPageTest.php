@@ -25,6 +25,7 @@ it('renders the assessment score calculator teacher page through the generic too
     $response->assertSee('/api/teacher/blueprints/discover', false);
     $response->assertSee('const toolSlug =', false);
     $response->assertSee('executionEndpoint', false);
+    $response->assertSee('response.json().catch(() => ({}))', false);
     $response->assertSee("payload.status !== 'completed'", false);
     $response->assertSee('!payload.result', false);
     $response->assertSee('Calculate result');
