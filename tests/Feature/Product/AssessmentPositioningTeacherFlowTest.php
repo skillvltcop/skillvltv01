@@ -83,8 +83,5 @@ it('returns 422 when a required input field is missing through the teacher API',
         );
 
     $response->assertUnprocessable();
-    $response->assertJsonPath(
-        'message',
-        'Input is missing required field(s): max_score.',
-    );
+    $response->assertJsonValidationErrors(['input.max_score']);
 });

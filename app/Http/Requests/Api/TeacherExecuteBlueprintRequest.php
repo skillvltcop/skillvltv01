@@ -39,6 +39,13 @@ final class TeacherExecuteBlueprintRequest extends FormRequest
             ]);
         }
 
+        if ($this->route('slug') === 'assessment-positioning') {
+            return array_merge($rules, [
+                'input.score' => ['required', 'numeric', 'min:0'],
+                'input.max_score' => ['required', 'numeric', 'gt:0'],
+            ]);
+        }
+
         if ($this->route('slug') === 'assessment-score-calculator') {
             return array_merge($rules, [
                 'input.correct' => ['required', 'integer', 'min:0'],
@@ -51,6 +58,42 @@ final class TeacherExecuteBlueprintRequest extends FormRequest
 
     public function withValidator(Validator $validator): void
     {
+        if ($this->route('slug') === 'assessment-positioning') {
+            $validator->after(function (Validator $validator): void {
+                $score = $this->input('input.score');
+                $maxScore = $this->input('input.max_score');
+
+                if (is_numeric($score) && ! is_finite((float) $score)) {
+                    $validator->errors()->add(
+                        'input.score',
+                        'The score must be finite.',
+                    );
+                }
+
+                if (is_numeric($maxScore) && ! is_finite((float) $maxScore)) {
+                    $validator->errors()->add(
+                        'input.max_score',
+                        'The maximum score must be finite.',
+                    );
+                }
+
+                if (
+                    is_numeric($score)
+                    && is_finite((float) $score)
+                    && is_numeric($maxScore)
+                    && is_finite((float) $maxScore)
+                    && NumericValueComparator::compare($score, $maxScore) > 0
+                ) {
+                    $validator->errors()->add(
+                        'input.score',
+                        'The score may not exceed the maximum score.',
+                    );
+                }
+            });
+
+            return;
+        }
+
         if ($this->route('slug') === 'assessment-score-calculator') {
             $validator->after(function (Validator $validator): void {
                 if (
