@@ -218,7 +218,10 @@
                 const payload = await response.json().catch(() => ({}));
 
                 if (!response.ok || payload.status !== 'completed' || !payload.result) {
-                    throw new Error(payload.message ?? translations.execute_error);
+                    const validationMessages = payload.errors && typeof payload.errors === 'object'
+                        ? Object.values(payload.errors).flat().filter(message => typeof message === 'string' && message.trim() !== '')
+                        : [];
+                    throw new Error(validationMessages[0] || payload.message || translations.execute_error);
                 }
 
                 const result = payload.result;
