@@ -41,6 +41,8 @@ it('renders the assessment positioning teacher page through the generic tool rou
     $response->assertSee("tool.querySelectorAll('input')", false);
     $response->assertSee('setFormBusy(true)', false);
     $response->assertSee('setFormBusy(false)', false);
+    $response->assertSee('Object.values(payload.errors).flat()', false);
+    $response->assertSee('validationMessages[0] || payload.message || translations.execute_error', false);
 });
 
 
