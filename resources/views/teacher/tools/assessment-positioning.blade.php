@@ -121,6 +121,10 @@
     const score = document.getElementById('score');
     const maxScore = document.getElementById('max_score');
     const execute = document.getElementById('execute');
+    const setFormBusy = busy => {
+        execute.disabled = busy;
+        tool.querySelectorAll('input').forEach(input => { input.disabled = busy; });
+    };
     const status = document.getElementById('status');
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
@@ -193,7 +197,7 @@
                 return;
             }
 
-            execute.disabled = true;
+            setFormBusy(true);
 
             try {
                 const response = await fetch(
@@ -237,7 +241,7 @@
                 error.textContent = exception.message;
                 error.hidden = false;
             } finally {
-                execute.disabled = false;
+                setFormBusy(false);
             }
         });
     } catch (exception) {

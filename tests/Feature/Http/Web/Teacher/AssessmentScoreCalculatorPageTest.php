@@ -33,6 +33,10 @@ it('renders the assessment score calculator teacher page through the generic too
     $response->assertSee('Calculate result');
     $response->assertSee('Correct answers');
     $response->assertSee('Total');
+    $response->assertSee('const setFormBusy = busy =>', false);
+    $response->assertSee("tool.querySelectorAll('input')", false);
+    $response->assertSee('setFormBusy(true)', false);
+    $response->assertSee('setFormBusy(false)', false);
 });
 
 it('renders the localized shell for supported locales', function () {

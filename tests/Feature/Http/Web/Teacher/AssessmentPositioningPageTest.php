@@ -37,6 +37,10 @@ it('renders the assessment positioning teacher page through the generic tool rou
     $response->assertSee('Number.isFinite(scoreNumber)', false);
     $response->assertSee('scoreNumber > maxScoreNumber', false);
     $response->assertSee('score_exceeds_max', false);
+    $response->assertSee('const setFormBusy = busy =>', false);
+    $response->assertSee("tool.querySelectorAll('input')", false);
+    $response->assertSee('setFormBusy(true)', false);
+    $response->assertSee('setFormBusy(false)', false);
 });
 
 
