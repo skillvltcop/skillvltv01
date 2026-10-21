@@ -39,11 +39,41 @@ final class TeacherExecuteBlueprintRequest extends FormRequest
             ]);
         }
 
+        if ($this->route('slug') === 'assessment-score-calculator') {
+            return array_merge($rules, [
+                'input.correct' => ['required', 'integer', 'min:0'],
+                'input.total' => ['required', 'integer', 'min:1'],
+            ]);
+        }
+
         return $rules;
     }
 
     public function withValidator(Validator $validator): void
     {
+        if ($this->route('slug') === 'assessment-score-calculator') {
+            $validator->after(function (Validator $validator): void {
+                if (
+                    $validator->errors()->has('input.correct')
+                    || $validator->errors()->has('input.total')
+                ) {
+                    return;
+                }
+
+                $correct = $this->input('input.correct');
+                $total = $this->input('input.total');
+
+                if (NumericValueComparator::compare($correct, $total) > 0) {
+                    $validator->errors()->add(
+                        'input.correct',
+                        'The number of correct answers may not exceed the total.',
+                    );
+                }
+            });
+
+            return;
+        }
+
         if ($this->route('slug') !== 'assessment-results-analyzer') {
             return;
         }
