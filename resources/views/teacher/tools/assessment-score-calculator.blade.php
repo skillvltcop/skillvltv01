@@ -127,7 +127,7 @@
             throw new Error(translations.load_error);
         }
 
-        const payload = await response.json();
+        const payload = await response.json().catch(() => ({}));
         const blueprint = (payload.data ?? []).find(item => item.slug === toolSlug);
 
         if (!blueprint) {
