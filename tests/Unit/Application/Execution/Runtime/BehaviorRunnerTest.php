@@ -1912,3 +1912,37 @@ it('preserves small contributions when summing large cancelling values', functio
 
     expect($result['total'])->toBe(1.0);
 });
+
+
+it('preserves integer precision when averaging large integer values', function () {
+    $runner = createBehaviorRunner();
+
+    $result = $runner->run(
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'aggregate',
+                    'source' => 'input.values',
+                    'operation' => 'average',
+                    'field' => 'value',
+                    'assign_to' => 'average',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => ['average' => '{state.average}'],
+                ],
+            ],
+        ],
+        input: [
+            'values' => [
+                ['value' => 9007199254740993],
+                ['value' => 0],
+                ['value' => 0],
+            ],
+        ],
+    );
+
+    expect($result['average'])->toBe(3002399751580331);
+});
