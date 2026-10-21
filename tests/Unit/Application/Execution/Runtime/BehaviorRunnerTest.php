@@ -1986,6 +1986,39 @@ it('sums finite floating-point values when an intermediate partial sum overflows
 });
 
 
+it('preserves small residuals when large aggregate values cancel after scaling', function () {
+    $runner = createBehaviorRunner();
+
+    $result = $runner->run(
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'aggregate',
+                    'source' => 'input.values',
+                    'operation' => 'sum',
+                    'field' => 'value',
+                    'assign_to' => 'total',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => ['total' => '{state.total}'],
+                ],
+            ],
+        ],
+        input: [
+            'values' => array_map(
+                static fn (float $value): array => ['value' => $value],
+                [1.0e308, 1.0e308, -1.0e308, -1.0e308, 1.0e-300],
+            ),
+        ],
+    );
+
+    expect($result['total'])->toBe(1.0e-300);
+});
+
+
 it('sums large floating-point values when alternating signs avoid intermediate overflow', function () {
     $runner = createBehaviorRunner();
 
