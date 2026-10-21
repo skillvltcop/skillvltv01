@@ -25,7 +25,7 @@ it('renders the teacher tools page', function () {
     $response->assertSee('/api/teacher/blueprints/discover', false);
 });
 
-it('guards discovery payload shape and skips empty tool entries', function () {
+it('loads the dedicated teacher tools discovery module', function () {
     $user = User::factory()->create();
 
     $response = $this
@@ -34,10 +34,9 @@ it('guards discovery payload shape and skips empty tool entries', function () {
         ->get('/teacher/tools');
 
     $response->assertSuccessful();
-    $response->assertSee('response.json().catch(() => ({}))', false);
-    $response->assertSee('Array.isArray(payload.data)', false);
-    $response->assertSee("typeof blueprint.slug !== 'string'", false);
-    $response->assertSee("blueprint.slug.trim() === ''", false);
+    $response->assertSee('<script type="module">', false);
+    $response->assertSee("from '/js/teacher-tools.js'", false);
+    $response->assertSee('loadTeacherTools({', false);
 });
 
 it('requires browser authentication', function () {
