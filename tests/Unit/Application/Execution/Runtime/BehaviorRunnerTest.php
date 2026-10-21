@@ -1878,3 +1878,37 @@ it('preserves small contributions when averaging large cancelling values', funct
 
     expect($result['average'])->toBe(1 / 3);
 });
+
+
+it('preserves small contributions when summing large cancelling values', function () {
+    $runner = createBehaviorRunner();
+
+    $result = $runner->run(
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'aggregate',
+                    'source' => 'input.values',
+                    'operation' => 'sum',
+                    'field' => 'value',
+                    'assign_to' => 'total',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => ['total' => '{state.total}'],
+                ],
+            ],
+        ],
+        input: [
+            'values' => [
+                ['value' => 1.0e16],
+                ['value' => 1.0],
+                ['value' => -1.0e16],
+            ],
+        ],
+    );
+
+    expect($result['total'])->toBe(1.0);
+});
