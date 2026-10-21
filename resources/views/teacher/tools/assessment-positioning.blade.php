@@ -185,7 +185,7 @@
                     }
                 );
 
-                const payload = await response.json();
+                const payload = await response.json().catch(() => ({}));
 
                 if (!response.ok || payload.status !== 'completed' || !payload.result) {
                     throw new Error(payload.message ?? translations.execute_error);

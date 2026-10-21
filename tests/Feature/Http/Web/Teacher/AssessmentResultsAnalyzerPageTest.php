@@ -23,6 +23,7 @@ it('renders the assessment results analyzer teacher page through the generic too
     $response->assertSuccessful();
     $response->assertSee('Assessment Results Analyzer');
     $response->assertSee('/api/teacher/tools/assessment-results-analyzer/execute', false);
+    $response->assertSee('response.json().catch(() => ({}))', false);
     $response->assertSee('Analyze results');
     $response->assertSee('Maximum score');
     $response->assertSee('Average percentage');
