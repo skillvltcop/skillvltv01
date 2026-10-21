@@ -20,19 +20,24 @@ The domain and application layers live under `app/Domain` and `app/Application`;
 
 ## Local setup
 
+Install PHP dependencies and create the environment file:
+
 ```bash
 composer install
 cp .env.example .env
 php artisan key:generate
 ```
 
-Configure the database settings in `.env`, then run migrations:
+Configure the database settings in `.env`, then run migrations and seed the built-in teacher-tool Blueprints:
 
 ```bash
 php artisan migrate
+php artisan db:seed
 ```
 
-To build frontend assets:
+The database seeder registers the assessment positioning tool, assessment score calculator, and assessment results analyzer. It does not create a default user account; create or register a user through the application's intended authentication flow.
+
+Build frontend assets:
 
 ```bash
 npm install
