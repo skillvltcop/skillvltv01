@@ -120,6 +120,12 @@ const form = document.getElementById('analysis-form');
 const error = document.getElementById('error');
 const results = document.getElementById('results');
 const run = document.getElementById('run');
+const add = document.getElementById('add');
+const setFormBusy = busy => {
+    add.disabled = busy;
+    run.disabled = busy;
+    container.querySelectorAll('input, .remove').forEach(control => { control.disabled = busy; });
+};
 const addRow = (name = '', score = '', max = '20') => {
     const row = document.createElement('div');
     row.className = 'row';
@@ -134,7 +140,7 @@ const addRow = (name = '', score = '', max = '20') => {
     container.appendChild(row);
 };
 addRow(); addRow(); addRow();
-document.getElementById('add').addEventListener('click', () => addRow());
+add.addEventListener('click', () => addRow());
 form.addEventListener('submit', async event => {
     event.preventDefault();
     error.hidden = true; results.hidden = true;
@@ -146,7 +152,7 @@ form.addEventListener('submit', async event => {
     if (!learners.length || learners.some(x => !x.name || !Number.isFinite(x.score) || !Number.isFinite(x.max_score) || x.max_score <= 0 || x.score < 0 || x.score > x.max_score)) {
         error.textContent = labels.invalid; error.hidden = false; return;
     }
-    run.disabled = true;
+    setFormBusy(true);
     try {
         const response = await fetch('/api/teacher/tools/assessment-results-analyzer/execute', {
             method: 'POST',
@@ -181,7 +187,7 @@ form.addEventListener('submit', async event => {
     } catch (e) {
         error.textContent = e.message || labels.error; error.hidden = false;
     } finally {
-        run.disabled = false;
+        setFormBusy(false);
     }
 });
 })();

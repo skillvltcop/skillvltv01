@@ -30,6 +30,10 @@ it('renders the assessment results analyzer teacher page through the generic too
     $response->assertSee('Need support');
     $response->assertSee('Object.values(payload.errors).flat()', false);
     $response->assertSee('validationMessages[0] || payload.message || labels.error', false);
+    $response->assertSee('const setFormBusy = busy =>', false);
+    $response->assertSee("container.querySelectorAll('input, .remove')", false);
+    $response->assertSee('setFormBusy(true)', false);
+    $response->assertSee('setFormBusy(false)', false);
 });
 
 it('renders the localized shell for supported locales', function () {
