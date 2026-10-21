@@ -1,9 +1,9 @@
 <?php
 
-use App\\Models\\User;
-use Database\\Seeders\\AssessmentResultsAnalyzerBlueprintSeeder;
-use Illuminate\\Foundation\\Testing\\RefreshDatabase;
-use Tests\\TestCase;
+use App\Models\User;
+use Database\Seeders\AssessmentResultsAnalyzerBlueprintSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 uses(
     TestCase::class,
