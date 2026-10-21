@@ -63,10 +63,11 @@
             throw new Error(@json(['ar' => 'تعذر تحميل الأدوات التعليمية.', 'fr' => 'Impossible de charger les outils pédagogiques.', 'en' => 'Unable to load educational tools.'][app()->getLocale()] ?? 'Unable to load educational tools.'));
         }
 
-        const payload = await response.json();
+        const payload = await response.json().catch(() => ({}));
+        const blueprints = Array.isArray(payload.data) ? payload.data : [];
 
-        for (const blueprint of payload.data ?? []) {
-            if (!blueprint.slug) {
+        for (const blueprint of blueprints) {
+            if (!blueprint || typeof blueprint !== 'object' || typeof blueprint.slug !== 'string' || blueprint.slug.trim() === '') {
                 continue;
             }
 
