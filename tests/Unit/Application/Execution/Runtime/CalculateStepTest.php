@@ -152,6 +152,31 @@ it('rejects non-zero numeric strings that underflow to zero before arithmetic', 
     ],
 ]);
 
+it('rejects non-zero arithmetic results that underflow to zero', function ($operation, $left, $right, $input) {
+    $runner = calculateStepRunner();
+
+    expect(fn () => $runner->run(
+        logic: calculateBehavior($operation, $left, $right),
+        input: $input,
+    ))->toThrow(
+        DomainException::class,
+        'Calculation result must be representable as a finite number.'
+    );
+})->with([
+    'underflowing multiplication result' => [
+        'multiply',
+        'input.left',
+        'input.right',
+        ['left' => '1e-200', 'right' => '1e-200'],
+    ],
+    'underflowing division result' => [
+        'divide',
+        'input.left',
+        'input.right',
+        ['left' => '1e-300', 'right' => '1e100'],
+    ],
+]);
+
 it('rejects division by zero', function () {
     $runner = calculateStepRunner();
 
