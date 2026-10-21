@@ -46,7 +46,7 @@
             'empty_input' => 'Please enter the number of correct answers and the total.',
             'invalid_correct' => 'Correct answers must be a non-negative whole number.',
             'invalid_total' => 'Total must be a positive whole number.',
-            'correct_exceeds_total' => 'Correct answers cannot exceed the total.'
+            'correct_exceeds_total' => 'Correct answers cannot exceed the total.',
             'load_error' => 'Unable to load educational tools.',
             'tool_unavailable' => 'The assessment score calculator is not available.',
             'execute_error' => 'Unable to execute the assessment score calculator.',
