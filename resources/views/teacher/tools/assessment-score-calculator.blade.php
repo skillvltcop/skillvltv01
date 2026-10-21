@@ -12,6 +12,9 @@
             'total' => 'المجموع',
             'execute' => 'حساب النتيجة',
             'empty_input' => 'يرجى إدخال عدد الإجابات الصحيحة والمجموع.',
+            'invalid_correct' => 'يجب أن يكون عدد الإجابات الصحيحة عددًا صحيحًا غير سالب.',
+            'invalid_total' => 'يجب أن يكون المجموع عددًا صحيحًا موجبًا.',
+            'correct_exceeds_total' => 'لا يمكن أن يتجاوز عدد الإجابات الصحيحة المجموع.',
             'load_error' => 'تعذر تحميل الأدوات التعليمية.',
             'tool_unavailable' => 'حاسبة نتيجة التقويم غير متاحة.',
             'execute_error' => 'تعذر تنفيذ حاسبة نتيجة التقويم.',
@@ -24,7 +27,10 @@
             'correct' => 'Réponses correctes',
             'total' => 'Total',
             'execute' => 'Calculer le résultat',
-            'empty_input' => 'Veuillez saisir le nombre de réponses correctes et le total.',
+            'empty_input' => 'Veuillez saisir un nombre de réponses correctes et le total.',
+            'invalid_correct' => 'Le nombre de réponses correctes doit être un entier positif ou nul.',
+            'invalid_total' => 'Le total doit être un entier strictement positif.',
+            'correct_exceeds_total' => 'Le nombre de réponses correctes ne peut pas dépasser le total.',
             'load_error' => 'Impossible de charger les outils pédagogiques.',
             'tool_unavailable' => 'Le calculateur de score d’évaluation n’est pas disponible.',
             'execute_error' => 'Impossible d’exécuter le calculateur de score d’évaluation.',
@@ -38,6 +44,9 @@
             'total' => 'Total',
             'execute' => 'Calculate result',
             'empty_input' => 'Please enter the number of correct answers and the total.',
+            'invalid_correct' => 'Correct answers must be a non-negative whole number.',
+            'invalid_total' => 'Total must be a positive whole number.',
+            'correct_exceeds_total' => 'Correct answers cannot exceed the total.',
             'load_error' => 'Unable to load educational tools.',
             'tool_unavailable' => 'The assessment score calculator is not available.',
             'execute_error' => 'Unable to execute the assessment score calculator.',
@@ -158,6 +167,27 @@
                 return;
             }
 
+            const correctNumber = Number(correctValue);
+            const totalNumber = Number(totalValue);
+
+            if (!Number.isInteger(correctNumber) || correctNumber < 0) {
+                error.textContent = translations.invalid_correct;
+                error.hidden = false;
+                return;
+            }
+
+            if (!Number.isInteger(totalNumber) || totalNumber < 1) {
+                error.textContent = translations.invalid_total;
+                error.hidden = false;
+                return;
+            }
+
+            if (correctNumber > totalNumber) {
+                error.textContent = translations.correct_exceeds_total;
+                error.hidden = false;
+                return;
+            }
+
             execute.disabled = true;
 
             try {
@@ -173,8 +203,8 @@
                         },
                         body: JSON.stringify({
                             input: {
-                                correct: Number(correctValue),
-                                total: Number(totalValue),
+                                correct: correctNumber,
+                                total: totalNumber,
                             },
                             context: {},
                         }),
