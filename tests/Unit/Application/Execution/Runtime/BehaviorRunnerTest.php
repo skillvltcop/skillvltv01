@@ -1321,6 +1321,41 @@ it('rejects non-numeric values in numeric count_matching comparisons', function 
     );
 });
 
+it('rejects non-zero numeric strings that underflow to zero in count_matching comparisons', function () {
+    $runner = createBehaviorRunner();
+
+    expect(fn () => $runner->run(
+        logic: [
+            'type' => 'steps',
+            'version' => 1,
+            'steps' => [
+                [
+                    'type' => 'aggregate',
+                    'source' => 'input.learners',
+                    'operation' => 'count_matching',
+                    'field' => 'score',
+                    'operator' => 'gt',
+                    'value' => 0,
+                    'assign_to' => 'matching_count',
+                ],
+                [
+                    'type' => 'return',
+                    'data' => ['count' => '{state.matching_count}'],
+                ],
+            ],
+        ],
+        input: [
+            'learners' => [
+                ['score' => '1e-99999999999999999999'],
+            ],
+        ],
+        context: [],
+    ))->toThrow(
+        DomainException::class,
+        'Aggregate comparison value must be finite and representable.'
+    );
+});
+
 it('rejects numeric strings that overflow to non-finite values in count_matching comparisons', function () {
     $runner = createBehaviorRunner();
 
