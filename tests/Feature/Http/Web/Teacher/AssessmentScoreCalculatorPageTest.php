@@ -37,6 +37,8 @@ it('renders the assessment score calculator teacher page through the generic too
     $response->assertSee("tool.querySelectorAll('input')", false);
     $response->assertSee('setFormBusy(true)', false);
     $response->assertSee('setFormBusy(false)', false);
+    $response->assertSee('Object.values(payload.errors).flat()', false);
+    $response->assertSee('validationMessages[0] || payload.message || translations.execute_error', false);
 });
 
 it('renders the localized shell for supported locales', function () {
