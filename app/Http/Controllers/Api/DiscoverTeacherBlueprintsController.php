@@ -33,13 +33,16 @@ final class DiscoverTeacherBlueprintsController
                             : app()->getLocale();
                     } else {
                         $locale = app()->getLocale();
+                        $acceptLanguage = $request->header('Accept-Language');
 
-                        foreach ($request->getLanguages() as $preferredLanguage) {
-                            $language = strtolower(substr($preferredLanguage, 0, 2));
+                        if (is_string($acceptLanguage) && trim($acceptLanguage) !== '') {
+                            foreach ($request->getLanguages() as $preferredLanguage) {
+                                $language = strtolower(substr($preferredLanguage, 0, 2));
 
-                            if (in_array($language, ['ar', 'fr', 'en'], true)) {
-                                $locale = $language;
-                                break;
+                                if (in_array($language, ['ar', 'fr', 'en'], true)) {
+                                    $locale = $language;
+                                    break;
+                                }
                             }
                         }
                     }
