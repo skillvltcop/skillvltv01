@@ -361,6 +361,7 @@
 
 - `EloquentBlueprintRepository::discover()` يحصر النتائج في Blueprints المملوكة للنظام (`owner_type=system`, `owner_id=skillvlt`)، ذات الحالة `active`، والتي لها مراجعة حالية مجمدة وسياسة `policies.visibility=public`.
 - `DiscoverBlueprintsController` يعيد لكل نتيجة: `id`, `canonical_name`, `namespace`, `ownership`, كامل `metadata`, `lifecycle_status`, و`current_revision_id`.
+- `DiscoverTeacherBlueprintsController` يستدعي `discover()` نفسها دون تصفية namespace، ثم يحول كل نتيجة إلى حقول واجهة تعليمية محدودة. بالمقابل، `ExecuteTeacherBlueprintController` يقيد التنفيذ بـ`skillvlt.edu.assessment`. لذلك قد تظهر في اكتشاف أدوات المعلم Blueprints عامة من مجالات أخرى، إن وُجدت؛ اختبارات الاكتشاف الحالية لا تغطي Blueprint عامًا خارج namespace التعليمي. **هذه مسألة اتساق/نطاق مفتوحة وليست كشفًا لبيانات خاصة** لأن المصدر ما زال مقيدًا بـsystem + active + public + current frozen.
 - `BlueprintMetadataContractTest` يثبت أن metadata تقبل مفاتيح عامة/اعتباطية؛ لا يظهر في هذا العقد allowlist للحقول المسموح بنشرها. الاختبارات الحالية للاكتشاف تتوقع حقول metadata مثل `taxonomy` و`documentation`، كما تتوقع الحقول التعريفية الكاملة في الاستجابة.
 - لم يظهر في بيانات seeders التعليمية التي فُحصت حقل سري واضح؛ لكن هذا لا يثبت سلامة كل metadata الممكنة مستقبلًا، خصوصًا مع قبول مفاتيح غير محددة.
 - **الحالة:** قرار سياسة مفتوح، وليس تسريبًا حساسًا مثبتًا. يلزم تحديد ما إذا كانت الاستجابة العامة عقدًا عامًا يعيد metadata كاملة، أم يجب إخراج projection/allowlist موثق للبيانات العامة.
