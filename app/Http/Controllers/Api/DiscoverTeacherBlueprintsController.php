@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Api;
+namespace App\\Http\\Controllers\\Api;
 
-use App\Domain\Blueprint\Repositories\BlueprintRepository;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use App\\Domain\\Blueprint\\Repositories\\BlueprintRepository;
+use Illuminate\\Http\\JsonResponse;
+use Illuminate\\Http\\Request;
 
 final class DiscoverTeacherBlueprintsController
 {
@@ -30,7 +30,8 @@ final class DiscoverTeacherBlueprintsController
                         ? (string) $request->session()->get('locale', app()->getLocale())
                         : app()->getLocale();
 
-                    $fallbackLocale = in_array($sessionLocale, ['ar', 'fr', 'en'], true)
+                    $hasSupportedSessionLocale = in_array($sessionLocale, ['ar', 'fr', 'en'], true);
+                    $fallbackLocale = $hasSupportedSessionLocale
                         ? $sessionLocale
                         : app()->getLocale();
 
@@ -42,7 +43,9 @@ final class DiscoverTeacherBlueprintsController
                         $locale = $fallbackLocale;
                         $acceptLanguage = $request->headers->get('Accept-Language');
 
-                        if (is_string($acceptLanguage) && trim($acceptLanguage) !== '') {
+                        // An explicit user preference stored in the session takes precedence
+                        // over the browser's language negotiation.
+                        if (! $hasSupportedSessionLocale && is_string($acceptLanguage) && trim($acceptLanguage) !== '') {
                             foreach ($request->getLanguages() as $preferredLanguage) {
                                 $language = strtolower(substr($preferredLanguage, 0, 2));
 
