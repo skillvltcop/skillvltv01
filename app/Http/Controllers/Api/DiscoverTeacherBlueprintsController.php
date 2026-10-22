@@ -26,22 +26,21 @@ final class DiscoverTeacherBlueprintsController
                     $revision = $blueprint->currentRevision();
 
                     $requestedLocale = $request->query('locale');
+                    $sessionLocale = $request->hasSession()
+                        ? (string) $request->session()->get('locale', app()->getLocale())
+                        : app()->getLocale();
+
+                    $fallbackLocale = in_array($sessionLocale, ['ar', 'fr', 'en'], true)
+                        ? $sessionLocale
+                        : app()->getLocale();
 
                     if (is_string($requestedLocale)) {
-                        $sessionLocale = $request->hasSession()
-                            ? (string) $request->session()->get('locale', app()->getLocale())
-                            : app()->getLocale();
-
-                        $fallbackLocale = in_array($sessionLocale, ['ar', 'fr', 'en'], true)
-                            ? $sessionLocale
-                            : app()->getLocale();
-
                         $locale = in_array($requestedLocale, ['ar', 'fr', 'en'], true)
                             ? $requestedLocale
                             : $fallbackLocale;
                     } else {
-                        $locale = app()->getLocale();
-                        $acceptLanguage = $request->header('Accept-Language');
+                        $locale = $fallbackLocale;
+                        $acceptLanguage = $request->headers->get('Accept-Language');
 
                         if (is_string($acceptLanguage) && trim($acceptLanguage) !== '') {
                             foreach ($request->getLanguages() as $preferredLanguage) {
