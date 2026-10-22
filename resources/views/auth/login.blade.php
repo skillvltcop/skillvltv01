@@ -51,7 +51,7 @@
                 <label for="password">{{ ['ar' => 'كلمة المرور', 'fr' => 'Mot de passe', 'en' => 'Password'][app()->getLocale()] ?? 'Password' }}</label>
                 <div class="password-wrap">
                     <input id="password" name="password" type="password" autocomplete="current-password" required>
-                    <button class="reveal" type="button" id="toggle-password" aria-controls="password" aria-pressed="false">{{ ['ar' => 'إظهار', 'fr' => 'Afficher', 'en' => 'Show'][app()->getLocale()] ?? 'Show' }}</button>
+                    <button class="reveal" type="button" id="toggle-password" aria-controls="password" aria-pressed="false" data-show="{{ ['ar' => 'إظهار', 'fr' => 'Afficher', 'en' => 'Show'][app()->getLocale()] ?? 'Show' }}" data-hide="{{ ['ar' => 'إخفاء', 'fr' => 'Masquer', 'en' => 'Hide'][app()->getLocale()] ?? 'Hide' }}">{{ ['ar' => 'إظهار', 'fr' => 'Afficher', 'en' => 'Show'][app()->getLocale()] ?? 'Show' }}</button>
                 </div>
             </div>
             <div class="row">
@@ -78,10 +78,7 @@
 (() => {
     const field = document.getElementById('password');
     const button = document.getElementById('toggle-password');
-    const labels = @json([
-        'show' => ['ar' => 'إظهار', 'fr' => 'Afficher', 'en' => 'Show'][app()->getLocale()] ?? 'Show',
-        'hide' => ['ar' => 'إخفاء', 'fr' => 'Masquer', 'en' => 'Hide'][app()->getLocale()] ?? 'Hide',
-    ]);
+    const labels = { show: button.dataset.show, hide: button.dataset.hide };
     button.addEventListener('click', () => {
         const visible = field.type === 'password';
         field.type = visible ? 'text' : 'password';
