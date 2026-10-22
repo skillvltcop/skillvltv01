@@ -32,8 +32,16 @@ final class DiscoverTeacherBlueprintsController
                             ? $requestedLocale
                             : app()->getLocale();
                     } else {
-                        $locale = $request->getPreferredLanguage(['ar', 'fr', 'en'])
-                            ?? app()->getLocale();
+                        $locale = app()->getLocale();
+
+                        foreach ($request->getLanguages() as $preferredLanguage) {
+                            $language = strtolower(substr($preferredLanguage, 0, 2));
+
+                            if (in_array($language, ['ar', 'fr', 'en'], true)) {
+                                $locale = $language;
+                                break;
+                            }
+                        }
                     }
 
                     $localize = static function (mixed $value) use ($locale): mixed {
