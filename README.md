@@ -46,10 +46,10 @@ php artisan tinker
 Then create a user with a unique email and a strong password of your choice:
 
 ```php
-\\App\\Models\\User::create([
+\App\\Models\\User::create([
     'name' => 'Your Name',
     'email' => 'you@example.com',
-    'password' => \\Illuminate\\Support\\Facades\\Hash::make('REPLACE_WITH_A_STRONG_PASSWORD'),
+    'password' => \Illuminate\\Support\\Facades\\Hash::make('REPLACE_WITH_A_STRONG_PASSWORD'),
 ]);
 ```
 
