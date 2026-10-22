@@ -17,7 +17,7 @@ it('shows the password reset request page to guests', function () {
     $this->get('/forgot-password')
         ->assertOk()
         ->assertSee('Forgot your password?')
-        ->assertSee('password.email');
+        ->assertSee('/forgot-password');
 });
 
 it('sends reset notifications for registered email addresses', function () {
@@ -39,6 +39,8 @@ it('sends reset notifications for registered email addresses', function () {
 it('does not disclose whether an email address is registered', function () {
     Notification::fake();
 
+    $knownUser = User::factory()->create(['email' => 'known@example.com']);
+
     $known = $this->from('/forgot-password')->post('/forgot-password', [
         'email' => 'known@example.com',
     ]);
@@ -50,7 +52,8 @@ it('does not disclose whether an email address is registered', function () {
     $known->assertRedirect('/forgot-password')->assertSessionHas('status');
     $unknown->assertRedirect('/forgot-password')->assertSessionHas('status');
     expect($known->getSession()->get('status'))->toBe($unknown->getSession()->get('status'));
-    Notification::assertNothingSent();
+    Notification::assertSentTo($knownUser, ResetPassword::class);
+    expect(Notification::sent($knownUser, ResetPassword::class))->toHaveCount(1);
 });
 
 it('resets the password with a valid token', function () {
