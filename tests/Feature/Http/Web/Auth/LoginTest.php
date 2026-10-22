@@ -25,6 +25,38 @@ it('authenticates a browser session', function () {
     $this->assertAuthenticatedAs($user);
 });
 
+
+it('does not persist the login unless remember me is selected', function () {
+    User::factory()->create([
+        'email' => 'teacher@example.com',
+        'password' => 'password',
+    ]);
+
+    $response = $this->post('/login', [
+        'email' => 'teacher@example.com',
+        'password' => 'password',
+    ]);
+
+    $response->assertRedirect('/');
+    $response->assertCookieMissing(auth()->guard('web')->getRecallerName());
+});
+
+it('persists the login when remember me is selected', function () {
+    User::factory()->create([
+        'email' => 'teacher@example.com',
+        'password' => 'password',
+    ]);
+
+    $response = $this->post('/login', [
+        'email' => 'teacher@example.com',
+        'password' => 'password',
+        'remember' => '1',
+    ]);
+
+    $response->assertRedirect('/');
+    $response->assertCookie(auth()->guard('web')->getRecallerName());
+});
+
 it('rejects invalid browser credentials', function () {
     $user = User::factory()->create([
         'email' => 'teacher@example.com',
