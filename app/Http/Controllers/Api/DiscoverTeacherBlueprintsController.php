@@ -25,8 +25,39 @@ final class DiscoverTeacherBlueprintsController
                     $metadata = $blueprint->metadata();
                     $revision = $blueprint->currentRevision();
 
-                    $locale = (string) $request->query('locale', $request->header('Accept-Language', app()->getLocale()));
-                    $locale = in_array($locale, ['ar', 'fr', 'en'], true) ? $locale : app()->getLocale();
+                    $requestedLocale = $request->query('locale');
+                    $sessionLocale = $request->hasSession()
+                        ? (string) $request->session()->get('locale', app()->getLocale())
+                        : app()->getLocale();
+
+                    $hasSupportedSessionLocale = $request->hasSession()
+                        && $request->session()->has('locale')
+                        && in_array($sessionLocale, ['ar', 'fr', 'en'], true);
+                    $fallbackLocale = $hasSupportedSessionLocale
+                        ? $sessionLocale
+                        : app()->getLocale();
+
+                    if (is_string($requestedLocale)) {
+                        $locale = in_array($requestedLocale, ['ar', 'fr', 'en'], true)
+                            ? $requestedLocale
+                            : $fallbackLocale;
+                    } else {
+                        $locale = $fallbackLocale;
+                        $acceptLanguage = $request->headers->get('Accept-Language');
+
+                        // An explicit user preference stored in the session takes precedence
+                        // over the browser's language negotiation.
+                        if (! $hasSupportedSessionLocale && is_string($acceptLanguage) && trim($acceptLanguage) !== '') {
+                            foreach ($request->getLanguages() as $preferredLanguage) {
+                                $language = strtolower(substr($preferredLanguage, 0, 2));
+
+                                if (in_array($language, ['ar', 'fr', 'en'], true)) {
+                                    $locale = $language;
+                                    break;
+                                }
+                            }
+                        }
+                    }
 
                     $localize = static function (mixed $value) use ($locale): mixed {
                         if (! is_array($value)) {

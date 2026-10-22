@@ -118,6 +118,20 @@ it('prioritizes the requested query locale over the Accept-Language header', fun
     $response->assertJsonPath('data.0.title', 'Positionnement évaluatif');
 });
 
+it('negotiates a supported locale from a compound Accept-Language header', function () {
+    $user = User::factory()->create();
+
+    (new AssessmentPositioningBlueprintSeeder())->run();
+
+    $response = $this
+        ->actingAs($user)
+        ->withHeader('Accept-Language', 'fr-FR,fr;q=0.9,en;q=0.8')
+        ->getJson('/api/teacher/blueprints/discover');
+
+    $response->assertSuccessful();
+    $response->assertJsonPath('data.0.title', 'Positionnement évaluatif');
+});
+
 it('falls back to the session locale when the requested query locale is unsupported', function () {
     $user = User::factory()->create();
 
