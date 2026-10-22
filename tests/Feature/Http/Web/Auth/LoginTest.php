@@ -59,7 +59,7 @@ it('persists the login when remember me is selected', function () {
 
 it('rate limits repeated browser login attempts', function () {
     foreach (range(1, 5) as $attempt) {
-        $this->post('/login', [
+        $this->from('/login')->post('/login', [
             'email' => 'unknown@example.com',
             'password' => 'wrong-password',
         ])->assertRedirect('/login');
