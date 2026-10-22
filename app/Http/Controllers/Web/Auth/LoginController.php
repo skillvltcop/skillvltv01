@@ -11,8 +11,12 @@ use Illuminate\View\View;
 
 final class LoginController
 {
-    public function create(): View
+    public function create(): View|RedirectResponse
     {
+        if (Auth::check()) {
+            return redirect()->intended('/');
+        }
+
         return view('auth.login');
     }
 

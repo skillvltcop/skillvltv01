@@ -174,3 +174,22 @@ it('requires browser authentication to log out', function () {
     $response->assertRedirect('/login');
     $this->assertGuest();
 });
+
+it('redirects authenticated users away from the login screen', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get('/login')
+        ->assertRedirect('/');
+});
+
+it('allows guests to change the interface language on the login screen', function () {
+    $this->get('/login')->assertOk();
+
+    $this->from('/login')
+        ->post('/locale', ['locale' => 'fr'])
+        ->assertRedirect('/login')
+        ->assertSessionHas('locale', 'fr');
+
+    $this->get('/login')->assertSee('Connexion | SkillVLT');
+});
