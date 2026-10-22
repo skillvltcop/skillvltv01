@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\\Http\\Controllers\\Api;
+namespace App\Http\Controllers\Api;
 
-use App\\Domain\\Blueprint\\Repositories\\BlueprintRepository;
-use Illuminate\\Http\\JsonResponse;
-use Illuminate\\Http\\Request;
+use App\Domain\Blueprint\Repositories\BlueprintRepository;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 final class DiscoverTeacherBlueprintsController
 {
