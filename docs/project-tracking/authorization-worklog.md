@@ -505,3 +505,37 @@
 - [ ] إعداد تقرير النقطة 1 ومصفوفة السماح/المنع للمراجعة قبل أي تعديل في كود التفويض.
 
 **الحالة:** اعتمد المالك المقترحات التفصيلية. لا يزال التدقيق مفتوحًا؛ لا تغييرات في كود التطبيق أو الاختبارات في هذا التحديث.
+
+
+## 21. تتبع مستهلكي metadata في discovery — 2026-10-22
+
+### 21.1 الاكتشاف العام: العقد الحالي والاعتماديات المؤكدة
+
+- `app/Http/Controllers/Api/DiscoverBlueprintsController.php` يعيد حاليًا لكل نتيجة: `id`، `canonical_name`، `namespace`، `ownership`، كامل `metadata`، `lifecycle_status`، و`current_revision_id`.
+- `tests/Feature/Http/Api/Blueprint/DiscoverBlueprintsApiTest.php` يثبت حاليًا بنية هذه الحقول، ويتحقق صراحةً من `metadata.taxonomy.domain` و`metadata.documentation.description`. لذلك فإن حذف `metadata` أو تغيير شكلها مباشرةً سيكسر عقدًا اختباريا قائمًا؛ يلزم قرار واعٍ بشأن التوافق قبل أي تغيير.
+- ملف الاختبار نفسه ينشئ metadata تحتوي `discovery.tags`، لكنه لا يثبت أن هذا الحقل مستهلك من واجهة حالية. لا نعدّ وجوده في fixture وحده دليلًا على ضرورة كشفه.
+- `README.md` يعرّف discovery ضمن مجموعات API، لكنه لا يوثق عقدًا تفصيليًا إضافيًا للمستهلكين الخارجيين.
+- لم يظهر في ملفات الواجهة الحالية مستهلك JavaScript مباشر لـ`/api/blueprints/discover`؛ هذا لا يستبعد مستهلكين خارجيين غير موجودين في المستودع.
+
+### 21.2 اكتشاف أدوات المعلم: عقد منفصل مثبت
+
+- `app/Http/Controllers/Api/DiscoverTeacherBlueprintsController.php` يحول metadata إلى إسقاط منفصل: `slug`، `title`، `target_level`، `purpose`، و`version`؛ ويُشتق `version` من رقم المراجعة الحالية، لا من metadata.
+- `public/js/teacher-tools.js` يستهلك هذه الحقول الخمسة فقط، ويعرض العنوان والغرض والمستوى والنسخة؛ كما أن `tests/Feature/Http/Api/Blueprint/DiscoverTeacherBlueprintsApiTest.php` يغطي شكل الاستجابة والتوطين إلى `ar/fr/en` والرجوع عند غياب الترجمة.
+- Seeders أدوات المعلم الثلاث (`AssessmentPositioningBlueprintSeeder` و`AssessmentScoreCalculatorBlueprintSeeder` و`AssessmentResultsAnalyzerBlueprintSeeder`) تعرّف `title` و`description` و`purpose` و`target_level`، غالبًا كقيم مترجمة. هذا يثبت عقد المجال التعليمي الحالي، ولا يثبت أن جميع هذه الحقول ينبغي كشفها في discovery العام.
+
+### 21.3 أثر ذلك على تصميم الإسقاط العام
+
+- `tests/Unit/Domain/Blueprint/BlueprintMetadataContractTest.php` يثبت أن طبقة المجال تقبل حقول metadata اعتباطية عند الإنشاء والتحديث وإعادة التكوين. لا ينبغي تغيير هذا العقد العام في المجال لمجرد تقييد استجابة discovery؛ التقييد المقترح يخص طبقة العرض/API.
+- طبقة persistence تحفظ `payload` الكامل، إضافةً إلى حقول مخزنة منفصلة مثل `taxonomy` و`documentation` و`discovery` و`lifecycle_metadata`. هذا وصف للتخزين الحالي وليس توصية بكشف جميع هذه الحقول للمستخدم العام.
+- الأدلة الحالية تدعم فصل عقدين: discovery عام محدود، وteacher discovery متخصص. أما الحقول النهائية التي يجب أن تبقى عامة، وهل تُعرض داخل `metadata` أو كحقول top-level، فلا تزال تحتاج قرار توافق صريح؛ لا تُجرى تغييرات في الكود في هذه المرحلة.
+
+### 21.4 الحالة بعد تتبع المستهلكين
+
+- [x] توثيق الحقول التي يعيدها discovery العام حاليًا.
+- [x] تحديد اعتماد الاختبارات الحالي على `metadata.taxonomy.domain` و`metadata.documentation.description`.
+- [x] إثبات عقد teacher discovery من المتحكم والواجهة والاختبارات.
+- [x] التمييز بين قبول metadata في طبقة المجال وبين إسقاط الحقول في استجابة discovery.
+- [ ] حسم العقد العام النهائي: الحقول العامة، شكلها، وقرار التوافق مع الاستجابة الحالية.
+- [ ] استكمال مصفوفة المسارات والسياسات المتبقية قبل التقرير النهائي.
+
+**لم يُعدّل كود التطبيق أو الاختبارات؛ هذا تحديث توثيقي لنتائج التدقيق فقط.**
