@@ -35,7 +35,25 @@ php artisan migrate
 php artisan db:seed
 ```
 
-The database seeder registers the assessment positioning tool, assessment score calculator, and assessment results analyzer. It does not create a default user account; create or register a user through the application's intended authentication flow.
+The database seeder registers the assessment positioning tool, assessment score calculator, and assessment results analyzer. For security, it does not create a default user account. The current application does not provide a web registration route, so provision the first user explicitly.
+
+For local development, open Tinker:
+
+```bash
+php artisan tinker
+```
+
+Then create a user with a unique email and a strong password of your choice:
+
+```php
+\App\\Models\\User::create([
+    'name' => 'Your Name',
+    'email' => 'you@example.com',
+    'password' => \Illuminate\\Support\\Facades\\Hash::make('REPLACE_WITH_A_STRONG_PASSWORD'),
+]);
+```
+
+Replace all example values before running the command. Do not use a shared or default password in production.
 
 Build frontend assets:
 
