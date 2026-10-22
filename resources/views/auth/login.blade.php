@@ -21,6 +21,11 @@
             <label for="email">Email</label>
             <input id="email" name="email" type="email" value="{{ old('email') }}" required>
 
+            <label for="remember">
+                <input id="remember" name="remember" type="checkbox" value="1" @checked(old('remember'))>
+                Remember me
+            </label>
+
             <label for="password">Password</label>
             <input id="password" name="password" type="password" required>
 
