@@ -23,7 +23,9 @@ final class LoginController
             'password' => ['required', 'string'],
         ]);
 
-        if (! Auth::attempt($credentials, true)) {
+        $remember = $request->boolean('remember');
+
+        if (! Auth::attempt($credentials, $remember)) {
             return back()
                 ->withErrors([
                     'email' => 'Invalid credentials.',
