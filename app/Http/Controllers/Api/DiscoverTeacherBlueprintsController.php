@@ -30,7 +30,9 @@ final class DiscoverTeacherBlueprintsController
                         ? (string) $request->session()->get('locale', app()->getLocale())
                         : app()->getLocale();
 
-                    $hasSupportedSessionLocale = in_array($sessionLocale, ['ar', 'fr', 'en'], true);
+                    $hasSupportedSessionLocale = $request->hasSession()
+                        && $request->session()->has('locale')
+                        && in_array($sessionLocale, ['ar', 'fr', 'en'], true);
                     $fallbackLocale = $hasSupportedSessionLocale
                         ? $sessionLocale
                         : app()->getLocale();
