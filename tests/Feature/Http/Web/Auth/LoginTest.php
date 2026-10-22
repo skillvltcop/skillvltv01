@@ -57,6 +57,20 @@ it('persists the login when remember me is selected', function () {
     $response->assertCookie(auth()->guard('web')->getRecallerName());
 });
 
+it('rate limits repeated browser login attempts', function () {
+    foreach (range(1, 5) as $attempt) {
+        $this->from('/login')->post('/login', [
+            'email' => 'unknown@example.com',
+            'password' => 'wrong-password',
+        ])->assertRedirect('/login');
+    }
+
+    $this->post('/login', [
+        'email' => 'unknown@example.com',
+        'password' => 'wrong-password',
+    ])->assertTooManyRequests();
+});
+
 it('rejects invalid browser credentials', function () {
     $user = User::factory()->create([
         'email' => 'teacher@example.com',
