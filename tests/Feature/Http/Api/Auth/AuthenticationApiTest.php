@@ -74,6 +74,20 @@ it('rejects invalid login credentials', function () {
     ]);
 });
 
+it('rate limits repeated API login attempts', function () {
+    foreach (range(1, 5) as $attempt) {
+        $this->postJson('/api/auth/login', [
+            'email' => 'unknown@example.com',
+            'password' => 'wrong-password',
+        ])->assertUnauthorized();
+    }
+
+    $this->postJson('/api/auth/login', [
+        'email' => 'unknown@example.com',
+        'password' => 'wrong-password',
+    ])->assertTooManyRequests();
+});
+
 it('validates required login fields', function () {
     $response = $this->postJson('/api/auth/login', []);
 

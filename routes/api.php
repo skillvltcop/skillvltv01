@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\Route;
 Route::post(
     '/auth/login',
     LoginController::class,
-);
+)->middleware('throttle:5,1');
 
 Route::middleware('auth:sanctum')->group(function () {
     /*
