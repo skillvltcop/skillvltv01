@@ -162,7 +162,7 @@ it('forbids executing another user-owned blueprint through the teacher endpoint'
         ->postJson(
             "/api/teacher/tools/{$blueprint->canonicalName()}/execute",
             [
-                'input' => [],
+                'input' => ['score' => 59, 'max_score' => 100],
                 'context' => [],
             ],
         );
