@@ -38,6 +38,26 @@ final class AuthorizationAuditLogger
     /**
      * @param array<string, scalar|null> $context
      */
+    /**
+     * @param array<string, mixed> $context
+     */
+    public function recordTeacherToolRegistryChange(
+        User $actor,
+        string $slug,
+        string $reason,
+        array $context = [],
+    ): void {
+        $this->write(
+            actor: $actor,
+            action: 'change_teacher_tool_registry',
+            resourceType: 'teacher_tool',
+            resourceId: $slug,
+            reason: $reason,
+            permission: 'teacher_tools.manage_registry',
+            context: $context,
+        );
+    }
+
     public function recordExecutionRead(
         User $actor,
         Execution $execution,
