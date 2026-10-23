@@ -39,6 +39,7 @@ final class ActivateBlueprintController
             $blueprintEntity,
             $request->user(),
             'blueprint.system.manage_lifecycle',
+            $request->input('authorization_reason'),
         )) {
             return response()->json([
                 'message' => 'Forbidden.',
