@@ -21,7 +21,7 @@ final class DiscoverBlueprintsController
     {
         return response()->json([
             'data' => array_map(
-                fn ($blueprint): array => $this->projection->from($blueprint),
+                fn ($blueprint): array => $this->projection->from($blueprint, $request->query('locale')),
                 $this->repository->discover(),
             ),
         ]);
