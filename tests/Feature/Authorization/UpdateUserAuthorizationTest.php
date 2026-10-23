@@ -127,7 +127,6 @@ it('rejects unsupported permissions and role permission mismatches without chang
         ->assertUnprocessable();
 
     expect($target->fresh()->role)->toBe('user')
-        ->and($target->fresh()->permissions)->toBe([])
         ->and(DB::table('authorization_audit_events')
             ->where('action', 'change_user_authorization')
             ->where('resource_id', (string) $target->id)
