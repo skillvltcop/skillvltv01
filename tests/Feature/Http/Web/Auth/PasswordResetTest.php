@@ -62,6 +62,7 @@ it('resets the password with a valid token', function () {
         'password' => 'old-password',
     ]);
     $token = Password::createToken($user);
+    $apiToken = $user->createToken('before-password-reset')->plainTextToken;
     $originalRememberToken = $user->remember_token;
 
     $response = $this->post('/reset-password', [
@@ -78,6 +79,11 @@ it('resets the password with a valid token', function () {
     expect(Hash::check('new-secure-password', $user->password))->toBeTrue();
     expect($user->remember_token)->not->toBe($originalRememberToken);
     expect(Password::tokenExists($user, $token))->toBeFalse();
+    $this->assertDatabaseCount('personal_access_tokens', 0);
+
+    $this->withToken($apiToken)
+        ->getJson('/api/auth/me')
+        ->assertUnauthorized();
 });
 
 it('rejects an invalid password reset token', function () {

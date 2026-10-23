@@ -14,6 +14,8 @@ The global personal-access-token lifetime is controlled by `SANCTUM_EXPIRATION_M
 
 No global lifetime is imposed by default in this repository because choosing a maximum lifetime is an API compatibility and product-policy decision. Operators should set a finite value appropriate to their client and re-authentication model, then verify expiry behavior in the deployed configuration. For example, `SANCTUM_EXPIRATION_MINUTES=10080` represents seven days; this is an example, not a universal recommendation. Changing the value requires configuration-cache refresh/redeployment as appropriate.
 
+A successful web password reset revokes all existing Sanctum personal access tokens for that account, so clients must authenticate again with the new credentials. This does not replace incident-response review of other active browser sessions.
+
 The current login flow does not expose token naming, per-device token management, or an endpoint to revoke all of a user's tokens. Repeated successful logins can therefore create multiple active personal access tokens. During account compromise, revoke affected tokens through a trusted operational path and review whether a user-facing token-management feature is required before supporting long-lived third-party clients.
 
 ## Roles
