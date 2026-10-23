@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Authorization\BlueprintAuthorizationPolicy;
+
 use App\Application\Blueprint\Commands\FreezeBlueprintRevision;
 use App\Domain\Blueprint\Repositories\BlueprintRepository;
 use App\Domain\Blueprint\ValueObjects\BlueprintId;
@@ -15,6 +17,7 @@ final class FreezeBlueprintRevisionController
     public function __construct(
         private FreezeBlueprintRevision $command,
         private BlueprintRepository $repository,
+        private BlueprintAuthorizationPolicy $authorization,
     ) {
     }
 
@@ -44,15 +47,11 @@ final class FreezeBlueprintRevisionController
             ], 404);
         }
 
-        $ownership = $blueprintEntity->ownership();
-
-        $user = $request->user();
-
-        $isOwner =
-            $ownership['type'] === 'user'
-            && (string) $ownership['id'] === (string) $user->id;
-
-        if (! $isOwner) {
+        if (! $this->authorization->canManage(
+            $blueprintEntity,
+            $request->user(),
+            'blueprint.system.manage_revisions',
+        )) {
             return response()->json([
                 'message' => 'Forbidden.',
             ], 403);
