@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace App\Authorization;
 
 use App\Domain\Blueprint\Entities\Blueprint;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Product-specific allowlist for teacher-facing tools.
  *
- * Discovery and execution must consult this same registry. The registry is
- * configuration-driven so additional product domains can be added without
- * hard-coding their slugs into the platform's Blueprint core.
+ * Discovery and execution consult this same registry. Configuration provides
+ * safe defaults; persisted administrative overrides can add, replace, or disable
+ * entries without coupling the Blueprint core to the education domain.
  */
 final class TeacherToolRegistry
 {
@@ -35,12 +37,30 @@ final class TeacherToolRegistry
             ],
         ];
 
-        // Keep this small resolver independently testable without booting Laravel.
-        if (! app()->bound('config')) {
+        if (app()->bound('config')) {
+            $defaults = (array) config('teacher_tools.tools', $defaults);
+        }
+
+        // Unit tests may instantiate the resolver without booting database services.
+        if (! app()->bound('db') || ! Schema::hasTable('teacher_tool_registry')) {
             return $defaults;
         }
 
-        return (array) config('teacher_tools.tools', $defaults);
+        $tools = $defaults;
+
+        foreach (DB::table('teacher_tool_registry')->get() as $entry) {
+            if (! (bool) $entry->is_enabled) {
+                unset($tools[$entry->slug]);
+                continue;
+            }
+
+            $tools[$entry->slug] = [
+                'namespace' => (string) $entry->namespace,
+                'view' => (string) $entry->view,
+            ];
+        }
+
+        return $tools;
     }
 
     public function contains(string $slug): bool
