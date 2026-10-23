@@ -22,7 +22,7 @@ final class BlueprintAuthorizationPolicy
     public function canReadBlueprintDetails(
         Blueprint $blueprint,
         User $user,
-        ?string $reason = null,
+        mixed $reason = null,
     ): bool {
         if ($this->isOwner($blueprint, $user)) {
             return true;
@@ -154,7 +154,7 @@ final class BlueprintAuthorizationPolicy
         User $user,
         string $permission,
         string $action,
-        ?string $reason,
+        mixed $reason,
         array $context = [],
     ): bool {
         if (! $this->isSystemOwned($blueprint) || ! $user->hasPermissionTo($permission)) {
