@@ -66,7 +66,7 @@ The engine requires the revision to belong to the Blueprint, be frozen and curre
 
 ### Teacher tool execution
 
-POST /api/teacher/tools/{slug}/execute accepts input and context. The request shape is validated according to the registered teacher tool. The endpoint returns execution_id, status, result, and error; it intentionally omits internal Blueprint and Revision identifiers from the teacher-facing response. The slug must be in the registry, and the underlying Blueprint must be a public, active system Blueprint with a frozen current revision.
+POST /api/teacher/tools/{slug}/execute accepts input and context. Built-in teacher slugs have dedicated Form Request validation. All registered tools still pass the revision input-contract validation in the execution engine; registering a new slug does not automatically create a slug-specific Form Request validator. The endpoint returns execution_id, status, result, and error; it intentionally omits internal Blueprint and Revision identifiers from the teacher-facing response. The slug must be in the registry, and the underlying Blueprint must be a public, active system Blueprint with a frozen current revision.
 
 ### Execution record
 
