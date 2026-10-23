@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Admin;
 
-use App\Authorization\AuthorizationPermissionCatalog;
-
 use App\Authorization\AuthorizationAuditLogger;
+use App\Authorization\AuthorizationPermissionCatalog;
 use App\Authorization\TeacherToolRegistry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -67,7 +66,7 @@ final class TeacherToolRegistryController
         }
 
         return DB::transaction(function () use ($actor, $slug, $validated): JsonResponse {
-            $before = $this->registry->all()[$slug] ?? null;
+            $before = $this->registry->administrativeEntries()[$slug] ?? null;
             $existing = DB::table('teacher_tool_registry')->where('slug', $slug)->first();
             $now = now();
 
@@ -86,9 +85,11 @@ final class TeacherToolRegistryController
                 DB::table('teacher_tool_registry')->where('slug', $slug)->update($values);
             }
 
-            $after = $validated['enabled']
-                ? ['namespace' => $validated['namespace'], 'view' => $validated['view']]
-                : null;
+            $after = [
+                'namespace' => $validated['namespace'],
+                'view' => $validated['view'],
+                'enabled' => (bool) $validated['enabled'],
+            ];
 
             $this->audit->recordTeacherToolRegistryChange(
                 actor: $actor,
