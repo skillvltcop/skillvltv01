@@ -9,7 +9,7 @@ use App\Authorization\TeacherToolRegistry;
 final class TeacherToolResolver
 {
     public function __construct(
-        private TeacherToolRegistry $registry,
+        private TeacherToolRegistry $registry = new TeacherToolRegistry(),
     ) {
     }
 
