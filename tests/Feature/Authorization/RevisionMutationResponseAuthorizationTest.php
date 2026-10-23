@@ -3,11 +3,8 @@
 use App\Application\Behavior\BehaviorContractValidator;
 use App\Application\Blueprint\Commands\AddBlueprintRevision;
 use App\Application\Blueprint\Commands\CreateBlueprint;
-use App\Application\Blueprint\Commands\ActivateBlueprint;
-use App\Application\Blueprint\Commands\DeprecateBlueprint;
 use App\Application\Blueprint\Commands\FreezeBlueprintRevision;
 use App\Application\Blueprint\Commands\PromoteBlueprintRevision;
-use App\Application\Blueprint\Commands\SunsetBlueprint;
 use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
