@@ -20,7 +20,27 @@ final class TeacherToolRegistry
      */
     public function all(): array
     {
-        return (array) config('teacher_tools.tools', []);
+        $defaults = [
+            'assessment-positioning' => [
+                'namespace' => 'skillvlt.edu.assessment',
+                'view' => 'teacher.tools.assessment-positioning',
+            ],
+            'assessment-score-calculator' => [
+                'namespace' => 'skillvlt.edu.assessment',
+                'view' => 'teacher.tools.assessment-score-calculator',
+            ],
+            'assessment-results-analyzer' => [
+                'namespace' => 'skillvlt.edu.assessment',
+                'view' => 'teacher.tools.assessment-results-analyzer',
+            ],
+        ];
+
+        // Keep this small resolver independently testable without booting Laravel.
+        if (! app()->bound('config')) {
+            return $defaults;
+        }
+
+        return (array) config('teacher_tools.tools', $defaults);
     }
 
     public function contains(string $slug): bool
