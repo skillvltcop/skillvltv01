@@ -8,6 +8,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -39,6 +40,23 @@ class User extends Authenticatable
         'role',
         'permissions',
     ];
+
+    protected static function booted(): void
+    {
+        static::deleting(function (User $user): void {
+            // Keep the execution audit shell, but remove potentially personal
+            // payloads before the owner_id foreign key is set to null.
+            DB::table('executions')
+                ->where('owner_id', (string) $user->id)
+                ->update([
+                    'input' => json_encode(new \\stdClass(), JSON_THROW_ON_ERROR),
+                    'context' => json_encode(new \\stdClass(), JSON_THROW_ON_ERROR),
+                    'output' => json_encode(new \\stdClass(), JSON_THROW_ON_ERROR),
+                    'error' => null,
+                    'updated_at' => now(),
+                ]);
+        });
+    }
 
     /**
      * Check whether a named administrative permission has been explicitly granted.
