@@ -309,7 +309,7 @@
                 body: JSON.stringify(payload),
             });
             status('تم تحديث سجل الأداة وتسجيل العملية.', 'success');
-            document.getElementById('newToolForm').reset();
+            if (form.id === 'newToolForm') form.reset();
             await loadRegistry();
         } catch (error) {
             status(error.message, 'error');
