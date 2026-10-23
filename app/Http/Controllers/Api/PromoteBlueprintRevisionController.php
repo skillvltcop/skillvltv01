@@ -84,16 +84,28 @@ final class PromoteBlueprintRevisionController
             };
         }
 
-        return response()->json([
+        $response = [
             'id' => (string) $revisionEntity->id(),
             'blueprint_id' => $blueprint,
             'number' => (string) $revisionEntity->number(),
-            'behavior_digest' => (string) $revisionEntity->behaviorDigest(),
-            'contracts' => $revisionEntity->contracts(),
-            'logic' => $revisionEntity->logic(),
-            'outputs' => $revisionEntity->outputs(),
-            'policies' => $revisionEntity->policies(),
             'frozen' => $revisionEntity->isFrozen(),
-        ]);
+        ];
+
+        // Revision-management permission does not implicitly grant permission
+        // to read the private behavior definition.
+        if ($this->authorization->canReadRevisionDetails(
+            $blueprintEntity,
+            $revisionEntity,
+            $request->user(),
+            $request->input('authorization_reason'),
+        )) {
+            $response['behavior_digest'] = (string) $revisionEntity->behaviorDigest();
+            $response['contracts'] = $revisionEntity->contracts();
+            $response['logic'] = $revisionEntity->logic();
+            $response['outputs'] = $revisionEntity->outputs();
+            $response['policies'] = $revisionEntity->policies();
+        }
+
+        return response()->json($response);
     }
 }
