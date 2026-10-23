@@ -37,15 +37,15 @@ final class AuthorizationPermissionCatalog
     public static function definitions(): array
     {
         return [
-            self::BLUEPRINT_SYSTEM_CREATE => 'Create system-owned Blueprints.',
-            self::BLUEPRINT_SYSTEM_READ_PRIVATE => 'Read internal details of system Blueprints and revisions.',
-            self::BLUEPRINT_SYSTEM_EXECUTE_PRIVATE => 'Execute non-public system Blueprints when domain rules permit.',
-            self::BLUEPRINT_SYSTEM_MANAGE_REVISIONS => 'Add, freeze, and promote revisions of system Blueprints.',
-            self::BLUEPRINT_SYSTEM_MANAGE_LIFECYCLE => 'Change lifecycle state of system Blueprints.',
-            self::BLUEPRINT_USER_READ_PRIVATE => 'Audited support access to another user’s private Blueprint details.',
-            self::BLUEPRINT_USER_EXECUTE_PRIVATE => 'Audited support execution of another user’s private Blueprint.',
-            self::TEACHER_TOOLS_MANAGE_REGISTRY => 'List and change the teacher tool registry.',
-            self::EXECUTION_SUPPORT_READ => 'Audited support access to execution records.',
+            self::BLUEPRINT_SYSTEM_CREATE => 'إنشاء Blueprint مملوك للنظام.',
+            self::BLUEPRINT_SYSTEM_READ_PRIVATE => 'قراءة التفاصيل الداخلية لـBlueprints النظام ومراجعاتها.',
+            self::BLUEPRINT_SYSTEM_EXECUTE_PRIVATE => 'تنفيذ Blueprints النظام غير العامة عندما تسمح قواعد المجال.',
+            self::BLUEPRINT_SYSTEM_MANAGE_REVISIONS => 'إضافة مراجعات Blueprints النظام وتجميدها وترقيتها.',
+            self::BLUEPRINT_SYSTEM_MANAGE_LIFECYCLE => 'تغيير حالة دورة حياة Blueprints النظام.',
+            self::BLUEPRINT_USER_READ_PRIVATE => 'قراءة تفاصيل Blueprint خاص لمستخدم آخر مع تسجيل التدقيق.',
+            self::BLUEPRINT_USER_EXECUTE_PRIVATE => 'تنفيذ Blueprint خاص لمستخدم آخر مع تسجيل التدقيق.',
+            self::TEACHER_TOOLS_MANAGE_REGISTRY => 'استعراض سجل أدوات المعلم وتعديله.',
+            self::EXECUTION_SUPPORT_READ => 'قراءة سجلات التنفيذ لأغراض الدعم مع تسجيل التدقيق.',
         ];
     }
 
