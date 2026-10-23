@@ -281,7 +281,7 @@
                 + '<label class="field">Slug<input name="slug" value="' + esc(tool.slug) + '" readonly></label>'
                 + '<label class="field">Namespace<input name="namespace" value="' + esc(tool.namespace) + '" required maxlength="255"></label>'
                 + '<label class="field">View<input name="view" value="' + esc(tool.view) + '" required maxlength="255" pattern="teacher\.tools\.[a-z0-9-]+"></label>'
-                + '<label class="check"><input name="enabled" type="checkbox" checked> مفعّلة</label>'
+                + '<label class="check"><input name="enabled" type="checkbox" ' + (tool.enabled ? 'checked' : '') + '> مفعّلة</label>'
                 + '</div>'
                 + '<label class="field">سبب التغيير<input class="reason" name="reason" required minlength="10" maxlength="1000" placeholder="سبب واضح ومحدد"></label>'
                 + '<button class="primary" type="submit">حفظ التغيير</button>'
