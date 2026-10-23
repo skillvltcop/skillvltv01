@@ -31,13 +31,10 @@ final class AuthorizationAuditLogger
             resourceId: (string) $blueprint->id(),
             reason: $reason,
             permission: $permission,
-            context: ['required_role' => 'super_admin'] + $context,
+            context: $context,
         );
     }
 
-    /**
-     * @param array<string, scalar|null> $context
-     */
     /**
      * @param array<string, mixed> $context
      */
@@ -90,12 +87,12 @@ final class AuthorizationAuditLogger
             resourceId: (string) $target->id,
             reason: $reason,
             permission: null,
-            context: $context,
+            context: ['required_role' => 'super_admin'] + $context,
         );
     }
 
     /**
-     * @param array<string, scalar|null> $context
+     * @param array<string, mixed> $context
      */
     private function write(
         User $actor,
