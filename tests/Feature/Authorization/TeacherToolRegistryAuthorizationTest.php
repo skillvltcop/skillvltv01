@@ -93,7 +93,7 @@ it('removes a disabled teacher tool from discovery and blocks execution', functi
         'permissions' => ['teacher_tools.manage_registry'],
     ])->save();
 
-    (new \\Database\\Seeders\\AssessmentPositioningBlueprintSeeder())->run();
+    (new \Database\Seeders\AssessmentPositioningBlueprintSeeder())->run();
 
     $this->actingAs($admin)
         ->putJson('/api/admin/teacher-tools/assessment-positioning', [
