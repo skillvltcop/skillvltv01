@@ -49,9 +49,9 @@ class User extends Authenticatable
             DB::table('executions')
                 ->where('owner_id', (string) $user->id)
                 ->update([
-                    'input' => json_encode(new \\stdClass(), JSON_THROW_ON_ERROR),
-                    'context' => json_encode(new \\stdClass(), JSON_THROW_ON_ERROR),
-                    'output' => json_encode(new \\stdClass(), JSON_THROW_ON_ERROR),
+                    'input' => json_encode(new \stdClass(), JSON_THROW_ON_ERROR),
+                    'context' => json_encode(new \stdClass(), JSON_THROW_ON_ERROR),
+                    'output' => json_encode(new \stdClass(), JSON_THROW_ON_ERROR),
                     'error' => null,
                     'updated_at' => now(),
                 ]);
