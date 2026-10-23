@@ -916,3 +916,11 @@
 - أضيف اختبار تكاملي يبدأ بتسجيل دخول متصفح، ثم ينفذ logout عبر API، ويتحقق من أن `/api/auth/me` يرفض الطلب التالي رغم بقاء سياق الطلبات stateful.
 - التغيير يخص سلوك تسجيل الخروج فقط؛ لم تتغير قواعد الصلاحيات أو سياسات Blueprint.
 - يلزم نجاح SQLite وMySQL على SHA النهائي للـPR، ثم نجاح CI على `main` بعد الدمج.
+
+## Post-merge verification: PR #319 and session deployment controls
+
+- PR #319 was merged after both PHP 8.2 CI engines passed on exact head SHA `032cd74f3b2eefb6aa723d4863a070188167d0b1`.
+- Post-merge CI succeeded on SQLite and MySQL for `main` commit `867ff603dbf713bcc18151d232db06f729620290` (run `40018093050`). The main branch SHA and run SHA matched during verification.
+- The first logout regression-test attempt returned 200 on the follow-up request because Laravel's feature-test application reuses cached guards across multiple requests. The test now explicitly clears cached guards between requests to model a fresh HTTP request; the updated test suite passed on both database engines.
+- Deployment review found that the example environment does not explicitly set `SESSION_SECURE_COOKIE`. The deployment guide now requires secure session cookies in production, retains HttpOnly and SameSite guidance, and records a staging verification procedure for stateful CSRF behavior.
+- CSRF end-to-end enforcement is not marked as proven by the feature suite: Laravel's test environment bypasses CSRF validation by design. A staging/browser-level check remains a release verification item.
