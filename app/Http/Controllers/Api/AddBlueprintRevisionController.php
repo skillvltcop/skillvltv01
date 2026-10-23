@@ -68,6 +68,7 @@ public function __construct(
             $blueprintEntity,
             $request->user(),
             'blueprint.system.manage_revisions',
+            $request->input('authorization_reason'),
         )) {
             return response()->json([
                 'message' => 'Forbidden.',
