@@ -13,6 +13,8 @@ final class AuthorizationDashboardController
     {
         abort_unless($request->user()?->isSuperAdmin(), 403);
 
-        return view('admin.authorization.index');
+        return view('admin.authorization.index', [
+            'currentUserId' => (string) $request->user()->id,
+        ]);
     }
 }
