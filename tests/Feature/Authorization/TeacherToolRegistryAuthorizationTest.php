@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
 
-it('allows a specifically authorized administrator to disable a teacher tool with an audit reason', function () {
+it('allows a specifically authorized administrator to disable and re-enable a teacher tool with audit reasons', function () {
     $admin = User::factory()->create();
     $admin->forceFill([
         'role' => 'admin',
@@ -27,7 +27,27 @@ it('allows a specifically authorized administrator to disable a teacher tool wit
         ->assertSuccessful()
         ->assertJsonPath('enabled', false);
 
-    expect(app(TeacherToolRegistry::class)->contains('assessment-positioning'))->toBeFalse()
+    expect(app(TeacherToolRegistry::class)->contains('assessment-positioning'))->toBeFalse();
+
+    $this->actingAs($admin)
+        ->getJson('/api/admin/teacher-tools')
+        ->assertSuccessful()
+        ->assertJsonFragment([
+            'slug' => 'assessment-positioning',
+            'enabled' => false,
+        ]);
+
+    $this->actingAs($admin)
+        ->putJson('/api/admin/teacher-tools/assessment-positioning', [
+            'namespace' => 'skillvlt.edu.assessment',
+            'view' => 'teacher.tools.assessment-positioning',
+            'enabled' => true,
+            'reason' => 'Re-enable after review is complete',
+        ])
+        ->assertSuccessful()
+        ->assertJsonPath('enabled', true);
+
+    expect(app(TeacherToolRegistry::class)->contains('assessment-positioning'))->toBeTrue()
         ->and(DB::table('authorization_audit_events')
             ->where('action', 'change_teacher_tool_registry')
             ->where('resource_id', 'assessment-positioning')
