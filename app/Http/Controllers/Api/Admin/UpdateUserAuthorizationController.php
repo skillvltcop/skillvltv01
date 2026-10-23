@@ -15,6 +15,8 @@ final class UpdateUserAuthorizationController
 {
     private const ALLOWED_PERMISSIONS = [
         'blueprint.system.create',
+        'blueprint.user.read_private',
+        'blueprint.user.execute_private',
         'blueprint.system.read_private',
         'blueprint.system.execute_private',
         'blueprint.system.manage_revisions',
