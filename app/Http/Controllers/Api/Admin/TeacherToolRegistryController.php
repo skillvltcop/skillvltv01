@@ -29,11 +29,12 @@ final class TeacherToolRegistryController
 
         $tools = [];
 
-        foreach ($this->registry->all() as $slug => $entry) {
+        foreach ($this->registry->administrativeEntries() as $slug => $entry) {
             $tools[] = [
                 'slug' => $slug,
                 'namespace' => $entry['namespace'],
                 'view' => $entry['view'],
+                'enabled' => $entry['enabled'],
             ];
         }
 
