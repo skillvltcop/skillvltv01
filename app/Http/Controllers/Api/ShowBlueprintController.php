@@ -28,7 +28,7 @@ final class ShowBlueprintController
             return response()->json(['message' => 'Blueprint not found.'], 404);
         }
 
-        if ($this->authorization->canReadBlueprintDetails($entity, $request->user())) {
+        if ($this->authorization->canReadBlueprintDetails($entity, $request->user(), $request->input('authorization_reason'))) {
             return response()->json([
                 'id' => (string) $entity->id(),
                 'canonical_name' => (string) $entity->canonicalName(),
