@@ -73,3 +73,15 @@ it('forbids administrators without the registry permission from changing teacher
 
     expect(app(TeacherToolRegistry::class)->contains('assessment-positioning'))->toBeTrue();
 });
+
+it('forbids administrators without the registry permission from listing teacher tools', function () {
+    $admin = User::factory()->create();
+    $admin->forceFill([
+        'role' => 'admin',
+        'permissions' => ['blueprint.system.create'],
+    ])->save();
+
+    $this->actingAs($admin)
+        ->getJson('/api/admin/teacher-tools')
+        ->assertForbidden();
+});
