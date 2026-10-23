@@ -58,6 +58,6 @@ it('redacts execution payloads and retains an ownerless audit shell when deletin
         ->and($stored->owner_id)->toBeNull()
         ->and(json_decode($stored->input, true))->toBe([])
         ->and(json_decode($stored->context, true))->toBe([])
-        ->and(json_decode($stored->output, true))->toBe([])
+        ->and($stored->output)->toBeNull()
         ->and($stored->error)->toBeNull();
 });
