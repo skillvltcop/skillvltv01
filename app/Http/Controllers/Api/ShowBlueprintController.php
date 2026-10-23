@@ -62,6 +62,6 @@ final class ShowBlueprintController
             return response()->json(['message' => 'Forbidden.'], 403);
         }
 
-        return response()->json($this->projection->from($entity));
+        return response()->json($this->projection->from($entity, $request->query('locale')));
     }
 }
