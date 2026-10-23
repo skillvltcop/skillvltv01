@@ -41,9 +41,12 @@ Do not expose Tinker publicly or run role promotion based on an unverified email
 ## Sanctum and transport security
 
 - Serve the application over HTTPS.
+- In production, set `SESSION_SECURE_COOKIE=true` so the session cookie is sent only over HTTPS; keep `SESSION_HTTP_ONLY=true` and use `SESSION_SAME_SITE=lax` for the same-site browser application unless the reviewed deployment topology requires a different value.
+- Keep `SESSION_DOMAIN` unset (host-only cookie) unless sharing the session across subdomains is an explicit requirement. If cross-site SPA cookies are required, review `SameSite=None`, `Secure`, allowed origins, credentials, and `SANCTUM_STATEFUL_DOMAINS` together; never broaden the stateful domain list with wildcards.
 - Protect bearer tokens and revoke tokens when an account is compromised.
 - Include the canonical browser host and port in SANCTUM_STATEFUL_DOMAINS so the same-origin authorization dashboard can authenticate its stateful API requests. Keep the domain list narrow and do not use wildcards.
 - Keep login and password-reset rate limits enabled.
+- Verify CSRF enforcement against a deployed/staging HTTP stack: a stateful session-authenticated mutation without a valid CSRF token should be rejected (typically HTTP 419), while the same request with the session cookie and matching CSRF token should succeed. Laravel's normal feature-test environment bypasses CSRF validation, so ordinary feature tests alone do not prove this end-to-end behavior.
 - Do not return role/permission data from general user serialization.
 - Keep public API projections narrow and review new fields for sensitive data.
 - Do not expose execution input, context, output, or error to another user without an explicit audited support permission.
