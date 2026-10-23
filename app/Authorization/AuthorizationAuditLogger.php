@@ -31,7 +31,7 @@ final class AuthorizationAuditLogger
             resourceId: (string) $blueprint->id(),
             reason: $reason,
             permission: $permission,
-            context: $context,
+            context: ['required_role' => 'super_admin'] + $context,
         );
     }
 
@@ -89,7 +89,7 @@ final class AuthorizationAuditLogger
             resourceType: 'user',
             resourceId: (string) $target->id,
             reason: $reason,
-            permission: 'authorization.users.manage',
+            permission: null,
             context: $context,
         );
     }
