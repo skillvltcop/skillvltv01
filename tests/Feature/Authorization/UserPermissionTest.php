@@ -7,7 +7,7 @@ use Tests\TestCase;
 uses(TestCase::class, RefreshDatabase::class);
 
 it('does not grant named administrative permissions to a regular user', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->create()->refresh();
 
     expect($user->role)->toBe('user')
         ->and($user->hasPermissionTo('blueprint.system.read_private'))->toBeFalse()
