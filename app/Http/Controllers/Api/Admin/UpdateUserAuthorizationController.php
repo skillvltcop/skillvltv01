@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Admin;
 
-use App\Authorization\AuthorizationPermissionCatalog;
-
 use App\Authorization\AuthorizationAuditLogger;
+use App\Authorization\AuthorizationPermissionCatalog;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,18 +15,6 @@ use Illuminate\Validation\ValidationException;
 
 final class UpdateUserAuthorizationController
 {
-    private const ALLOWED_PERMISSIONS = [
-        AuthorizationPermissionCatalog::BLUEPRINT_SYSTEM_CREATE,
-        AuthorizationPermissionCatalog::BLUEPRINT_USER_READ_PRIVATE,
-        AuthorizationPermissionCatalog::BLUEPRINT_USER_EXECUTE_PRIVATE,
-        AuthorizationPermissionCatalog::BLUEPRINT_SYSTEM_READ_PRIVATE,
-        AuthorizationPermissionCatalog::BLUEPRINT_SYSTEM_EXECUTE_PRIVATE,
-        AuthorizationPermissionCatalog::BLUEPRINT_SYSTEM_MANAGE_REVISIONS,
-        AuthorizationPermissionCatalog::BLUEPRINT_SYSTEM_MANAGE_LIFECYCLE,
-        AuthorizationPermissionCatalog::TEACHER_TOOLS_MANAGE_REGISTRY,
-        AuthorizationPermissionCatalog::EXECUTION_SUPPORT_READ,
-    ];
-
     public function __construct(
         private AuthorizationAuditLogger $audit,
     ) {
