@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\ActivateBlueprintController;
 use App\Http\Controllers\Api\Admin\UpdateUserAuthorizationController;
+use App\Http\Controllers\Api\Admin\TeacherToolRegistryController;
 use App\Http\Controllers\Api\AddBlueprintRevisionController;
 use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
@@ -47,6 +48,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch(
         '/admin/users/{userId}/authorization',
         UpdateUserAuthorizationController::class,
+    );
+
+    Route::get(
+        '/admin/teacher-tools',
+        [TeacherToolRegistryController::class, 'index'],
+    );
+
+    Route::put(
+        '/admin/teacher-tools/{slug}',
+        [TeacherToolRegistryController::class, 'update'],
     );
 
     /*
