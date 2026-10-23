@@ -41,6 +41,12 @@ A successful response contains a Sanctum bearer token and a minimal user object.
 | POST | /api/blueprints/{blueprint}/deprecate | Deprecate a Blueprint. | Owner or audited system lifecycle permission. |
 | POST | /api/blueprints/{blueprint}/sunset | Sunset a Blueprint. | Owner or audited system lifecycle permission. |
 
+### Public discovery response contract
+
+The general discovery endpoint returns only canonical_name, title, description, category, tags, and version. The optional locale query parameter accepts ar, fr, or en and localizes title and description when translations are available. Internal IDs, namespace, ownership, lifecycle status, current revision ID, full metadata, logic, contracts, outputs, and policies are omitted from this projection.
+
+Teacher discovery has a separate contract: slug, title, purpose, optional target_level, and version. It is filtered through the shared teacher tool registry and public Blueprint eligibility policy.
+
 ### Create Blueprint request
 
 Required fields:
