@@ -13,7 +13,7 @@ The current role values are user, admin, and super_admin. A guest is an unauthen
 - super_admin — can pass named permission checks and is the only role permitted to change users' roles and permission assignments. Sensitive exceptions still require a reason and are audited; domain integrity rules remain in force.
 - guest — cannot call authenticated API operations or access authenticated teacher pages.
 
-There is no web administration dashboard yet. Administrative functions are provided by authenticated API routes. A first super administrator must be provisioned securely by an operator; the application intentionally creates no default administrator account.
+A minimal Arabic web dashboard is available at /admin/authorization for super_admin accounts. It uses the authenticated API for user/permission management, teacher registry changes, and audit review. A first super administrator must be provisioned securely by an operator; the application intentionally creates no default administrator account.
 
 ## Named permissions currently supported
 
@@ -59,6 +59,7 @@ Privileged read, execution, and system-management exceptions require a non-empty
 
 ## Administrative API
 
+- GET /api/admin/permissions — super_admin only; returns the canonical grantable permission catalog and Arabic descriptions.
 - GET /api/admin/users — super_admin only; paginated list of user IDs, names, emails, roles, and permissions, excluding credentials.
 - PATCH /api/admin/users/{userId}/authorization — super_admin only; changes role and explicit permission list, requires reason, records an audit event, and prevents demotion of the last super administrator.
 - GET /api/admin/audit-events — super_admin only; paginated audit log with optional action, resource_type, and actor_user_id filters.
