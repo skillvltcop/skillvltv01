@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Authorization\BlueprintAuthorizationPolicy;
+
 use App\Application\Blueprint\Commands\CreateBlueprint;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,6 +16,7 @@ final class CreateBlueprintController
 {
     public function __construct(
         private CreateBlueprint $command,
+        private BlueprintAuthorizationPolicy $authorization,
     ) {
     }
 
@@ -36,19 +39,30 @@ final class CreateBlueprintController
                     'sometimes',
                     'array',
                 ],
+                'ownership' => ['sometimes', 'array'],
+                'ownership.type' => ['sometimes', 'string', 'in:user,system'],
             ],
         )->validate();
 
         $user = $request->user();
+        $requestedOwnership = $validated['ownership']['type'] ?? 'user';
+
+        if (
+            $requestedOwnership === 'system'
+            && ! $user->hasPermissionTo('blueprint.system.create')
+        ) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        $ownership = $requestedOwnership === 'system'
+            ? ['type' => 'system', 'id' => 'skillvlt']
+            : ['type' => 'user', 'id' => (string) $user->id];
 
         try {
             $blueprint = $this->command->handle(
                 canonicalName: $validated['canonical_name'],
                 namespace: $validated['namespace'],
-                ownership: [
-                    'type' => 'user',
-                    'id' => (string) $user->id,
-                ],
+                ownership: $ownership,
                 metadata: $validated['metadata'] ?? [],
             );
         } catch (InvalidArgumentException $exception) {
