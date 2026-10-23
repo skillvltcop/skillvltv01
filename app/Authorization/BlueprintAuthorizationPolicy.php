@@ -110,6 +110,10 @@ final class BlueprintAuthorizationPolicy
             return true;
         }
 
+        if (! $this->isSystemOwned($blueprint)) {
+            return false;
+        }
+
         return $this->allowAuditedException(
             $blueprint,
             $user,
