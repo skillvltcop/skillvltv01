@@ -58,7 +58,7 @@ For ordinary creation, ownership is always assigned to the current user. A clien
 
 ### Add revision request
 
-The request requires a string revision number plus arrays for contracts, logic, outputs, and policies. The server validates behavior contracts and domain rules. The response includes the new revision identifier, digest, definition fields, and frozen status.
+The request requires a string revision number plus arrays for contracts, logic, outputs, and policies. The server validates behavior contracts and domain rules. The response includes the new revision identifier, digest, definition fields, and frozen status. For system-owned Blueprints, an administrator with revision-management permission but without the separate private-read permission receives only the revision identifier, Blueprint identifier, revision number, and frozen status; private contracts, logic, outputs, policies, and digest are omitted.
 
 ### Execute Blueprint request
 
