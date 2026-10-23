@@ -41,7 +41,7 @@ final class BlueprintAuthorizationPolicy
         Blueprint $blueprint,
         BlueprintRevision $revision,
         User $user,
-        ?string $reason = null,
+        mixed $reason = null,
     ): bool {
         if ($this->isOwner($blueprint, $user)) {
             return true;
@@ -66,7 +66,7 @@ final class BlueprintAuthorizationPolicy
     public function canExecute(
         Blueprint $blueprint,
         User $user,
-        ?string $reason = null,
+        mixed $reason = null,
     ): bool {
         if ($this->isOwner($blueprint, $user)) {
             return true;
@@ -89,7 +89,7 @@ final class BlueprintAuthorizationPolicy
         Blueprint $blueprint,
         User $user,
         string $permission,
-        ?string $reason = null,
+        mixed $reason = null,
     ): bool {
         if ($this->isOwner($blueprint, $user)) {
             return true;
