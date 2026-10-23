@@ -80,6 +80,10 @@ GET /api/executions/{execution} returns the execution's identifiers, status, inp
 
 ## Administrative routes
 
+### List the canonical permission catalog
+
+GET /api/admin/permissions — super_admin only. Returns the centrally defined grantable permission identifiers and Arabic descriptions used by the dashboard and API validation.
+
 ### List users for authorization management
 
 GET /api/admin/users — super_admin only. Supports per_page pagination (1–100) and returns only id, name, email, role, and permissions. Passwords, tokens, and other credentials are never returned.
