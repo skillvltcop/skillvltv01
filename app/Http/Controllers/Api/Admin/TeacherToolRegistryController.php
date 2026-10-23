@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Authorization\AuthorizationPermissionCatalog;
+
 use App\Authorization\AuthorizationAuditLogger;
 use App\Authorization\TeacherToolRegistry;
 use Illuminate\Http\JsonResponse;
@@ -21,7 +23,7 @@ final class TeacherToolRegistryController
 
     public function index(Request $request): JsonResponse
     {
-        if (! $request->user()->hasPermissionTo('teacher_tools.manage_registry')) {
+        if (! $request->user()->hasPermissionTo(AuthorizationPermissionCatalog::TEACHER_TOOLS_MANAGE_REGISTRY)) {
             return response()->json(['message' => 'Forbidden.'], 403);
         }
 
@@ -42,7 +44,7 @@ final class TeacherToolRegistryController
     {
         $actor = $request->user();
 
-        if (! $actor->hasPermissionTo('teacher_tools.manage_registry')) {
+        if (! $actor->hasPermissionTo(AuthorizationPermissionCatalog::TEACHER_TOOLS_MANAGE_REGISTRY)) {
             return response()->json(['message' => 'Forbidden.'], 403);
         }
 
