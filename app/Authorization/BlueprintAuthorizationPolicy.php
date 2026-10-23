@@ -28,10 +28,15 @@ final class BlueprintAuthorizationPolicy
             return true;
         }
 
-        return $this->allowAuditedSystemException(
+        $ownership = $blueprint->ownership();
+        $permission = ($ownership['type'] ?? null) === 'system'
+            ? 'blueprint.system.read_private'
+            : 'blueprint.user.read_private';
+
+        return $this->allowAuditedException(
             $blueprint,
             $user,
-            'blueprint.system.read_private',
+            $permission,
             'read_blueprint_details',
             $reason,
         );
@@ -47,10 +52,15 @@ final class BlueprintAuthorizationPolicy
             return true;
         }
 
-        return $this->allowAuditedSystemException(
+        $ownership = $blueprint->ownership();
+        $permission = ($ownership['type'] ?? null) === 'system'
+            ? 'blueprint.system.read_private'
+            : 'blueprint.user.read_private';
+
+        return $this->allowAuditedException(
             $blueprint,
             $user,
-            'blueprint.system.read_private',
+            $permission,
             'read_blueprint_revision_details',
             $reason,
             ['revision_id' => (string) $revision->id()],
@@ -76,10 +86,15 @@ final class BlueprintAuthorizationPolicy
             return true;
         }
 
-        return $this->allowAuditedSystemException(
+        $ownership = $blueprint->ownership();
+        $permission = ($ownership['type'] ?? null) === 'system'
+            ? 'blueprint.system.execute_private'
+            : 'blueprint.user.execute_private';
+
+        return $this->allowAuditedException(
             $blueprint,
             $user,
-            'blueprint.system.execute_private',
+            $permission,
             'execute_private_blueprint',
             $reason,
         );
@@ -95,7 +110,7 @@ final class BlueprintAuthorizationPolicy
             return true;
         }
 
-        return $this->allowAuditedSystemException(
+        return $this->allowAuditedException(
             $blueprint,
             $user,
             $permission,
@@ -149,7 +164,7 @@ final class BlueprintAuthorizationPolicy
      *
      * @param array<string, scalar|null> $context
      */
-    private function allowAuditedSystemException(
+    private function allowAuditedException(
         Blueprint $blueprint,
         User $user,
         string $permission,
@@ -157,7 +172,11 @@ final class BlueprintAuthorizationPolicy
         mixed $reason,
         array $context = [],
     ): bool {
-        if (! $this->isSystemOwned($blueprint) || ! $user->hasPermissionTo($permission)) {
+        $ownership = $blueprint->ownership();
+        $isSupportedOwner = $this->isSystemOwned($blueprint)
+            || (($ownership['type'] ?? null) === 'user' && (string) ($ownership['id'] ?? '') !== (string) $user->id);
+
+        if (! $isSupportedOwner || ! $user->hasPermissionTo($permission)) {
             return false;
         }
 
