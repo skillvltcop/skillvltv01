@@ -80,6 +80,14 @@ GET /api/executions/{execution} returns the execution's identifiers, status, inp
 
 ## Administrative routes
 
+### List users for authorization management
+
+GET /api/admin/users — super_admin only. Supports per_page pagination (1–100) and returns only id, name, email, role, and permissions. Passwords, tokens, and other credentials are never returned.
+
+### Review authorization audit events
+
+GET /api/admin/audit-events — super_admin only. Supports per_page pagination (1–100) and optional action, resource_type, and actor_user_id filters. It returns the recorded reason and non-payload audit context.
+
 ### Change a user's role and permissions
 
 PATCH /api/admin/users/{userId}/authorization — super_admin only.

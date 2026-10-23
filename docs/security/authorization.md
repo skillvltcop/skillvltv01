@@ -59,7 +59,9 @@ Privileged read, execution, and system-management exceptions require a non-empty
 
 ## Administrative API
 
+- GET /api/admin/users — super_admin only; paginated list of user IDs, names, emails, roles, and permissions, excluding credentials.
 - PATCH /api/admin/users/{userId}/authorization — super_admin only; changes role and explicit permission list, requires reason, records an audit event, and prevents demotion of the last super administrator.
+- GET /api/admin/audit-events — super_admin only; paginated audit log with optional action, resource_type, and actor_user_id filters.
 - GET /api/admin/teacher-tools — requires teacher_tools.manage_registry.
 - PUT /api/admin/teacher-tools/{slug} — requires teacher_tools.manage_registry and a reason; sets namespace, view, and enabled state.
 
