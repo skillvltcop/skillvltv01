@@ -65,16 +65,27 @@ final class DeprecateBlueprintController
             throw $exception;
         }
 
-        return response()->json([
+        $response = [
             'id' => (string) $blueprintEntity->id(),
             'canonical_name' => (string) $blueprintEntity->canonicalName(),
-            'namespace' => (string) $blueprintEntity->namespace(),
-            'ownership' => $blueprintEntity->ownership(),
-            'metadata' => $blueprintEntity->metadata(),
             'lifecycle_status' => $blueprintEntity->lifecycleStatus()->value,
-            'current_revision_id' => $blueprintEntity->currentRevisionId()
+        ];
+
+        // Lifecycle-management permission does not implicitly grant access to
+        // private metadata or internal ownership/revision identifiers.
+        if ($this->authorization->canReadBlueprintDetails(
+            $blueprintEntity,
+            $request->user(),
+            $request->input('authorization_reason'),
+        )) {
+            $response['namespace'] = (string) $blueprintEntity->namespace();
+            $response['ownership'] = $blueprintEntity->ownership();
+            $response['metadata'] = $blueprintEntity->metadata();
+            $response['current_revision_id'] = $blueprintEntity->currentRevisionId()
                 ? (string) $blueprintEntity->currentRevisionId()
-                : null,
-        ]);
+                : null;
+        }
+
+        return response()->json($response);
     }
 }

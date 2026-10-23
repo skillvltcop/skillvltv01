@@ -58,7 +58,7 @@ For ordinary creation, ownership is always assigned to the current user. A clien
 
 ### Add revision request
 
-The request requires a string revision number plus arrays for contracts, logic, outputs, and policies. The server validates behavior contracts and domain rules. The response includes the new revision identifier, digest, definition fields, and frozen status.
+The request requires a string revision number plus arrays for contracts, logic, outputs, and policies. The server validates behavior contracts and domain rules. The response includes the new revision identifier, digest, definition fields, and frozen status. For system-owned Blueprints, an administrator with revision-management permission but without the separate private-read permission receives only the revision identifier, Blueprint identifier, revision number, and frozen status; private contracts, logic, outputs, policies, and digest are omitted.
 
 ### Execute Blueprint request
 
@@ -126,3 +126,8 @@ Registry changes are audited. Disabling a configured tool overrides the default 
 - 422 — validation, domain-rule, or authorization-reason failure.
 
 Exact error bodies depend on the endpoint and exception handler. Treat response schemas from the controller and tests as authoritative.
+
+
+### Mutation response minimization
+
+Lifecycle mutation endpoints (`activate`, `deprecate`, and `sunset`) return only the Blueprint identifier, canonical name, and resulting lifecycle status unless the caller is also authorized to read private Blueprint details. Namespace, ownership, metadata, and the current revision identifier are omitted for callers who hold only lifecycle-management permission. Likewise, `freeze` and `promote` return revision identifiers, number, and frozen status unless the caller separately has permission to read revision details. Management permissions do not imply private-read permission.

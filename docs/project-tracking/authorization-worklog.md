@@ -818,3 +818,30 @@
 - دُمج PR #313 بعد نجاح CI على SQLite وMySQL.
 
 **الحالة:** أصبحت واجهة إدارة بشرية متاحة في الفرع، بدل الاعتماد على استدعاءات API يدويًا. ستُراجع صلاحية جلسة المتصفح وطلبات CSRF عبر اختبارات Laravel قبل الدمج.
+
+
+## 29. مراجعة أمنية بعد البناء — تسريب تفاصيل المراجعة وبيانات Blueprint عبر استجابات التعديل
+
+### الملاحظة
+
+أثناء مراجعة الصلاحيات المدمجة، ظهر أن `blueprint.system.manage_revisions` يسمح للمسؤول بإجراء freeze/promote، لكن استجابتَا freeze وpromote كانتا ترجعان `contracts` و`logic` و`outputs` و`policies` دون تحقق مستقل من صلاحية قراءة تفاصيل المراجعة. كما كانت استجابات activate/deprecate/sunset ترجع `metadata` و`ownership` و`namespace` و`current_revision_id` للمسؤول الذي يحمل صلاحية lifecycle فقط. هذا يخلط بين صلاحية تغيير الحالة وصلاحية قراءة البيانات الخاصة.
+
+### المعالجة في PR #315
+
+- أصبحت استجابتَا freeze وpromote تعيدان الحد الأدنى: `id`, `blueprint_id`, `number`, `frozen`.
+- لا تُضاف تفاصيل المراجعة وبصمتها إلا إذا سمحت `BlueprintAuthorizationPolicy::canReadRevisionDetails()` بذلك.
+- أصبحت استجابات activate/deprecate/sunset تعيد فقط `id`, `canonical_name`, `lifecycle_status` ما لم تسمح `canReadBlueprintDetails()` بالقراءة التفصيلية.
+- لا تُعاد `metadata` أو `ownership` أو `namespace` أو `current_revision_id` لمجرد امتلاك صلاحية إدارة دورة الحياة.
+- يظل مالك Blueprint قادرًا على استلام التفاصيل في موارده، بينما يحتاج الوصول الإداري إلى صلاحية القراءة الخاصة المنفصلة وسبب تدقيق.
+- أضيف اختبار ارتجاعي لمسؤول لديه `blueprint.system.manage_revisions` فقط، ويتأكد من عدم وجود `logic/contracts/outputs/policies` في استجابتي freeze/promote.
+- أضيف اختبار يغطي activate/deprecate/sunset لمسؤول لديه `blueprint.system.manage_lifecycle` فقط، ويتأكد من عدم تسريب metadata أو حقول الملكية/namespace/المراجعة الحالية.
+- حُدث مرجع API لشرح اختلاف شكل الاستجابة حسب الصلاحية.
+
+### التحقق
+
+- PR: https://github.com/skillvltcop/skillvltv01/pull/315
+- head SHA عند التوثيق: `c58928a9d1ebdaa646e1daad50a638663383c005`
+- تُعاد CI على SQLite وMySQL بعد تحديثات الفرع؛ لا يدمج PR قبل نجاح المحركين والتحقق من SHA النهائي.
+- لا تزال مراجعة الأمان مستمرة؛ نجاح الاختبارات لا يغني عن فحص أن كل استجابة mutation لا تتجاوز صلاحيات القراءة.
+
+**الحالة:** إصلاح ضيق لاستجابات التعديل مع اختبارات ارتجاعية بانتظار CI. مراجعة الصلاحيات مستمرة. 
