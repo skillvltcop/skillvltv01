@@ -30,7 +30,7 @@ final class ExecuteBlueprintController
             return response()->json(['message' => 'Blueprint not found.'], 404);
         }
 
-        if (! $this->authorization->canExecute($blueprintEntity, $request->user())) {
+        if (! $this->authorization->canExecute($blueprintEntity, $request->user(), $request->input('authorization_reason'))) {
             return response()->json(['message' => 'Forbidden.'], 403);
         }
 
