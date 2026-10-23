@@ -36,7 +36,7 @@ final class ShowBlueprintRevisionController
             return response()->json(['message' => 'Blueprint revision not found.'], 404);
         }
 
-        if (! $this->authorization->canReadRevisionDetails($entity, $revisionEntity, $request->user())) {
+        if (! $this->authorization->canReadRevisionDetails($entity, $revisionEntity, $request->user(), $request->input('authorization_reason'))) {
             return response()->json(['message' => 'Forbidden.'], 403);
         }
 
