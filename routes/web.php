@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Web\Admin\AuthorizationDashboardController;
 use App\Http\Controllers\Web\Auth\LoginController;
 use App\Http\Controllers\Web\Auth\NewPasswordController;
 use App\Http\Controllers\Web\Auth\PasswordResetLinkController;
@@ -26,6 +27,10 @@ Route::middleware('guest')->group(function (): void {
 });
 
 Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('logout');
+
+Route::get('/admin/authorization', AuthorizationDashboardController::class)
+    ->middleware('auth')
+    ->name('admin.authorization.index');
 Route::post('/locale', LocaleController::class)->name('locale.update');
 
 Route::get('/teacher/tools', ToolsController::class)
