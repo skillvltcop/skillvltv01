@@ -103,7 +103,7 @@
             <div class="registry-fields">
                 <label class="field">Slug<input name="slug" required pattern="[a-z0-9][a-z0-9-]{0,127}" placeholder="assessment-example"></label>
                 <label class="field">Namespace<input name="namespace" required maxlength="255" placeholder="skillvlt.edu.assessment"></label>
-                <label class="field">View<input name="view" required maxlength="255" pattern="teacher\.tools\.[a-z0-9-]+" placeholder="teacher.tools.example"></label>
+                <label class="field">View<input name="view" required maxlength="255" pattern="teacher\\.tools\\.[a-z0-9-]+" placeholder="teacher.tools.example"></label>
                 <label class="check"><input name="enabled" type="checkbox" checked> مفعّلة</label>
             </div>
             <label class="field">سبب التغيير<input class="reason" name="reason" required minlength="10" maxlength="1000" placeholder="اذكر سبب التغيير (10 أحرف على الأقل)"></label>
