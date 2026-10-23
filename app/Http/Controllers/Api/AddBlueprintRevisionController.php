@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Authorization\BlueprintAuthorizationPolicy;
+
 use App\Application\Blueprint\Commands\AddBlueprintRevision;
 use App\Domain\Behavior\Exceptions\InvalidBehaviorContractException;
 use Illuminate\Http\JsonResponse;
@@ -17,6 +19,7 @@ final class AddBlueprintRevisionController
 public function __construct(
     private AddBlueprintRevision $command,
     private BlueprintRepository $repository,
+        private BlueprintAuthorizationPolicy $authorization,
 ) {
 }
 
@@ -61,15 +64,12 @@ public function __construct(
             ], 404);
         }
 
-        $ownership = $blueprintEntity->ownership();
-
-        $user = $request->user();
-
-        $isOwner =
-            $ownership['type'] === 'user'
-            && (string) $ownership['id'] === (string) $user->id;
-
-        if (! $isOwner) {
+        if (! $this->authorization->canManage(
+            $blueprintEntity,
+            $request->user(),
+            'blueprint.system.manage_revisions',
+            $request->input('authorization_reason'),
+        )) {
             return response()->json([
                 'message' => 'Forbidden.',
             ], 403);

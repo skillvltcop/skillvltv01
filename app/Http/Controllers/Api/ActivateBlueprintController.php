@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Authorization\BlueprintAuthorizationPolicy;
+
 use App\Application\Blueprint\Commands\ActivateBlueprint;
 use App\Domain\Blueprint\Repositories\BlueprintRepository;
 use App\Domain\Blueprint\ValueObjects\BlueprintId;
@@ -15,6 +17,7 @@ final class ActivateBlueprintController
     public function __construct(
         private ActivateBlueprint $command,
         private BlueprintRepository $repository,
+        private BlueprintAuthorizationPolicy $authorization,
     ) {
     }
 
@@ -32,22 +35,12 @@ final class ActivateBlueprintController
             ], 404);
         }
 
-        $ownership = $blueprintEntity->ownership();
-
-        $user = $request->user();
-
-        if (($ownership['type'] ?? null) === 'system') {
-            return response()->json([
-                'message' => 'Forbidden.',
-            ], 403);
-        }
-
-        $isOwner =
-            ($ownership['type'] ?? null) === 'user'
-            && (string) ($ownership['id'] ?? '')
-                === (string) $user->id;
-
-        if (! $isOwner) {
+        if (! $this->authorization->canManage(
+            $blueprintEntity,
+            $request->user(),
+            'blueprint.system.manage_lifecycle',
+            $request->input('authorization_reason'),
+        )) {
             return response()->json([
                 'message' => 'Forbidden.',
             ], 403);

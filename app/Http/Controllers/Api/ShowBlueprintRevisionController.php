@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Authorization\BlueprintAuthorizationPolicy;
 use App\Domain\Blueprint\Repositories\BlueprintRepository;
 use App\Domain\Blueprint\ValueObjects\BlueprintId;
 use App\Domain\Blueprint\ValueObjects\RevisionId;
@@ -14,6 +15,7 @@ final class ShowBlueprintRevisionController
 {
     public function __construct(
         private BlueprintRepository $repository,
+        private BlueprintAuthorizationPolicy $authorization,
     ) {
     }
 
@@ -22,41 +24,25 @@ final class ShowBlueprintRevisionController
         string $blueprint,
         string $revision,
     ): JsonResponse {
-        $blueprintEntity = $this->repository->find(
-            new BlueprintId($blueprint),
-        );
+        $entity = $this->repository->find(new BlueprintId($blueprint));
 
-        if ($blueprintEntity === null) {
-            abort(404, 'Blueprint not found.');
+        if ($entity === null) {
+            return response()->json(['message' => 'Blueprint not found.'], 404);
         }
 
-        $revisionEntity = $blueprintEntity->revision(
-            new RevisionId($revision),
-        );
+        $revisionEntity = $entity->revision(new RevisionId($revision));
 
         if ($revisionEntity === null) {
-            abort(404, 'Blueprint revision not found.');
+            return response()->json(['message' => 'Blueprint revision not found.'], 404);
         }
 
-        $ownership = $blueprintEntity->ownership();
-
-        $user = $request->user();
-
-        $isSystemOwned = $ownership['type'] === 'system';
-
-        $isOwner =
-            $ownership['type'] === 'user'
-            && (string) $ownership['id'] === (string) $user->id;
-
-        if (! $isSystemOwned && ! $isOwner) {
-            return response()->json([
-                'message' => 'Forbidden.',
-            ], 403);
+        if (! $this->authorization->canReadRevisionDetails($entity, $revisionEntity, $request->user(), $request->input('authorization_reason'))) {
+            return response()->json(['message' => 'Forbidden.'], 403);
         }
 
         return response()->json([
             'id' => (string) $revisionEntity->id(),
-            'blueprint_id' => (string) $blueprintEntity->id(),
+            'blueprint_id' => (string) $entity->id(),
             'number' => (string) $revisionEntity->number(),
             'parent_revision_id' => $revisionEntity->parentRevisionId()
                 ? (string) $revisionEntity->parentRevisionId()

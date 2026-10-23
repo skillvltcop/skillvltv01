@@ -34,37 +34,30 @@ it('discovers only active public system blueprints with a frozen current revisio
     $response->assertJsonStructure([
         'data' => [
             '*' => [
-                'id',
                 'canonical_name',
-                'namespace',
-                'ownership',
-                'metadata',
-                'lifecycle_status',
-                'current_revision_id',
+                'title',
+                'description',
+                'category',
+                'tags',
+                'version',
             ],
         ],
     ]);
 
     $response->assertJsonCount(1, 'data');
 
-    $response->assertJsonFragment([
-        'id' => (string) $discoverableBlueprint->id(),
-        'canonical_name' => 'assessment-rubric-show',
-        'namespace' => 'skillvlt.edu.assessment',
-    ]);
-
-    $response->assertJsonPath('data.0.ownership.type', 'system');
-    $response->assertJsonPath('data.0.ownership.id', 'skillvlt');
-    $response->assertJsonPath('data.0.metadata.taxonomy.domain', 'assessment');
-    $response->assertJsonPath(
-        'data.0.metadata.documentation.description',
-        'Assessment rubric blueprint.',
-    );
-    $response->assertJsonPath('data.0.lifecycle_status', 'active');
-    $response->assertJsonPath(
-        'data.0.current_revision_id',
-        (string) $discoverableBlueprint->currentRevisionId(),
-    );
+    $response->assertJsonPath('data.0.canonical_name', 'assessment-rubric-show');
+    $response->assertJsonPath('data.0.title', 'assessment-rubric-show');
+    $response->assertJsonPath('data.0.description', 'Assessment rubric blueprint.');
+    $response->assertJsonPath('data.0.category', 'assessment');
+    $response->assertJsonPath('data.0.tags', ['assessment', 'rubric']);
+    $response->assertJsonPath('data.0.version', '1.0.0');
+    $response->assertJsonMissingPath('data.0.id');
+    $response->assertJsonMissingPath('data.0.namespace');
+    $response->assertJsonMissingPath('data.0.ownership');
+    $response->assertJsonMissingPath('data.0.metadata');
+    $response->assertJsonMissingPath('data.0.lifecycle_status');
+    $response->assertJsonMissingPath('data.0.current_revision_id');
 });
 
 it('does not discover a draft system blueprint', function () {
@@ -177,10 +170,7 @@ it('does not expose another user blueprint through discovery', function () {
     $response->assertSuccessful();
     $response->assertJsonCount(1, 'data');
 
-    $response->assertJsonFragment([
-        'id' => (string) $systemBlueprint->id(),
-        'canonical_name' => 'assessment-rubric-show',
-    ]);
+    $response->assertJsonPath('data.0.canonical_name', 'assessment-rubric-show');
 
     $response->assertJsonMissing([
         'id' => (string) $privateBlueprint->id(),

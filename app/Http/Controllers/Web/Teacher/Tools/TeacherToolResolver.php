@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Web\Teacher\Tools;
 
+use App\Authorization\TeacherToolRegistry;
+
 final class TeacherToolResolver
 {
+    public function __construct(
+        private TeacherToolRegistry $registry = new TeacherToolRegistry(),
+    ) {
+    }
+
     public function viewFor(string $slug): ?string
     {
-        return match ($slug) {
-            'assessment-positioning' => 'teacher.tools.assessment-positioning',
-            'assessment-score-calculator' => 'teacher.tools.assessment-score-calculator',
-            'assessment-results-analyzer' => 'teacher.tools.assessment-results-analyzer',
-            default => null,
-        };
+        return $this->registry->viewFor($slug);
     }
 }

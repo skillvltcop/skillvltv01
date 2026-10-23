@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Authorization\BlueprintAuthorizationPolicy;
+use App\Authorization\BlueprintPublicProjection;
 use App\Domain\Blueprint\Repositories\BlueprintRepository;
 use App\Domain\Blueprint\ValueObjects\BlueprintId;
 use Illuminate\Http\JsonResponse;
@@ -13,72 +15,53 @@ final class ShowBlueprintController
 {
     public function __construct(
         private BlueprintRepository $repository,
+        private BlueprintAuthorizationPolicy $authorization,
+        private BlueprintPublicProjection $projection,
     ) {
     }
 
-    public function __invoke(
-        Request $request,
-        string $blueprint,
-        ): JsonResponse {
-            $blueprintEntity = $this->repository->find(
-                new BlueprintId($blueprint),
-            );
+    public function __invoke(Request $request, string $blueprint): JsonResponse
+    {
+        $entity = $this->repository->find(new BlueprintId($blueprint));
 
-        if ($blueprintEntity === null) {
-            return response()->json([
-                'message' => 'Blueprint not found.',
-            ], 404);
+        if ($entity === null) {
+            return response()->json(['message' => 'Blueprint not found.'], 404);
         }
 
-        $ownership = $blueprintEntity->ownership();
-
-        $user = $request->user();
-
-        $isSystemOwned = $ownership['type'] === 'system';
-
-        $isOwner =
-            $ownership['type'] === 'user'
-            && (string) $ownership['id'] === (string) $user->id;
-
-        if (! $isSystemOwned && ! $isOwner) {
+        if ($this->authorization->canReadBlueprintDetails($entity, $request->user(), $request->input('authorization_reason'))) {
             return response()->json([
-                'message' => 'Forbidden.',
-            ], 403);
+                'id' => (string) $entity->id(),
+                'canonical_name' => (string) $entity->canonicalName(),
+                'namespace' => (string) $entity->namespace(),
+                'ownership' => $entity->ownership(),
+                'metadata' => $entity->metadata(),
+                'lifecycle_status' => $entity->lifecycleStatus()->value,
+                'current_revision_id' => $entity->currentRevisionId()
+                    ? (string) $entity->currentRevisionId()
+                    : null,
+                'revisions' => array_values(array_map(
+                    static fn ($revision): array => [
+                        'id' => (string) $revision->id(),
+                        'number' => (string) $revision->number(),
+                        'parent_revision_id' => $revision->parentRevisionId()
+                            ? (string) $revision->parentRevisionId()
+                            : null,
+                        'behavior_digest' => (string) $revision->behaviorDigest(),
+                        'contracts' => $revision->contracts(),
+                        'logic' => $revision->logic(),
+                        'outputs' => $revision->outputs(),
+                        'policies' => $revision->policies(),
+                        'frozen' => $revision->isFrozen(),
+                    ],
+                    $entity->revisions(),
+                )),
+            ]);
         }
 
-        return response()->json([
-            'id' => (string) $blueprintEntity->id(),
-            'canonical_name' => (string) $blueprintEntity->canonicalName(),
-            'namespace' => (string) $blueprintEntity->namespace(),
-            'ownership' => $ownership,
-            'metadata' => $blueprintEntity->metadata(),
-            'lifecycle_status' => $blueprintEntity->lifecycleStatus()->value,
-            'current_revision_id' => $blueprintEntity->currentRevisionId()
-                ? (string) $blueprintEntity->currentRevisionId()
-                : null,
+        if (! $this->authorization->canReadPublicMetadata($entity, $request->user())) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
 
-            'revisions' => array_values(
-                array_map(
-                    static function ($revision): array {
-                        return [
-                            'id' => (string) $revision->id(),
-                            'number' => (string) $revision->number(),
-                            'parent_revision_id' =>
-                                $revision->parentRevisionId()
-                                    ? (string) $revision->parentRevisionId()
-                                    : null,
-                            'behavior_digest' =>
-                                (string) $revision->behaviorDigest(),
-                            'contracts' => $revision->contracts(),
-                            'logic' => $revision->logic(),
-                            'outputs' => $revision->outputs(),
-                            'policies' => $revision->policies(),
-                            'frozen' => $revision->isFrozen(),
-                        ];
-                    },
-                    $blueprintEntity->revisions(),
-                ),
-            ),
-        ]);
+        return response()->json($this->projection->from($entity));
     }
 }

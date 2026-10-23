@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Authorization\BlueprintAuthorizationPolicy;
+use App\Authorization\TeacherToolRegistry;
 use App\Domain\Blueprint\Repositories\BlueprintRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,12 +14,18 @@ final class DiscoverTeacherBlueprintsController
 {
     public function __construct(
         private BlueprintRepository $repository,
+        private BlueprintAuthorizationPolicy $authorization,
+        private TeacherToolRegistry $teacherTools,
     ) {
     }
 
     public function __invoke(Request $request): JsonResponse
     {
-        $blueprints = $this->repository->discover();
+        $blueprints = array_values(array_filter(
+            $this->repository->discover(),
+            fn ($blueprint): bool => $this->teacherTools->matches($blueprint)
+                && $this->authorization->isPubliclyAvailable($blueprint),
+        ));
 
         return response()->json([
             'data' => array_map(
@@ -45,8 +53,6 @@ final class DiscoverTeacherBlueprintsController
                         $locale = $fallbackLocale;
                         $acceptLanguage = $request->headers->get('Accept-Language');
 
-                        // An explicit user preference stored in the session takes precedence
-                        // over the browser's language negotiation.
                         if (! $hasSupportedSessionLocale && is_string($acceptLanguage) && trim($acceptLanguage) !== '') {
                             foreach ($request->getLanguages() as $preferredLanguage) {
                                 $language = strtolower(substr($preferredLanguage, 0, 2));

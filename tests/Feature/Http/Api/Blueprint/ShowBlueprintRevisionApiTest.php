@@ -24,8 +24,8 @@ it('retrieves a blueprint revision through the HTTP API', function () {
         canonicalName: 'assessment-rubric-revision-show',
         namespace: 'skillvlt.edu.assessment',
         ownership: [
-            'type' => 'system',
-            'id' => 'skillvlt',
+            'type' => 'user',
+            'id' => (string) $user->id,
         ],
         metadata: [],
     );
@@ -167,8 +167,8 @@ it('retrieves a frozen blueprint revision through the HTTP API', function () {
         canonicalName: 'assessment-rubric-frozen-revision',
         namespace: 'skillvlt.edu.assessment',
         ownership: [
-            'type' => 'system',
-            'id' => 'skillvlt',
+            'type' => 'user',
+            'id' => (string) $user->id,
         ],
         metadata: [],
     );
@@ -249,8 +249,8 @@ it('returns the parent revision id for a subsequent revision', function () {
         canonicalName: 'assessment-rubric-parent-revision',
         namespace: 'skillvlt.edu.assessment',
         ownership: [
-            'type' => 'system',
-            'id' => 'skillvlt',
+            'type' => 'user',
+            'id' => (string) $user->id,
         ],
         metadata: [],
     );

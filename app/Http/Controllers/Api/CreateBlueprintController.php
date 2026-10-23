@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Authorization\AuthorizationAuditLogger;
+
 use App\Application\Blueprint\Commands\CreateBlueprint;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,6 +16,7 @@ final class CreateBlueprintController
 {
     public function __construct(
         private CreateBlueprint $command,
+        private AuthorizationAuditLogger $audit,
     ) {
     }
 
@@ -36,25 +39,52 @@ final class CreateBlueprintController
                     'sometimes',
                     'array',
                 ],
+                'ownership' => ['sometimes', 'array'],
+                'ownership.type' => ['sometimes', 'string', 'in:user,system'],
+                'authorization_reason' => ['sometimes', 'string', 'max:1000'],
             ],
         )->validate();
 
         $user = $request->user();
+        $requestedOwnership = $validated['ownership']['type'] ?? 'user';
+
+        if ($requestedOwnership === 'system') {
+            if (! $user->hasPermissionTo('blueprint.system.create')) {
+                return response()->json(['message' => 'Forbidden.'], 403);
+            }
+
+            if (trim((string) ($validated['authorization_reason'] ?? '')) === '') {
+                return response()->json([
+                    'message' => 'An authorization_reason is required for system Blueprint creation.',
+                ], 422);
+            }
+        }
+
+        $ownership = $requestedOwnership === 'system'
+            ? ['type' => 'system', 'id' => 'skillvlt']
+            : ['type' => 'user', 'id' => (string) $user->id];
 
         try {
             $blueprint = $this->command->handle(
                 canonicalName: $validated['canonical_name'],
                 namespace: $validated['namespace'],
-                ownership: [
-                    'type' => 'user',
-                    'id' => (string) $user->id,
-                ],
+                ownership: $ownership,
                 metadata: $validated['metadata'] ?? [],
             );
         } catch (InvalidArgumentException $exception) {
             return response()->json([
                 'message' => $exception->getMessage(),
             ], 422);
+        }
+
+        if ($requestedOwnership === 'system') {
+            $this->audit->record(
+                actor: $user,
+                action: 'create_system_blueprint',
+                blueprint: $blueprint,
+                permission: 'blueprint.system.create',
+                reason: (string) $validated['authorization_reason'],
+            );
         }
 
         return response()->json([

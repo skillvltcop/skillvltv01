@@ -225,13 +225,12 @@ it('forbids a user from accessing another user blueprint', function () {
     $response->assertForbidden();
 });
 
-it('allows an authenticated user to access a system-owned blueprint', function () {
+it('forbids reading unpublished system Blueprint details', function () {
     $user = User::factory()->create();
-
     $repository = new EloquentBlueprintRepository();
 
     $blueprint = (new CreateBlueprint($repository))->handle(
-        canonicalName: 'system-blueprint-show',
+        canonicalName: 'unpublished-system-blueprint',
         namespace: 'skillvlt.edu.system',
         ownership: [
             'type' => 'system',
@@ -239,36 +238,14 @@ it('allows an authenticated user to access a system-owned blueprint', function (
         ],
         metadata: [
             'documentation' => [
-                'description' => 'System blueprint.',
+                'description' => 'Internal system blueprint.',
             ],
         ],
     );
 
     $response = $this
         ->actingAs($user)
-        ->getJson(
-            "/api/blueprints/{$blueprint->id()}",
-        );
+        ->getJson("/api/blueprints/{$blueprint->id()}");
 
-    $response->assertSuccessful();
-
-    $response->assertJsonPath(
-        'id',
-        (string) $blueprint->id(),
-    );
-
-    $response->assertJsonPath(
-        'ownership.type',
-        'system',
-    );
-
-    $response->assertJsonPath(
-        'ownership.id',
-        'skillvlt',
-    );
-
-    $response->assertJsonPath(
-        'metadata.documentation.description',
-        'System blueprint.',
-    );
+    $response->assertForbidden();
 });

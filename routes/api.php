@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\ActivateBlueprintController;
+use App\Http\Controllers\Api\Admin\UpdateUserAuthorizationController;
 use App\Http\Controllers\Api\AddBlueprintRevisionController;
 use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
@@ -41,6 +42,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post(
         '/auth/logout',
         LogoutController::class,
+    );
+
+    Route::patch(
+        '/admin/users/{userId}/authorization',
+        UpdateUserAuthorizationController::class,
     );
 
     /*
