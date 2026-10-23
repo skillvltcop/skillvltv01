@@ -178,6 +178,41 @@ it('does not expose another user blueprint through discovery', function () {
     ]);
 });
 
+it('localizes public discovery title and description by requested locale', function () {
+    $user = User::factory()->create();
+    $repository = new EloquentBlueprintRepository();
+
+    createDiscoverableBlueprint(
+        $repository,
+        metadataOverrides: [
+            'title' => [
+                'ar' => 'عنوان عربي',
+                'fr' => 'Titre français',
+                'en' => 'English title',
+            ],
+            'documentation' => [
+                'description' => [
+                    'ar' => 'وصف عربي',
+                    'fr' => 'Description française',
+                    'en' => 'English description',
+                ],
+            ],
+        ],
+    );
+
+    $this->actingAs($user)
+        ->getJson('/api/blueprints/discover?locale=fr')
+        ->assertSuccessful()
+        ->assertJsonPath('data.0.title', 'Titre français')
+        ->assertJsonPath('data.0.description', 'Description française');
+
+    $this->actingAs($user)
+        ->getJson('/api/blueprints/discover?locale=ar')
+        ->assertSuccessful()
+        ->assertJsonPath('data.0.title', 'عنوان عربي')
+        ->assertJsonPath('data.0.description', 'وصف عربي');
+});
+
 it('returns an empty discovery list when no discoverable blueprints exist', function () {
     $user = User::factory()->create();
 
@@ -198,6 +233,7 @@ it('rejects unauthenticated blueprint discovery', function () {
 function createDiscoverableBlueprint(
     EloquentBlueprintRepository $repository,
     string $visibility = 'public',
+    array $metadataOverrides = [],
 ) {
     $blueprint = (new CreateBlueprint($repository))->handle(
         canonicalName: 'assessment-rubric-show',
@@ -206,7 +242,7 @@ function createDiscoverableBlueprint(
             'type' => 'system',
             'id' => 'skillvlt',
         ],
-        metadata: [
+        metadata: array_replace_recursive([
             'taxonomy' => [
                 'domain' => 'assessment',
             ],
@@ -219,7 +255,7 @@ function createDiscoverableBlueprint(
                     'rubric',
                 ],
             ],
-        ],
+        ], $metadataOverrides),
     );
 
     $revision = (new AddBlueprintRevision(
