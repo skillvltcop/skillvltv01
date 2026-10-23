@@ -8,6 +8,7 @@ use App\Authorization\AuthorizationAuditLogger;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
@@ -32,9 +33,9 @@ final class UpdateUserAuthorizationController
 
     public function __invoke(Request $request, string $userId): JsonResponse
     {
-        $actor = $request->user();
+        $actorId = (string) $request->user()->id;
 
-        if (! $actor->isSuperAdmin()) {
+        if (! $request->user()->isSuperAdmin()) {
             return response()->json(['message' => 'Forbidden.'], 403);
         }
 
@@ -45,22 +46,6 @@ final class UpdateUserAuthorizationController
             'reason' => ['required', 'string', 'min:10', 'max:1000'],
         ])->validate();
 
-        $target = User::query()->find($userId);
-
-        if ($target === null) {
-            return response()->json(['message' => 'User not found.'], 404);
-        }
-
-        if (
-            $target->role === User::ROLE_SUPER_ADMIN
-            && $validated['role'] !== User::ROLE_SUPER_ADMIN
-            && User::query()->where('role', User::ROLE_SUPER_ADMIN)->count() <= 1
-        ) {
-            throw ValidationException::withMessages([
-                'role' => ['The last super administrator cannot be demoted.'],
-            ]);
-        }
-
         $permissions = array_values($validated['permissions']);
 
         if ($validated['role'] !== User::ROLE_ADMIN && $permissions !== []) {
@@ -69,33 +54,64 @@ final class UpdateUserAuthorizationController
             ]);
         }
 
-        $before = [
-            'role' => $target->role,
-            'permissions' => $target->permissions ?? [],
-        ];
+        return DB::transaction(function () use ($actorId, $userId, $validated, $permissions): JsonResponse {
+            // Lock the super-admin set before checking the last-admin invariant.
+            $superAdmins = User::query()
+                ->where('role', User::ROLE_SUPER_ADMIN)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get(['id']);
 
-        $target->forceFill([
-            'role' => $validated['role'],
-            'permissions' => $permissions,
-        ])->save();
+            $actor = User::query()->lockForUpdate()->find($actorId);
 
-        $this->audit->recordUserAuthorizationChange(
-            actor: $actor,
-            target: $target,
-            reason: $validated['reason'],
-            context: [
-                'before' => $before,
-                'after' => [
-                    'role' => $target->role,
-                    'permissions' => $target->permissions ?? [],
+            if ($actor === null || ! $actor->isSuperAdmin()) {
+                return response()->json(['message' => 'Forbidden.'], 403);
+            }
+
+            $target = User::query()->lockForUpdate()->find($userId);
+
+            if ($target === null) {
+                return response()->json(['message' => 'User not found.'], 404);
+            }
+
+            if (
+                $target->role === User::ROLE_SUPER_ADMIN
+                && $validated['role'] !== User::ROLE_SUPER_ADMIN
+                && $superAdmins->count() <= 1
+            ) {
+                throw ValidationException::withMessages([
+                    'role' => ['The last super administrator cannot be demoted.'],
+                ]);
+            }
+
+            $before = [
+                'role' => $target->role,
+                'permissions' => $target->permissions ?? [],
+            ];
+
+            $target->forceFill([
+                'role' => $validated['role'],
+                'permissions' => $permissions,
+            ])->save();
+
+            $this->audit->recordUserAuthorizationChange(
+                actor: $actor,
+                target: $target,
+                reason: $validated['reason'],
+                context: [
+                    'before' => $before,
+                    'after' => [
+                        'role' => $target->role,
+                        'permissions' => $target->permissions ?? [],
+                    ],
                 ],
-            ],
-        );
+            );
 
-        return response()->json([
-            'id' => (string) $target->id,
-            'role' => $target->role,
-            'permissions' => $target->permissions ?? [],
-        ]);
+            return response()->json([
+                'id' => (string) $target->id,
+                'role' => $target->role,
+                'permissions' => $target->permissions ?? [],
+            ]);
+        });
     }
 }
