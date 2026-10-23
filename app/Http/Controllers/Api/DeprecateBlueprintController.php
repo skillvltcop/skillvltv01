@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Authorization\BlueprintAuthorizationPolicy;
+
 use App\Application\Blueprint\Commands\DeprecateBlueprint;
 use App\Domain\Blueprint\Repositories\BlueprintRepository;
 use App\Domain\Blueprint\ValueObjects\BlueprintId;
@@ -16,6 +18,7 @@ final class DeprecateBlueprintController
     public function __construct(
         private DeprecateBlueprint $command,
         private BlueprintRepository $repository,
+        private BlueprintAuthorizationPolicy $authorization,
     ) {
     }
 
@@ -33,15 +36,11 @@ final class DeprecateBlueprintController
             ], 404);
         }
 
-        $ownership = $blueprintEntity->ownership();
-
-        $user = $request->user();
-
-        $isOwner =
-            $ownership['type'] === 'user'
-            && (string) $ownership['id'] === (string) $user->id;
-
-        if (! $isOwner) {
+        if (! $this->authorization->canManage(
+            $blueprintEntity,
+            $request->user(),
+            'blueprint.system.manage_lifecycle',
+        )) {
             return response()->json([
                 'message' => 'Forbidden.',
             ], 403);
