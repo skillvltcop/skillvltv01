@@ -85,3 +85,39 @@ it('forbids administrators without the registry permission from listing teacher 
         ->getJson('/api/admin/teacher-tools')
         ->assertForbidden();
 });
+
+it('removes a disabled teacher tool from discovery and blocks execution', function () {
+    $admin = User::factory()->create();
+    $admin->forceFill([
+        'role' => 'admin',
+        'permissions' => ['teacher_tools.manage_registry'],
+    ])->save();
+
+    (new \\Database\\Seeders\\AssessmentPositioningBlueprintSeeder())->run();
+
+    $this->actingAs($admin)
+        ->putJson('/api/admin/teacher-tools/assessment-positioning', [
+            'namespace' => 'skillvlt.edu.assessment',
+            'view' => 'teacher.tools.assessment-positioning',
+            'enabled' => false,
+            'reason' => 'Disable tool during a controlled review',
+        ])
+        ->assertSuccessful()
+        ->assertJsonPath('enabled', false);
+
+    $teacher = User::factory()->create();
+
+    $discovery = $this->actingAs($teacher)
+        ->getJson('/api/teacher/blueprints/discover')
+        ->assertSuccessful();
+
+    expect(collect($discovery->json('data'))->pluck('slug')->all())
+        ->not->toContain('assessment-positioning');
+
+    $this->actingAs($teacher)
+        ->postJson('/api/teacher/tools/assessment-positioning/execute', [
+            'input' => ['score' => 59, 'max_score' => 100],
+            'context' => [],
+        ])
+        ->assertNotFound();
+});
