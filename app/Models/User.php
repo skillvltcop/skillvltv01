@@ -51,7 +51,7 @@ class User extends Authenticatable
                 ->update([
                     'input' => json_encode(new \stdClass(), JSON_THROW_ON_ERROR),
                     'context' => json_encode(new \stdClass(), JSON_THROW_ON_ERROR),
-                    'output' => json_encode(new \stdClass(), JSON_THROW_ON_ERROR),
+                    'output' => null,
                     'error' => null,
                     'updated_at' => now(),
                 ]);
