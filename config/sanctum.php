@@ -20,7 +20,7 @@ return [
 
     'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
         '%s%s',
-        'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1',
+        'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1,',
         Sanctum::currentApplicationUrlWithPort(),
         // Sanctum::currentRequestHost(),
     ))),
@@ -30,10 +30,10 @@ return [
     | Sanctum Guards
     |--------------------------------------------------------------------------
     |
-    | This array contains the authentication guards that will be checked when
-    | Sanctum is trying to authenticate a request. If none of these guards
-    | are able to authenticate the request, Sanctum will use the bearer
-    | token that's present on an incoming request for authentication.
+    | This array contains the guards that will be checked when Sanctum is
+    | trying to authenticate a request. If none of these guards are able to
+    | authenticate the request, Sanctum will use the bearer token that's
+    | present on an incoming request for authentication.
     |
     */
 
@@ -58,8 +58,8 @@ return [
     |--------------------------------------------------------------------------
     |
     | Sanctum can prefix new tokens in order to take advantage of numerous
-    | security scanning initiatives maintained by open source platforms
-    | that notify developers if they commit tokens into repositories.
+    | security scanning initiatives maintained by open source platforms that
+    | notify developers if they commit tokens into repositories.
     |
     | See: https://docs.github.com/en/code-security/secret-scanning/about-secret-scanning
     |
