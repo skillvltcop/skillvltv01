@@ -148,7 +148,7 @@ it('forbids executing another user-owned blueprint through the teacher endpoint'
     $actor = User::factory()->create();
 
     $blueprint = (new CreateBlueprint($repository))->handle(
-        canonicalName: 'private-teacher-assessment',
+        canonicalName: 'assessment-positioning',
         namespace: 'skillvlt.edu.assessment',
         ownership: [
             'type' => 'user',
