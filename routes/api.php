@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\Admin\UpdateUserAuthorizationController;
 use App\Http\Controllers\Api\Admin\TeacherToolRegistryController;
 use App\Http\Controllers\Api\Admin\ListUsersAuthorizationController;
 use App\Http\Controllers\Api\Admin\ListAuthorizationAuditEventsController;
+use App\Http\Controllers\Api\Admin\ListAuthorizationPermissionsController;
 use App\Http\Controllers\Api\AddBlueprintRevisionController;
 use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
@@ -45,6 +46,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post(
         '/auth/logout',
         LogoutController::class,
+    );
+
+    Route::get(
+        '/admin/permissions',
+        ListAuthorizationPermissionsController::class,
     );
 
     Route::get(

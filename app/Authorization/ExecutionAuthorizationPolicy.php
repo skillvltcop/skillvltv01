@@ -23,7 +23,7 @@ final class ExecutionAuthorizationPolicy
         }
 
         if (
-            ! $user->hasPermissionTo('execution.support_read')
+            ! $user->hasPermissionTo(AuthorizationPermissionCatalog::EXECUTION_SUPPORT_READ)
             || ! is_string($reason)
             || trim($reason) === ''
         ) {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Authorization\AuthorizationAuditLogger;
+use App\Authorization\AuthorizationPermissionCatalog;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,18 +15,6 @@ use Illuminate\Validation\ValidationException;
 
 final class UpdateUserAuthorizationController
 {
-    private const ALLOWED_PERMISSIONS = [
-        'blueprint.system.create',
-        'blueprint.user.read_private',
-        'blueprint.user.execute_private',
-        'blueprint.system.read_private',
-        'blueprint.system.execute_private',
-        'blueprint.system.manage_revisions',
-        'blueprint.system.manage_lifecycle',
-        'teacher_tools.manage_registry',
-        'execution.support_read',
-    ];
-
     public function __construct(
         private AuthorizationAuditLogger $audit,
     ) {
@@ -42,7 +31,7 @@ final class UpdateUserAuthorizationController
         $validated = Validator::make($request->all(), [
             'role' => ['required', 'string', 'in:user,admin,super_admin'],
             'permissions' => ['required', 'array'],
-            'permissions.*' => ['string', 'distinct', 'in:' . implode(',', self::ALLOWED_PERMISSIONS)],
+            'permissions.*' => ['string', 'distinct', 'in:' . implode(',', AuthorizationPermissionCatalog::all())],
             'reason' => ['required', 'string', 'min:10', 'max:1000'],
         ])->validate();
 

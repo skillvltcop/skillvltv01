@@ -36,9 +36,6 @@ final class AuthorizationAuditLogger
     }
 
     /**
-     * @param array<string, scalar|null> $context
-     */
-    /**
      * @param array<string, mixed> $context
      */
     public function recordTeacherToolRegistryChange(
@@ -53,7 +50,7 @@ final class AuthorizationAuditLogger
             resourceType: 'teacher_tool',
             resourceId: $slug,
             reason: $reason,
-            permission: 'teacher_tools.manage_registry',
+            permission: AuthorizationPermissionCatalog::TEACHER_TOOLS_MANAGE_REGISTRY,
             context: $context,
         );
     }
@@ -69,7 +66,7 @@ final class AuthorizationAuditLogger
             resourceType: 'execution',
             resourceId: (string) $execution->id(),
             reason: $reason,
-            permission: 'execution.support_read',
+            permission: AuthorizationPermissionCatalog::EXECUTION_SUPPORT_READ,
             context: [
                 'blueprint_id' => (string) $execution->blueprintId(),
                 'revision_id' => (string) $execution->revisionId(),
@@ -89,13 +86,13 @@ final class AuthorizationAuditLogger
             resourceType: 'user',
             resourceId: (string) $target->id,
             reason: $reason,
-            permission: 'authorization.users.manage',
-            context: $context,
+            permission: null,
+            context: ['required_role' => 'super_admin'] + $context,
         );
     }
 
     /**
-     * @param array<string, scalar|null> $context
+     * @param array<string, mixed> $context
      */
     private function write(
         User $actor,

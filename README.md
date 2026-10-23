@@ -50,7 +50,7 @@ GitHub Actions runs the PHP suite on SQLite and MySQL 8. Both jobs must pass bef
 
 ## API and security
 
-Most API routes require Sanctum authentication. Public discovery is still behind authentication in the current MVP. Normal users can discover and execute only eligible public system Blueprints; internal revision details and private-resource exceptions are protected by the central authorization policy. Privileged exceptions require a reason and are audited.
+Most API routes require Sanctum authentication. Public discovery is still behind authentication in the current MVP. Normal users can discover and execute only eligible public system Blueprints; internal revision details and private-resource exceptions are protected by the central authorization policy. Privileged exceptions require a reason and are audited. Super administrators can use the Arabic administration dashboard at `/admin/authorization` to manage roles, permissions, teacher-tool registry entries, and review audit events.
 
 See [the API reference](docs/api/reference.md) and [authorization guide](docs/security/authorization.md) before integrating with the API.
 

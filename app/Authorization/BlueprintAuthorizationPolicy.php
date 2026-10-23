@@ -30,8 +30,8 @@ final class BlueprintAuthorizationPolicy
 
         $ownership = $blueprint->ownership();
         $permission = ($ownership['type'] ?? null) === 'system'
-            ? 'blueprint.system.read_private'
-            : 'blueprint.user.read_private';
+            ? AuthorizationPermissionCatalog::BLUEPRINT_SYSTEM_READ_PRIVATE
+            : AuthorizationPermissionCatalog::BLUEPRINT_USER_READ_PRIVATE;
 
         return $this->allowAuditedException(
             $blueprint,
@@ -54,8 +54,8 @@ final class BlueprintAuthorizationPolicy
 
         $ownership = $blueprint->ownership();
         $permission = ($ownership['type'] ?? null) === 'system'
-            ? 'blueprint.system.read_private'
-            : 'blueprint.user.read_private';
+            ? AuthorizationPermissionCatalog::BLUEPRINT_SYSTEM_READ_PRIVATE
+            : AuthorizationPermissionCatalog::BLUEPRINT_USER_READ_PRIVATE;
 
         return $this->allowAuditedException(
             $blueprint,
@@ -88,8 +88,8 @@ final class BlueprintAuthorizationPolicy
 
         $ownership = $blueprint->ownership();
         $permission = ($ownership['type'] ?? null) === 'system'
-            ? 'blueprint.system.execute_private'
-            : 'blueprint.user.execute_private';
+            ? AuthorizationPermissionCatalog::BLUEPRINT_SYSTEM_EXECUTE_PRIVATE
+            : AuthorizationPermissionCatalog::BLUEPRINT_USER_EXECUTE_PRIVATE;
 
         return $this->allowAuditedException(
             $blueprint,
