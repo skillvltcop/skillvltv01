@@ -131,6 +131,7 @@
 <script>
 (() => {
     const csrf = document.querySelector('meta[name="csrf-token"]').content;
+    const currentUserId = @json($currentUserId);
     const permissionLabels = new Map();
     let usersPage = 1;
     let usersLastPage = 1;
@@ -255,6 +256,11 @@
             });
             form.querySelector('[name="reason"]').value = '';
             status('تم حفظ الصلاحيات وتسجيل العملية في سجل التدقيق.', 'success');
+            if (String(form.dataset.userId) === String(currentUserId) && role !== 'super_admin') {
+                status('تم تغيير دور حسابك؛ سيتم نقلك إلى صفحة أدوات المعلم.', 'success');
+                window.location.href = '/teacher/tools';
+                return;
+            }
             await loadUsers(usersPage);
         } catch (error) {
             status(error.message, 'error');
