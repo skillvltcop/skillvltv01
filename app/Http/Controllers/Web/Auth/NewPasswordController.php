@@ -39,6 +39,9 @@ final class NewPasswordController
 
                 $user->save();
 
+                // A password reset invalidates credentials issued before the reset.
+                $user->tokens()->delete();
+
                 event(new PasswordReset($user));
             },
         );
