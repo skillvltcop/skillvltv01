@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Authorization;
 
 use App\Domain\Blueprint\Entities\Blueprint;
+use App\Domain\Execution\Entities\Execution;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
@@ -37,6 +38,25 @@ final class AuthorizationAuditLogger
     /**
      * @param array<string, scalar|null> $context
      */
+    public function recordExecutionRead(
+        User $actor,
+        Execution $execution,
+        string $reason,
+    ): void {
+        $this->write(
+            actor: $actor,
+            action: 'read_execution_support',
+            resourceType: 'execution',
+            resourceId: (string) $execution->id(),
+            reason: $reason,
+            permission: 'execution.support_read',
+            context: [
+                'blueprint_id' => (string) $execution->blueprintId(),
+                'revision_id' => (string) $execution->revisionId(),
+            ],
+        );
+    }
+
     public function recordUserAuthorizationChange(
         User $actor,
         User $target,
