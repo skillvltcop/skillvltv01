@@ -36,6 +36,11 @@
                 <option value="en" @selected(app()->getLocale() === 'en')>English</option>
             </select>
         </form>
+        @if (auth()->user()?->isSuperAdmin())
+            <a href="{{ route('admin.authorization.index') }}" style="color:#1d4ed8;text-decoration:none;font-weight:600;">
+                {{ ['ar' => 'إدارة الصلاحيات', 'fr' => 'Autorisations', 'en' => 'Authorization'][app()->getLocale()] ?? 'Authorization' }}
+            </a>
+        @endif
     </div>
     <p class="intro">{{ ['ar' => 'اختر الأداة التي تريد استخدامها.', 'fr' => 'Choisissez l’outil que vous souhaitez utiliser.', 'en' => 'Choose the tool you want to use.'][app()->getLocale()] ?? 'Choose the tool you want to use.' }}</p>
 
