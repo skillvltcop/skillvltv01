@@ -1,12 +1,12 @@
 <?php
 
-use App\\Application\\Behavior\\BehaviorContractValidator;
-use App\\Application\\Blueprint\\Commands\\AddBlueprintRevision;
-use App\\Application\\Blueprint\\Commands\\CreateBlueprint;
-use App\\Infrastructure\\Persistence\\Eloquent\\EloquentBlueprintRepository;
-use App\\Models\\User;
-use Illuminate\\Foundation\\Testing\\RefreshDatabase;
-use Tests\\TestCase;
+use App\Application\Behavior\BehaviorContractValidator;
+use App\Application\Blueprint\Commands\AddBlueprintRevision;
+use App\Application\Blueprint\Commands\CreateBlueprint;
+use App\Infrastructure\Persistence\Eloquent\EloquentBlueprintRepository;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
 
