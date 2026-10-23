@@ -42,6 +42,7 @@ Do not expose Tinker publicly or run role promotion based on an unverified email
 
 - Serve the application over HTTPS.
 - Protect bearer tokens and revoke tokens when an account is compromised.
+- Include the canonical browser host and port in SANCTUM_STATEFUL_DOMAINS so the same-origin authorization dashboard can authenticate its stateful API requests. Keep the domain list narrow and do not use wildcards.
 - Keep login and password-reset rate limits enabled.
 - Do not return role/permission data from general user serialization.
 - Keep public API projections narrow and review new fields for sensitive data.
