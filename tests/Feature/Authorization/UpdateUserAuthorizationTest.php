@@ -52,3 +52,20 @@ it('forbids a regular administrator from changing roles', function () {
 
     expect($target->fresh()->role)->toBe('user');
 });
+
+
+it('prevents demoting the last super administrator', function () {
+    $superAdmin = User::factory()->create();
+    $superAdmin->forceFill(['role' => 'super_admin', 'permissions' => []])->save();
+
+    $this->actingAs($superAdmin)
+        ->patchJson('/api/admin/users/' . $superAdmin->id . '/authorization', [
+            'role' => 'admin',
+            'permissions' => ['blueprint.system.read_private'],
+            'reason' => 'Change admin access safely',
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['role']);
+
+    expect($superAdmin->fresh()->role)->toBe('super_admin');
+});
