@@ -166,6 +166,10 @@ it('logs out a stateful browser session through the API logout endpoint', functi
         ->assertSuccessful()
         ->assertJsonPath('message', 'Logged out successfully.');
 
+    // Feature tests reuse the application container across requests; clear cached guards
+    // so this assertion models the next independent HTTP request.
+    Auth::forgetGuards();
+
     $this->withHeader('Origin', 'http://localhost')
         ->getJson('/api/auth/me')
         ->assertUnauthorized();
