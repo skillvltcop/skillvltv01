@@ -57,6 +57,12 @@ final class TeacherToolRegistryController
             'reason' => ['required', 'string', 'min:10', 'max:1000'],
         ])->validate();
 
+        if ($validated['enabled'] && ! view()->exists($validated['view'])) {
+            return response()->json([
+                'message' => 'The configured teacher tool view does not exist.',
+            ], 422);
+        }
+
         return DB::transaction(function () use ($actor, $slug, $validated): JsonResponse {
             $before = $this->registry->all()[$slug] ?? null;
             $existing = DB::table('teacher_tool_registry')->where('slug', $slug)->first();
