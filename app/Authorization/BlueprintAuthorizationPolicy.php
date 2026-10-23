@@ -11,68 +11,97 @@ use App\Models\User;
 
 /**
  * Central authorization decisions for Blueprint visibility and management.
- *
- * Authentication is enforced by the route middleware. This class handles
- * authorization after authentication and deliberately keeps domain invariants
- * (revision ownership, frozen/current state and lifecycle transitions) in the
- * domain/application layer.
  */
 final class BlueprintAuthorizationPolicy
 {
-    public function canReadBlueprintDetails(Blueprint $blueprint, User $user): bool
-    {
+    public function __construct(
+        private AuthorizationAuditLogger $audit,
+    ) {
+    }
+
+    public function canReadBlueprintDetails(
+        Blueprint $blueprint,
+        User $user,
+        ?string $reason = null,
+    ): bool {
         if ($this->isOwner($blueprint, $user)) {
             return true;
         }
 
-        return $this->isSystemOwned($blueprint)
-            && $user->hasPermissionTo('blueprint.system.read_private');
+        return $this->allowAuditedSystemException(
+            $blueprint,
+            $user,
+            'blueprint.system.read_private',
+            'read_blueprint_details',
+            $reason,
+        );
     }
 
     public function canReadRevisionDetails(
         Blueprint $blueprint,
         BlueprintRevision $revision,
         User $user,
+        ?string $reason = null,
     ): bool {
         if ($this->isOwner($blueprint, $user)) {
             return true;
         }
 
-        return $this->isSystemOwned($blueprint)
-            && $user->hasPermissionTo('blueprint.system.read_private');
+        return $this->allowAuditedSystemException(
+            $blueprint,
+            $user,
+            'blueprint.system.read_private',
+            'read_blueprint_revision_details',
+            $reason,
+            ['revision_id' => (string) $revision->id()],
+        );
     }
 
     public function canReadPublicMetadata(Blueprint $blueprint, User $user): bool
     {
         return $this->isOwner($blueprint, $user)
-            || $this->isPubliclyAvailable($blueprint)
-            || (
-                $this->isSystemOwned($blueprint)
-                && $user->hasPermissionTo('blueprint.system.read_private')
-            );
+            || $this->isPubliclyAvailable($blueprint);
     }
 
-    public function canExecute(Blueprint $blueprint, User $user): bool
-    {
+    public function canExecute(
+        Blueprint $blueprint,
+        User $user,
+        ?string $reason = null,
+    ): bool {
         if ($this->isOwner($blueprint, $user)) {
             return true;
         }
 
-        return $this->isPubliclyAvailable($blueprint)
-            || (
-                $this->isSystemOwned($blueprint)
-                && $user->hasPermissionTo('blueprint.system.execute_private')
-            );
+        if ($this->isPubliclyAvailable($blueprint)) {
+            return true;
+        }
+
+        return $this->allowAuditedSystemException(
+            $blueprint,
+            $user,
+            'blueprint.system.execute_private',
+            'execute_private_blueprint',
+            $reason,
+        );
     }
 
-    public function canManage(Blueprint $blueprint, User $user, string $permission): bool
-    {
+    public function canManage(
+        Blueprint $blueprint,
+        User $user,
+        string $permission,
+        ?string $reason = null,
+    ): bool {
         if ($this->isOwner($blueprint, $user)) {
             return true;
         }
 
-        return $this->isSystemOwned($blueprint)
-            && $user->hasPermissionTo($permission);
+        return $this->allowAuditedSystemException(
+            $blueprint,
+            $user,
+            $permission,
+            'manage_system_blueprint',
+            $reason,
+        );
     }
 
     public function isPubliclyAvailable(Blueprint $blueprint): bool
@@ -113,5 +142,38 @@ final class BlueprintAuthorizationPolicy
 
         return ($ownership['type'] ?? null) === 'system'
             && (string) ($ownership['id'] ?? '') === 'skillvlt';
+    }
+
+    /**
+     * Administrative exceptions require an explicit permission and a reason.
+     *
+     * @param array<string, scalar|null> $context
+     */
+    private function allowAuditedSystemException(
+        Blueprint $blueprint,
+        User $user,
+        string $permission,
+        string $action,
+        ?string $reason,
+        array $context = [],
+    ): bool {
+        if (! $this->isSystemOwned($blueprint) || ! $user->hasPermissionTo($permission)) {
+            return false;
+        }
+
+        if (! is_string($reason) || trim($reason) === '') {
+            return false;
+        }
+
+        $this->audit->record(
+            actor: $user,
+            action: $action,
+            blueprint: $blueprint,
+            permission: $permission,
+            reason: $reason,
+            context: $context,
+        );
+
+        return true;
     }
 }
