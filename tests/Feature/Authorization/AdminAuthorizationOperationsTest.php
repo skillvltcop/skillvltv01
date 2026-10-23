@@ -70,3 +70,28 @@ it('forbids regular administrators from listing users or audit events', function
         ->getJson('/api/admin/audit-events')
         ->assertForbidden();
 });
+
+
+it('exposes the canonical permission catalog only to super administrators', function () {
+    $superAdmin = User::factory()->create();
+    $superAdmin->forceFill(['role' => 'super_admin', 'permissions' => []])->save();
+
+    $this->actingAs($superAdmin)
+        ->getJson('/api/admin/permissions')
+        ->assertSuccessful()
+        ->assertJsonFragment([
+            'key' => 'blueprint.system.create',
+            'description' => 'إنشاء Blueprint مملوك للنظام.',
+        ])
+        ->assertJsonFragment([
+            'key' => 'execution.support_read',
+            'description' => 'قراءة سجلات التنفيذ لأغراض الدعم مع تسجيل التدقيق.',
+        ]);
+
+    $admin = User::factory()->create();
+    $admin->forceFill(['role' => 'admin', 'permissions' => []])->save();
+
+    $this->actingAs($admin)
+        ->getJson('/api/admin/permissions')
+        ->assertForbidden();
+});
