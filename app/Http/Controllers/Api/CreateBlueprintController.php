@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Authorization\AuthorizationPermissionCatalog;
+
 use App\Authorization\AuthorizationAuditLogger;
 
 use App\Application\Blueprint\Commands\CreateBlueprint;
@@ -49,7 +51,7 @@ final class CreateBlueprintController
         $requestedOwnership = $validated['ownership']['type'] ?? 'user';
 
         if ($requestedOwnership === 'system') {
-            if (! $user->hasPermissionTo('blueprint.system.create')) {
+            if (! $user->hasPermissionTo(AuthorizationPermissionCatalog::BLUEPRINT_SYSTEM_CREATE)) {
                 return response()->json(['message' => 'Forbidden.'], 403);
             }
 
@@ -82,7 +84,7 @@ final class CreateBlueprintController
                 actor: $user,
                 action: 'create_system_blueprint',
                 blueprint: $blueprint,
-                permission: 'blueprint.system.create',
+                permission: AuthorizationPermissionCatalog::BLUEPRINT_SYSTEM_CREATE,
                 reason: (string) $validated['authorization_reason'],
             );
         }
