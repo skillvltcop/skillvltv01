@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -148,4 +149,29 @@ it('rejects unauthenticated logout requests', function () {
     $response = $this->postJson('/api/auth/logout');
 
     $response->assertUnauthorized();
+});
+
+it('logs out a stateful browser session through the API logout endpoint', function () {
+    $user = User::factory()->create([
+        'email' => 'teacher@example.com',
+        'password' => 'password',
+    ]);
+
+    $this->post('/login', [
+        'email' => $user->email,
+        'password' => 'password',
+    ])->assertRedirect('/');
+
+    $this->withHeader('Origin', 'http://localhost')
+        ->postJson('/api/auth/logout')
+        ->assertSuccessful()
+        ->assertJsonPath('message', 'Logged out successfully.');
+
+    // Feature tests reuse the application container across requests; clear cached guards
+    // so this assertion models the next independent HTTP request.
+    Auth::forgetGuards();
+
+    $this->withHeader('Origin', 'http://localhost')
+        ->getJson('/api/auth/me')
+        ->assertUnauthorized();
 });
