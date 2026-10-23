@@ -69,3 +69,68 @@ it('prevents demoting the last super administrator', function () {
 
     expect($superAdmin->fresh()->role)->toBe('super_admin');
 });
+
+it('records only the effective authorization fields and does not persist unrelated request data', function () {
+    $superAdmin = User::factory()->create();
+    $superAdmin->forceFill(['role' => 'super_admin', 'permissions' => []])->save();
+    $target = User::factory()->create();
+
+    $response = $this->actingAs($superAdmin)
+        ->patchJson('/api/admin/users/' . $target->id . '/authorization', [
+            'role' => 'admin',
+            'permissions' => ['blueprint.system.read_private'],
+            'reason' => 'Grant controlled support access',
+            'password' => 'must-not-be-captured',
+            'input' => ['sensitive' => 'must-not-be-captured'],
+        ])
+        ->assertSuccessful()
+        ->assertJsonMissingPath('password')
+        ->assertJsonMissingPath('input');
+
+    $event = DB::table('authorization_audit_events')
+        ->where('action', 'change_user_authorization')
+        ->where('actor_user_id', (string) $superAdmin->id)
+        ->where('resource_id', (string) $target->id)
+        ->latest('id')
+        ->first();
+
+    expect($event)->not->toBeNull()
+        ->and($event->reason)->toBe('Grant controlled support access')
+        ->and(json_decode($event->context, true))->toMatchArray([
+            'required_role' => 'super_admin',
+            'before' => ['role' => 'user', 'permissions' => []],
+            'after' => ['role' => 'admin', 'permissions' => ['blueprint.system.read_private']],
+        ])
+        ->and($event->context)->not->toContain('must-not-be-captured')
+        ->and($event->context)->not->toContain('password');
+});
+
+it('rejects unsupported permissions and role permission mismatches without changing the target or adding audit records', function () {
+    $superAdmin = User::factory()->create();
+    $superAdmin->forceFill(['role' => 'super_admin', 'permissions' => []])->save();
+    $target = User::factory()->create();
+
+    $this->actingAs($superAdmin)
+        ->patchJson('/api/admin/users/' . $target->id . '/authorization', [
+            'role' => 'admin',
+            'permissions' => ['authorization.users.manage'],
+            'reason' => 'Attempt unsupported permission',
+        ])
+        ->assertUnprocessable();
+
+    $this->actingAs($superAdmin)
+        ->patchJson('/api/admin/users/' . $target->id . '/authorization', [
+            'role' => 'user',
+            'permissions' => ['blueprint.system.read_private'],
+            'reason' => 'Attempt inconsistent assignment',
+        ])
+        ->assertUnprocessable();
+
+    expect($target->fresh()->role)->toBe('user')
+        ->and($target->fresh()->permissions)->toBe([])
+        ->and(DB::table('authorization_audit_events')
+            ->where('action', 'change_user_authorization')
+            ->where('resource_id', (string) $target->id)
+            ->count())->toBe(0);
+});
+
