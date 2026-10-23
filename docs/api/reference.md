@@ -12,7 +12,9 @@ Request fields:
 - email — required valid email address.
 - password — required string.
 
-A successful response contains a Sanctum bearer token and a minimal user object. Send the token on later API calls as Authorization: Bearer TOKEN. Protect it as a secret. POST /api/auth/logout revokes the current token. GET /api/auth/me returns the authenticated user's ID, name, and email.
+A successful response contains a Sanctum bearer token and a minimal user object. Send the token on later API calls as Authorization: Bearer TOKEN. Protect it as a secret and do not log it. Each successful login issues a new personal access token.
+
+The global token lifetime is configured with `SANCTUM_EXPIRATION_MINUTES`. If unset/null, tokens do not have a global expiration limit by default; an individual token may still have its own `expires_at`. The setting does not affect first-party browser sessions. POST /api/auth/logout revokes only the bearer token used by that request, or invalidates the web session for stateful browser authentication. There is currently no API endpoint for listing devices/tokens or revoking all tokens. GET /api/auth/me returns the authenticated user's ID, name, and email.
 
 ### Web authentication
 

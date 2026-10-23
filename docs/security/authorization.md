@@ -6,6 +6,16 @@ The API uses Laravel Sanctum authentication. Most API routes require auth:sanctu
 
 The current role values are user, admin, and super_admin. A guest is an unauthenticated visitor, not a required database row. The users table has a role column defaulting to user and a JSON permissions column. Authorization attributes are not mass-assignable and are hidden from default User serialization.
 
+## Sanctum bearer-token lifecycle
+
+The API login endpoint issues a new Sanctum personal access token after each successful login. The token is returned once in the login response; treat it as a credential and never write it to logs, audit context, or support tickets. The current logout endpoint revokes only the bearer token used for that request. A stateful browser-session logout instead invalidates the web session and rotates its CSRF token.
+
+The global personal-access-token lifetime is controlled by `SANCTUM_EXPIRATION_MINUTES`, which maps to `sanctum.expiration`. When the variable is unset or null, there is no global expiration limit; a token may remain valid until revoked unless it has its own `expires_at` value. First-party session authentication is not governed by this Sanctum token-expiration setting.
+
+No global lifetime is imposed by default in this repository because choosing a maximum lifetime is an API compatibility and product-policy decision. Operators should set a finite value appropriate to their client and re-authentication model, then verify expiry behavior in the deployed configuration. For example, `SANCTUM_EXPIRATION_MINUTES=10080` represents seven days; this is an example, not a universal recommendation. Changing the value requires configuration-cache refresh/redeployment as appropriate.
+
+The current login flow does not expose token naming, per-device token management, or an endpoint to revoke all of a user's tokens. Repeated successful logins can therefore create multiple active personal access tokens. During account compromise, revoke affected tokens through a trusted operational path and review whether a user-facing token-management feature is required before supporting long-lived third-party clients.
+
 ## Roles
 
 - user — manages their own Blueprints and can discover/use eligible public system Blueprints.

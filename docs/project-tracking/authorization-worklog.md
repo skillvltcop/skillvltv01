@@ -924,3 +924,27 @@
 - The first logout regression-test attempt returned 200 on the follow-up request because Laravel's feature-test application reuses cached guards across multiple requests. The test now explicitly clears cached guards between requests to model a fresh HTTP request; the updated test suite passed on both database engines.
 - Deployment review found that the example environment does not explicitly set `SESSION_SECURE_COOKIE`. The deployment guide now requires secure session cookies in production, retains HttpOnly and SameSite guidance, and records a staging verification procedure for stateful CSRF behavior.
 - CSRF end-to-end enforcement is not marked as proven by the feature suite: Laravel's test environment bypasses CSRF validation by design. A staging/browser-level check remains a release verification item.
+
+
+## تدقيق دورة حياة رموز Sanctum — 2026-10-23
+
+### النتائج المثبتة
+
+- رأس `main` عند بدء الجولة: `5e4cfc8b25425fde04cec2af5f8252b54f47b126`، وكانت CI بعد الدمج ناجحة على SQLite وMySQL في التشغيل `40018481709`.
+- `POST /api/auth/login` ينشئ Personal Access Token جديدًا باسم ثابت `api-token` عند كل تسجيل دخول ناجح، ويعيد الرمز مرة واحدة في الاستجابة.
+- `config/sanctum.php` كان يثبت `expiration = null` داخل الملف مباشرة، فلا توجد وسيلة إعداد عبر متغير بيئة لتحديد انتهاء عالمي دون تعديل الكود.
+- `POST /api/auth/logout` يبطل الرمز الشخصي الحالي فقط؛ ومسار الجلسة stateful ينهي جلسة الويب ويجدد CSRF token. لا يوجد حاليًا API لإدارة الرموز حسب الجهاز أو إبطال جميع الرموز.
+- إنشاء رموز متعددة عند تسجيل الدخول المتكرر قد يترك رموزًا فعالة قديمة. هذا خطر تشغيلي محتمل وليس ثغرة تفويض مؤكدة؛ تحديد مدة صلاحية إلزامية قرار توافق وسياسة منتج، لذلك لا نغيّر السلوك الافتراضي الحالي.
+
+### المعالجة الضيقة في PR
+
+- جعل `sanctum.expiration` قابلاً للضبط من `SANCTUM_EXPIRATION_MINUTES` مع الإبقاء على القيمة null عند عدم ضبط المتغير.
+- إضافة المتغير الاختياري إلى `.env.example` وتعريف مثال سبعة أيام بوصفه مثالًا فقط.
+- توثيق معنى القيمة null، وأن انتهاء الرموز لا يطبق على جلسات SPA الأولى، وأن logout يبطل الرمز الحالي أو جلسة الويب بحسب نوع المصادقة.
+- توثيق غياب إدارة الرموز حسب الجهاز/الإبطال الشامل كقيد معروف، دون توسيع نطاق PR إلى تغيير عقد API.
+
+### التحقق المطلوب
+
+- يجب أن تنجح CI على SQLite وMySQL على SHA النهائي للـPR.
+- بعد الدمج، يجب أن ينجح CI على `main` للمحركين على SHA الدمج نفسه.
+- لا يُعد هذا التغيير إثباتًا لاختبار CSRF end-to-end؛ تحقق staging/browser يبقى بند إطلاق منفصلًا.

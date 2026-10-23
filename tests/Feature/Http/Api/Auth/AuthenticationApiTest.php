@@ -57,6 +57,21 @@ it('logs in a user through the HTTP API', function () {
     );
 });
 
+it('rejects bearer tokens older than the configured global expiration', function () {
+    config(['sanctum.expiration' => 1]);
+
+    $user = User::factory()->create();
+    $token = $user->createToken('global-expiration-test')->plainTextToken;
+
+    $user->tokens()
+        ->where('name', 'global-expiration-test')
+        ->update(['created_at' => now()->subMinutes(2)]);
+
+    $this->withToken($token)
+        ->getJson('/api/auth/me')
+        ->assertUnauthorized();
+});
+
 it('rejects invalid login credentials', function () {
     User::factory()->create([
         'email' => 'zakaria@example.com',
