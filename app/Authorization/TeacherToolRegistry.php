@@ -11,9 +11,8 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Product-specific allowlist for teacher-facing tools.
  *
- * Discovery and execution consult this same registry. Configuration provides
- * safe defaults; persisted administrative overrides can add, replace, or disable
- * entries without coupling the Blueprint core to the education domain.
+ * Discovery and execution consult the same effective registry. Configuration
+ * provides safe defaults; persisted overrides can add, replace, or disable entries.
  */
 final class TeacherToolRegistry
 {
@@ -21,6 +20,27 @@ final class TeacherToolRegistry
      * @return array<string, array{namespace: string, view: string}>
      */
     public function all(): array
+    {
+        $enabled = [];
+
+        foreach ($this->administrativeEntries() as $slug => $entry) {
+            if ($entry['enabled']) {
+                $enabled[$slug] = [
+                    'namespace' => $entry['namespace'],
+                    'view' => $entry['view'],
+                ];
+            }
+        }
+
+        return $enabled;
+    }
+
+    /**
+     * Includes disabled entries so administrators can inspect and re-enable them.
+     *
+     * @return array<string, array{namespace: string, view: string, enabled: bool}>
+     */
+    public function administrativeEntries(): array
     {
         $defaults = [
             'assessment-positioning' => [
@@ -41,26 +61,30 @@ final class TeacherToolRegistry
             $defaults = (array) config('teacher_tools.tools', $defaults);
         }
 
-        // Unit tests may instantiate the resolver without booting database services.
-        if (! app()->bound('db') || ! Schema::hasTable('teacher_tool_registry')) {
-            return $defaults;
-        }
+        $entries = [];
 
-        $tools = $defaults;
-
-        foreach (DB::table('teacher_tool_registry')->get() as $entry) {
-            if (! (bool) $entry->is_enabled) {
-                unset($tools[$entry->slug]);
-                continue;
-            }
-
-            $tools[$entry->slug] = [
-                'namespace' => (string) $entry->namespace,
-                'view' => (string) $entry->view,
+        foreach ($defaults as $slug => $entry) {
+            $entries[$slug] = [
+                'namespace' => (string) ($entry['namespace'] ?? ''),
+                'view' => (string) ($entry['view'] ?? ''),
+                'enabled' => true,
             ];
         }
 
-        return $tools;
+        // Unit tests may instantiate the resolver without booting database services.
+        if (! app()->bound('db') || ! Schema::hasTable('teacher_tool_registry')) {
+            return $entries;
+        }
+
+        foreach (DB::table('teacher_tool_registry')->get() as $entry) {
+            $entries[(string) $entry->slug] = [
+                'namespace' => (string) $entry->namespace,
+                'view' => (string) $entry->view,
+                'enabled' => (bool) $entry->is_enabled,
+            ];
+        }
+
+        return $entries;
     }
 
     public function contains(string $slug): bool
