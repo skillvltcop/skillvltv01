@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\\Http\\Controllers\\Api\\Auth;
+namespace App\Http\Controllers\Api\Auth;
 
-use Illuminate\\Http\\JsonResponse;
-use Illuminate\\Http\\Request;
-use Illuminate\\Support\\Facades\\Auth;
-use Laravel\\Sanctum\\TransientToken;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Laravel\Sanctum\TransientToken;
 
 final class LogoutController
 {
