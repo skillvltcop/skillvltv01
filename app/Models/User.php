@@ -46,14 +46,37 @@ class User extends Authenticatable
         static::deleting(function (User $user): void {
             // Keep the execution audit shell, but remove potentially personal
             // payloads before the owner_id foreign key is set to null.
+            $executions = DB::table('executions')
+                ->where('owner_id', (string) $user->id);
+
+            $executions->update([
+                'input' => json_encode(new \stdClass(), JSON_THROW_ON_ERROR),
+                'context' => json_encode(new \stdClass(), JSON_THROW_ON_ERROR),
+                'updated_at' => now(),
+            ]);
+
             DB::table('executions')
                 ->where('owner_id', (string) $user->id)
+                ->where('status', 'completed')
                 ->update([
-                    'input' => json_encode(new \stdClass(), JSON_THROW_ON_ERROR),
-                    'context' => json_encode(new \stdClass(), JSON_THROW_ON_ERROR),
+                    'output' => json_encode(new \stdClass(), JSON_THROW_ON_ERROR),
+                    'error' => null,
+                ]);
+
+            DB::table('executions')
+                ->where('owner_id', (string) $user->id)
+                ->where('status', 'failed')
+                ->update([
+                    'output' => null,
+                    'error' => 'Redacted after owner deletion.',
+                ]);
+
+            DB::table('executions')
+                ->where('owner_id', (string) $user->id)
+                ->whereIn('status', ['pending', 'running'])
+                ->update([
                     'output' => null,
                     'error' => null,
-                    'updated_at' => now(),
                 ]);
         });
     }
