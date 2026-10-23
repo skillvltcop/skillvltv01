@@ -13,7 +13,7 @@ final class AuthorizationAuditLogger
     /**
      * Record an administrative exception without copying sensitive payloads.
      *
-     * @param array<string, scalar|null> $context
+     * @param array<string, mixed> $context
      */
     public function record(
         User $actor,
