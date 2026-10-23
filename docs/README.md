@@ -6,12 +6,13 @@ This handbook documents the current repository, its architecture, runtime behavi
 
 1. [System overview](architecture/overview.md) — application layers, core components, and request flow.
 2. [Blueprint lifecycle and execution](architecture/blueprint-lifecycle.md) — revisions, freezing, promotion, lifecycle states, and executions.
-3. [Authorization and security](security/authorization.md) — roles, named permissions, visibility rules, audit events, and privileged administration.
-4. [API reference](api/reference.md) — routes, authentication, request contracts, response shapes, and error codes.
-5. [Data model](data-model.md) — tables, relationships, constraints, and retention behavior.
-6. [Development and testing](development/testing.md) — local setup, commands, test suites, and CI.
-7. [Deployment and operations](operations/deployment.md) — production configuration, initial administrator provisioning, migrations, and security checks.
-8. [Glossary](glossary.md) — English technical terms with Arabic explanations.
+3. [Behavior runtime](architecture/behavior-runtime.md) — logic format, supported steps, value paths, contracts, and failure behavior.
+4. [Authorization and security](security/authorization.md) — roles, named permissions, visibility rules, audit events, and privileged administration.
+5. [API reference](api/reference.md) — routes, authentication, request contracts, response shapes, and error codes.
+6. [Data model](data-model.md) — tables, relationships, constraints, and retention behavior.
+7. [Development and testing](development/testing.md) — local setup, commands, test suites, and CI.
+8. [Deployment and operations](operations/deployment.md) — production configuration, initial administrator provisioning, migrations, and security checks.
+9. [Glossary](glossary.md) — English technical terms with Arabic explanations.
 
 ## Sources of truth
 
