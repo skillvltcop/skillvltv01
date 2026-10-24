@@ -26,6 +26,25 @@ it('authenticates a browser session', function () {
 });
 
 
+it('regenerates the session identifier after successful authentication', function () {
+    $user = User::factory()->create([
+        'email' => 'teacher@example.com',
+        'password' => 'password',
+    ]);
+
+    $this->get('/login')->assertOk();
+    $sessionIdBeforeLogin = session()->getId();
+
+    $response = $this->post('/login', [
+        'email' => 'teacher@example.com',
+        'password' => 'password',
+    ]);
+
+    $response->assertRedirect('/');
+    $this->assertAuthenticatedAs($user);
+    expect(session()->getId())->not->toBe($sessionIdBeforeLogin);
+});
+
 it('does not persist the login unless remember me is selected', function () {
     User::factory()->create([
         'email' => 'teacher@example.com',
