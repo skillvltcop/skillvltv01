@@ -175,14 +175,20 @@ it('validates required browser login fields', function () {
 it('logs out the browser session and clears its session data', function () {
     $user = User::factory()->create();
 
-    $response = $this
-        ->actingAs($user)
+    $this->actingAs($user)
         ->withSession(['locale' => 'fr'])
-        ->post('/logout');
+        ->get('/');
+
+    $sessionIdBeforeLogout = session()->getId();
+    $csrfTokenBeforeLogout = session()->token();
+
+    $response = $this->post('/logout');
 
     $response->assertRedirect('/login');
     $response->assertSessionMissing('locale');
     $this->assertGuest();
+    expect(session()->getId())->not->toBe($sessionIdBeforeLogout);
+    expect(session()->token())->not->toBe($csrfTokenBeforeLogout);
 });
 
 it('requires browser authentication to log out', function () {
